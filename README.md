@@ -1,13 +1,14 @@
 # Agentic Framework – High‑Level Overview
 
-## 1  Purpose & Vision
+## Purpose & Vision
 
-The framework allows developers to compose and execute **directed cyclic graphs of work items** (“AgentGraphs”). Each node is a Task that emits an immutable state object; edges transport that state to the next node, enabling transparent **plan → act → observe → act** cycles that repeat until a goal is reached or a guardrail intervenes, all while retaining full provenance.
+The framework allows developers to compose and execute **directed cyclic graphs of work items** (“AgentGraphs”) for agentic workflows. Each node is a Task that emits an immutable state object; edges transport that state to the next node, enabling transparent **plan → act → observe → act** cycles that repeat until a goal is reached or a guardrail intervenes, all while retaining full provenance.
 
 **Why?**
 
 * **Scalable Open Source Agent Runner** - Scales from running on a single laptop to a multitenant cloud deployment.
-* **Clean separation of concerns** – "Action" Tasks handles *doing*, "Planner" tasks handles *deciding*, letting you mix deterministic rules with LLM‑powered reasoning without entangling the two.
+* **Clean separation of concerns** – "Tasks" handles *doing*, "Plans" handles *deciding*, letting you mix deterministic rules with LLM‑powered reasoning without entangling the two.
+* **Simple Graph Abstraction** - Logically, Task nodes output to Plan nodes, and Plan nodes output to Task nodes in alternating tick-tock execution.
 * **Runs everywhere** – the same graph definition executes on a laptop (in‑memory queue + SQLite) or at SaaS scale (Kafka + Postgres + S3) by swapping pluggable adapters.
 * **Centralised guardrails** – cost, safety, and iteration caps enforced in the control plane so compliance and budgeting never rely on agent authors to ‘do the right thing’.
 * **Auditable and Reproducible**– every Task Execution is an append‑only event that gets recorded.  Restart an agent from any point in  a previous execution.
@@ -52,20 +53,22 @@ This Coding Agent example Agent Graph illustrates **plan → act → observe** l
 
 ---
 
-## 2  Core Domain Model  Core Domain Model
+## Core Domain Model  Core Domain Model
 
-| Entity            | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| **AgentGraph**    | Immutable graph template (nodes + edges) with semantic versioning.              |
-| **AgentLifetime** | One runtime instance of an AgentGraph executing to completion.                  |
-| **ActionTask**    | Node subtype that performs work – API call, DB query, computation.              |
-| **PlannerTask**   | Node subtype that selects the next edge(s) based on prior state.                |
-| **Edge**          | Directed link (`NORMAL`, `PARALLEL`, `JOIN`, `FINAL`).                          |
-| **TaskExecution** | Single run of an ActionTask or PlannerTask; produces an **Execution Envelope**. |
+| Entity            | Description                                                                                                                         |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| **AgentGraph**    | Immutable graph template (nodes + edges) with semantic versioning.                                                                  |
+| **AgentLifetime** | One runtime instance of an AgentGraph executing to completion.                                                                      |
+| **Task**          | Node type that performs work – API call, DB query, computation.                                                                     |
+| **Plan**          | Node type that selects the **Task** based on rules or prior state.                                                                  |
+| **Edge**          | Logical link between Tasks and Plans, mainly for configuration (`NORMAL`, `PARALLEL`, `JOIN`, `FINAL`).                             |
+| **TaskResult**    | Structured output from any task type.  Used as input to the downstream **Plan**                                                     |
+| **TaskExecution** | Record of a single run of a **Task**; Contains a **TaskResult** to be used as input to the next **Plan**.                           |
+| **PlanExecution** | Record of a single run of a **Plan**; Contains the upstream **TaskResult** passed through to be used as input to the next **Task**. |         
 
 ---
 
-## 3  Execution Envelope (v1)
+##  Execution Envelope (v1)
 
 A JSON record emitted on every TaskExecution.  Three sections:
 
@@ -76,21 +79,31 @@ A JSON record emitted on every TaskExecution.  Three sections:
 Optional **policy\_feedback** is appended by the control plane (e.g., remaining budget).
 
 ---
+##  Logical Flow (Happy Path)
 
-## 4  Runtime Flow (Happy Path)
+1. **Task** executes and produces some output as a **TaskResult**.    
+2. **TaskResult** is used as input to the downstream **Plan**.
+3. **Plan** evaluates and produces a **PlanResult**.
+4. Downstream **Task** executes using the **PlanResult** as input and produces a **TaskResult**.
 
-1. **ActionTask** writes any large result to the Blob Store **and emits a TaskExecution envelope** to the **Data Plane** (event‑bus topic).
-2. **Data Plane** persists the envelope in the State DB (append‑only) and republishes a *lightweight reference message* to the **Control Plane** topic.
-3. **Control Plane** reads the reference, loads envelope headers (and blob metadata), and evaluates YAML guardrails.
+##  Runtime Flow (Happy Path)
 
-   * **Pass** → forwards the envelope (or just its reference) to the target **PlannerTask** queue.
+1. **Task** executes and produces some output.  
+   * If the result is large (>1mb), the large result is written to the Blob Store and a **TaskResult** with a URI is created and wrapped in a **TaskExecution**.
+   * If the result is small, the **TaskResult** is created with output inlined and wrapped in a **TaskExecution**.
+   * The **TaskExecution** is published to the **Data Plane** topic.
+2. **Data Plane** persists the **TaskExecution** in the State DB (append‑only) and republishes a *lightweight reference message* to the **Control Plane** topic.
+3. **Control Plane** reads the reference, loads TaskExecution headers (and blob metadata), and evaluates YAML guardrails.
+   * **Pass** → forwards the envelope (or just its reference) to the target **Plan** executor queue.
    * **Fail** → issues `REJECT_EXECUTION`, `PAUSE_LIFETIME`, or `ABORT_LIFETIME` events.
-4. **PlannerTask** (rule‑based or LLM) fetches the blob if needed, produces a structured **Plan** listing `next_task_ids[]`, and emits its own envelope back to the **Data Plane**.
-5. Steps 1‑4 repeat as the Control Plane routes to downstream ActionTask(s) until an edge of type `FINAL` is taken, completing the AgentLifetime.
+4. **Plan** is passed the previous **TaskExecution** and **TaskResult** from the **Control Plane**, produces a structured **Plan** listing `next_task_ids[]`, and emits its own **PlanExecution**.
+5. **Data Plane** persists the **PlanExecution** in the State DB (append‑only) and republishes a *lightweight reference message* to the **Control Plane** topic.
+6. Step 1 repeats for the downstream **Task**, but with the **PlanResult** passed as input from the Control Plane.
+7. Steps 2-6 repeat following the path of the graphuntil an edge of type `FINAL` is taken, completing the AgentLifetime.
 
 ---
 
-## 5  Layered Architecture
+## Layered Architecture
 
 ```
 ┌───────────────┐   User code: Tasks & Graphs (Python SDK)
@@ -107,18 +120,19 @@ Optional **policy\_feedback** is appended by the control plane (e.g., remaining 
 
 ---
 
-## 6  Deployment Profiles
+##  Deployment Profiles
 
 | Profile   | Event Bus       | State DB             | Blob Store | KV / Cache   |
 | --------- | --------------- | -------------------- | ---------- | ------------ |
 | **Local** | `asyncio.Queue` | SQLite WAL           | Local FS   | In‑proc dict |
 | **Cloud** | Kafka / Pulsar  | Postgres / Cockroach | S3 / GCS   | Redis        |
+| **Test**  | `asyncio.Queue` | In-memory            | Local FS   | In-memory    |
 
 Both profiles share identical envelope schema and guardrail logic.
 
 ---
 
-## 7  Guardrail Policies (Control Plane ONLY)
+##  Guardrail Policies (Control Plane ONLY)
 
 * Declarative YAML (`sum(tokens_used) > 10 000 → abort_lifetime`).
 * Enforced per‑execution or cumulative per‑lifetime/tenant.
@@ -126,16 +140,17 @@ Both profiles share identical envelope schema and guardrail logic.
 
 ---
 
-## 8  Extensibility Points
+##  Extensibility Points
 
-* **Task SDK** – subclass ActionTask / PlannerTask; emit telemetry via helper.
+* **Task SDK** – subclass Task for custom tasks.
+* **Plan SDK** – subclass Plan for custom plans.
 * **Adapter SPI** – implement `EventBus`, `StateStore`, `BlobStore`, `KVStore` for new environments.
 * **Guardrail Engine** – pluggable policy language (YAML v1, Rego later).
 * **Language Ports** – JVM orchestrator can replace Python core; interfaces stay JSON/gRPC.
 
 ---
 
-## 9  Non‑Functional Goals
+##  Non‑Functional Goals
 
 * **Deterministic replay** – given the same envelopes, a graph run reproduces edge choices.
 * **Horizontal scalability** – SaaS tier targets 10 k concurrent AgentLifetimes.
@@ -145,10 +160,10 @@ Both profiles share identical envelope schema and guardrail logic.
 
 ---
 
-## 10  Roadmap to MVP
+##  Roadmap to MVP
 
 1. Finalise JSON Schema for ExecutionEnvelope + Plan (v1).
-2. Ship Python SDK (ActionTask, PlannerTask, telemetry helper).
+2. Ship Python SDK (Task, Plan, telemetry helper).
 3. Implement local profile adapters; run “Hello World” graph.
 4. Build guardrail engine with YAML policies + unit tests.
 5. Cloud profile adapters (Kafka, Postgres, S3, Redis) & Helm chart.
