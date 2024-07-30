@@ -2,7 +2,7 @@
 
 ## 1  Purpose & Vision
 
-The framework empowers developers to compose and execute **directed cyclic graphs of work items** (“AgentGraphs”). Each node is a Task that emits an immutable state object; edges transport that state to the next node, enabling transparent **plan → act → observe → act** cycles that repeat until a goal is reached or a guardrail intervenes, all while retaining full provenance.
+The framework allows developers to compose and execute **directed cyclic graphs of work items** (“AgentGraphs”). Each node is a Task that emits an immutable state object; edges transport that state to the next node, enabling transparent **plan → act → observe → act** cycles that repeat until a goal is reached or a guardrail intervenes, all while retaining full provenance.
 
 **Why?**
 
