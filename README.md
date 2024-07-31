@@ -64,19 +64,19 @@ This Coding Agent example Agent Graph illustrates **plan → act → observe** l
 | **Edge**          | Logical link between Tasks and Plans, mainly for configuration (`NORMAL`, `PARALLEL`, `JOIN`, `FINAL`).                             |
 | **TaskResult**    | Structured output from any task type.  Used as input to the downstream **Plan**                                                     |
 | **TaskExecution** | Record of a single run of a **Task**; Contains a **TaskResult** to be used as input to the next **Plan**.                           |
+| **PlanResult**    | Structured output from any plan type.  Used as input to the downstream **Task**                                                     |
 | **PlanExecution** | Record of a single run of a **Plan**; Contains the upstream **TaskResult** passed through to be used as input to the next **Task**. |         
 
 ---
 
-##  Execution Envelope (v1)
+##  TaskExecution - Execution Record
 
-A JSON record emitted on every TaskExecution.  Three sections:
+A record emitted on every TaskExecution.  Three sections:
 
 1. **Headers** – identity, timing, status, iteration.
 2. **Policy Telemetry** – `tokens_used`, `cost_usd`, `latency_ms`, etc.
-3. **Result** – `{content_type, uri, size_bytes, checksum, schema_uri}` (big blobs live in object storage).
+3. **TaskResult** – `{ oneof:{inline: any | uri: string }, uri, size_bytes}` (big blobs referenced by URI to object storage, small blobs inlined.
 
-Optional **policy\_feedback** is appended by the control plane (e.g., remaining budget).
 
 ---
 ##  Logical Flow (Happy Path)
@@ -96,7 +96,7 @@ Optional **policy\_feedback** is appended by the control plane (e.g., remaining 
 3. **Control Plane** reads the reference, loads TaskExecution headers (and blob metadata), and evaluates YAML guardrails.
    * **Pass** → forwards the envelope (or just its reference) to the target **Plan** executor queue.
    * **Fail** → issues `REJECT_EXECUTION`, `PAUSE_LIFETIME`, or `ABORT_LIFETIME` events.
-4. **Plan** is passed the previous **TaskExecution** and **TaskResult** from the **Control Plane**, produces a structured **Plan** listing `next_task_ids[]`, and emits its own **PlanExecution**.
+4. **Plan** is passed the previous **TaskExecution** and **TaskResult** from the **Control Plane**, produces a **PlanResult** listing `next_task_ids[]`, and emits its own **PlanExecution**.
 5. **Data Plane** persists the **PlanExecution** in the State DB (append‑only) and republishes a *lightweight reference message* to the **Control Plane** topic.
 6. Step 1 repeats for the downstream **Task**, but with the **PlanResult** passed as input from the Control Plane.
 7. Steps 2-6 repeat following the path of the graphuntil an edge of type `FINAL` is taken, completing the AgentLifetime.
