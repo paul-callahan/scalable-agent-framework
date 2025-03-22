@@ -1,0 +1,3 @@
+[console_scripts]
+agentic-control-plane = agentic.control_plane.server:serve
+agentic-data-plane = agentic.data_plane.server:serve
