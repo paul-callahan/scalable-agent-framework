@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package scalable_agent_framework.task;
+
+import "google/protobuf/any.proto";
+import "common.proto";
+
+// Result from a Task execution
+message TaskResult {
+  oneof result {
+    google.protobuf.Any inline_data = 1;  // Small results stored inline
+    string uri = 2;                       // Large results stored by URI
+  }
+  scalable_agent_framework.common.ResultMetadata metadata = 3;
+  map<string, string> headers = 4;
+}
+
+// Complete record of a Task execution
+message TaskExecution {
+  scalable_agent_framework.common.ExecutionHeader header = 1;
+  scalable_agent_framework.common.PolicyTelemetry policy_telemetry = 2;
+  TaskResult result = 3;
+  string error_message = 4;
+  map<string, string> context = 5;
+}
