@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package agent.framework.common.v1;
+
+option go_package = "github.com/scalable-agent-framework/protos/common/v1;commonv1";
+option java_multiple_files = true;
+option java_package = "com.scalableagentframework.protos.common.v1";
+option java_outer_classname = "CommonProto";
+
+// ExecutionStatus represents the current state of a task or plan execution
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STATUS_PENDING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
+  EXECUTION_STATUS_COMPLETED = 3;
+  EXECUTION_STATUS_FAILED = 4;
+  EXECUTION_STATUS_ABORTED = 5;
+}
+
+// EdgeType represents the type of connection between graph nodes
+enum EdgeType {
+  EDGE_TYPE_UNSPECIFIED = 0;
+  EDGE_TYPE_NORMAL = 1;
+  EDGE_TYPE_PARALLEL = 2;
+  EDGE_TYPE_JOIN = 3;
+  EDGE_TYPE_FINAL = 4;
+}
+
+// Timestamp represents a point in time with nanosecond precision
+message Timestamp {
+  // Seconds since the Unix epoch
+  int64 seconds = 1;
+  // Nanoseconds of the second
+  int32 nanos = 2;
+}
+
+// Duration represents a span of time
+message Duration {
+  // Total seconds
+  int64 seconds = 1;
+  // Nanoseconds of the second
+  int32 nanos = 2;
+}
+
+// ResourceUsage tracks policy telemetry for guardrail enforcement
+message ResourceUsage {
+  // Number of tokens used in the execution
+  int64 tokens_used = 1;
+  // Cost in USD
+  double cost_usd = 2;
+  // Latency in milliseconds
+  int64 latency_ms = 3;
+}
+
+// BlobReference handles large results stored in blob storage vs inlined content
+message BlobReference {
+  // URI to the blob storage location
+  string uri = 1;
+  // Content type of the blob
+  string content_type = 2;
+  // Size of the blob in bytes
+  int64 size_bytes = 3;
+  // Optional inline content for small results
+  bytes inline_content = 4;
+}
+
+// ExecutionHeaders contains identity, timing, status, and iteration information
+message ExecutionHeaders {
+  // Unique execution identifier
+  string execution_id = 1;
+  // Node identifier (task_id or plan_id)
+  string node_id = 2;
+  // Execution status
+  ExecutionStatus status = 3;
+  // Start timestamp
+  Timestamp started_at = 4;
+  // End timestamp
+  Timestamp ended_at = 5;
+  // Iteration number for retries
+  int32 iteration = 6;
+  // Parent execution ID if this is a retry
+  string parent_execution_id = 7;
+} 

@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package agent.framework.plan.v1;
+
+import "protos/common.proto";
+import "protos/task.proto";
+
+option go_package = "github.com/scalable-agent-framework/protos/plan/v1;planv1";
+option java_multiple_files = true;
+option java_package = "com.scalableagentframework.protos.plan.v1";
+option java_outer_classname = "PlanProto";
+
+// PlanExecution is the execution record that contains the upstream TaskResult
+message PlanExecution {
+  // Tenant identifier for multitenant support
+  string tenant_id = 1;
+  // Execution headers with identity, timing, status, iteration
+  agent.framework.common.v1.ExecutionHeaders headers = 2;
+  // Policy telemetry for guardrail enforcement
+  agent.framework.common.v1.ResourceUsage resource_usage = 3;
+  // Plan result
+  PlanResult result = 4;
+  // Input data (typically TaskResult from upstream task)
+  string input_data = 5;
+  // Upstream task execution that triggered this plan
+  agent.framework.task.v1.TaskExecution upstream_task_execution = 6;
+}
+
+// PlanResult represents structured output from any plan type
+message PlanResult {
+  // Success status of the plan
+  bool success = 1;
+  // Error message if plan failed
+  string error_message = 2;
+  // List of next task IDs to execute (supports parallel execution)
+  repeated string next_task_ids = 3;
+  // Decision metadata
+  map<string, string> decision_metadata = 4;
+  // Structured result data
+  oneof result_data {
+    // JSON string for structured data
+    string json_result = 5;
+    // Blob reference for large results
+    agent.framework.common.v1.BlobReference blob_reference = 6;
+  }
+} 

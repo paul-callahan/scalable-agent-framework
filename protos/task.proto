@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package agent.framework.task.v1;
+
+import "protos/common.proto";
+
+option go_package = "github.com/scalable-agent-framework/protos/task/v1;taskv1";
+option java_multiple_files = true;
+option java_package = "com.scalableagentframework.protos.task.v1";
+option java_outer_classname = "TaskProto";
+
+// TaskExecution is the execution record containing headers, telemetry, and result
+message TaskExecution {
+  // Tenant identifier for multitenant support
+  string tenant_id = 1;
+  // Execution headers with identity, timing, status, iteration
+  agent.framework.common.v1.ExecutionHeaders headers = 2;
+  // Policy telemetry for guardrail enforcement
+  agent.framework.common.v1.ResourceUsage resource_usage = 3;
+  // Task result
+  TaskResult result = 4;
+  // Input data passed to the task
+  string input_data = 5;
+}
+
+// TaskResult represents structured output from any task type
+message TaskResult {
+  // Success status of the task
+  bool success = 1;
+  // Error message if task failed
+  string error_message = 2;
+  // Structured result data
+  oneof result_data {
+    // JSON string for structured data
+    string json_result = 3;
+    // Blob reference for large results
+    agent.framework.common.v1.BlobReference blob_reference = 4;
+  }
+  // Metadata about the result
+  map<string, string> metadata = 5;
+} 

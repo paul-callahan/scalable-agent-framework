@@ -1,0 +1,28 @@
+# Generated protobuf files
+*_pb2.py
+*_pb2.pyi
+*_grpc.py
+*_grpc.pyi
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env
+.venv/
+venv/ 

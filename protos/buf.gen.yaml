@@ -1,0 +1,12 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/scalable-agent-framework/protos
+plugins:
+  - name: python
+    out: ../services/standalone-py
+    opt: pyi
+  - name: python-grpc
+    out: ../services/standalone-py
+    opt: pyi 

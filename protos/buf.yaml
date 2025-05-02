@@ -1,0 +1,12 @@
+version: v1
+name: buf.build/scalable-agent-framework/protos
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE 
