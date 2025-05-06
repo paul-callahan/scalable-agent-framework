@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package scalable_agent_framework.services;
+
+import "task.proto";
+import "plan.proto";
+import "common.proto";
+import "google/protobuf/empty.proto";
+
+// Control Plane Service - manages execution approval, guardrails, and lifecycle
+service ControlPlaneService {
+  // Approve or reject execution based on guardrails
+  rpc ApproveExecution(ApproveExecutionRequest) returns (ApproveExecutionResponse);
+  
+  // Manage agent lifetime
+  rpc PauseLifetime(PauseLifetimeRequest) returns (google.protobuf.Empty);
+  rpc ResumeLifetime(ResumeLifetimeRequest) returns (google.protobuf.Empty);
+  rpc AbortLifetime(AbortLifetimeRequest) returns (google.protobuf.Empty);
+  
+  // Query execution status
+  rpc GetExecutionStatus(GetExecutionStatusRequest) returns (GetExecutionStatusResponse);
+}
+
+// Data Plane Service - handles execution persistence and routing
+service DataPlaneService {
+  // Submit task execution
+  rpc SubmitTaskExecution(SubmitTaskExecutionRequest) returns (SubmitTaskExecutionResponse);
+  
+  // Submit plan execution
+  rpc SubmitPlanExecution(SubmitPlanExecutionRequest) returns (SubmitPlanExecutionResponse);
+  
+  // Retrieve execution history
+  rpc GetExecutionHistory(GetExecutionHistoryRequest) returns (GetExecutionHistoryResponse);
+}
+
+// Control Plane Messages
+message ApproveExecutionRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+  scalable_agent_framework.common.PolicyTelemetry policy_telemetry = 3;
+}
+
+message ApproveExecutionResponse {
+  bool approved = 1;
+  string reason = 2;
+  repeated string violations = 3;
+}
+
+message PauseLifetimeRequest {
+  string agent_lifetime_id = 1;
+  string tenant_id = 2;
+  string reason = 3;
+}
+
+message ResumeLifetimeRequest {
+  string agent_lifetime_id = 1;
+  string tenant_id = 2;
+}
+
+message AbortLifetimeRequest {
+  string agent_lifetime_id = 1;
+  string tenant_id = 2;
+  string reason = 3;
+}
+
+message GetExecutionStatusRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+}
+
+message GetExecutionStatusResponse {
+  scalable_agent_framework.common.ExecutionStatus status = 1;
+  string error_message = 2;
+}
+
+// Data Plane Messages
+message SubmitTaskExecutionRequest {
+  scalable_agent_framework.task.TaskExecution task_execution = 1;
+}
+
+message SubmitTaskExecutionResponse {
+  string execution_id = 1;
+  bool accepted = 2;
+}
+
+message SubmitPlanExecutionRequest {
+  scalable_agent_framework.plan.PlanExecution plan_execution = 1;
+}
+
+message SubmitPlanExecutionResponse {
+  string execution_id = 1;
+  bool accepted = 2;
+}
+
+message GetExecutionHistoryRequest {
+  string agent_lifetime_id = 1;
+  string tenant_id = 2;
+  int32 limit = 3;
+  string cursor = 4;
+}
+
+message GetExecutionHistoryResponse {
+  repeated ExecutionRecord executions = 1;
+  string next_cursor = 2;
+}
+
+message ExecutionRecord {
+  oneof execution {
+    scalable_agent_framework.task.TaskExecution task_execution = 1;
+    scalable_agent_framework.plan.PlanExecution plan_execution = 2;
+  }
+}
