@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package scalable_agent_framework.plan;
+
+import "google/protobuf/any.proto";
+import "common.proto";
+
+// Result from a Plan execution
+message PlanResult {
+  repeated string next_task_ids = 1;
+  oneof result {
+    google.protobuf.Any inline_data = 2;  // Small results stored inline
+    string uri = 3;                       // Large results stored by URI
+  }
+  scalable_agent_framework.common.ResultMetadata metadata = 4;
+  map<string, string> headers = 5;
+  string reasoning = 6;  // Optional reasoning for the plan decision
+}
+
+// Complete record of a Plan execution
+message PlanExecution {
+  scalable_agent_framework.common.ExecutionHeader header = 1;
+  scalable_agent_framework.common.PolicyTelemetry policy_telemetry = 2;
+  PlanResult result = 3;
+  string error_message = 4;
+  map<string, string> context = 5;
+  // Input from upstream TaskExecution
+  google.protobuf.Any upstream_task_result = 6;
+}
