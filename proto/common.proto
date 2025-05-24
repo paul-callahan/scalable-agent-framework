@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package scalable_agent_framework.common;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// Common execution header for TaskExecution and PlanExecution
+message ExecutionHeader {
+  string execution_id = 1;
+  string tenant_id = 2;
+  string agent_lifetime_id = 3;
+  string agent_graph_id = 4;
+  string node_id = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  ExecutionStatus status = 8;
+  int32 iteration_count = 9;
+  string parent_execution_id = 10;
+}
+
+// Execution status enumeration
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STATUS_PENDING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
+  EXECUTION_STATUS_COMPLETED = 3;
+  EXECUTION_STATUS_FAILED = 4;
+  EXECUTION_STATUS_CANCELLED = 5;
+}
+
+// Policy telemetry for tracking resource usage
+message PolicyTelemetry {
+  int64 tokens_used = 1;
+  double cost_usd = 2;
+  int64 latency_ms = 3;
+  int64 memory_bytes = 4;
+  int64 cpu_ms = 5;
+  map<string, string> custom_metrics = 6;
+}
+
+// Result metadata for tracking result size and storage
+message ResultMetadata {
+  int64 size_bytes = 1;
+  string content_type = 2;
+  string checksum = 3;
+}
