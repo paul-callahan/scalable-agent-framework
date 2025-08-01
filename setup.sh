@@ -37,7 +37,7 @@ uv sync
 # Verify installation
 echo "Verifying installation..."
 uv run python -c "import grpcio; print(f'grpcio version: {grpcio.__version__}')"
-uv run python -c "import protobuf; print(f'protobuf version: {protobuf.__version__}')"
+uv run python -c "import google.protobuf; print(f'protobuf version: {google.protobuf.__version__}')"
 uv run python -c "import pydantic; print(f'pydantic version: {pydantic.__version__}')"
 uv run python -c "import aiohttp; print(f'aiohttp version: {aiohttp.__version__}')"
 uv run python -c "import structlog; print(f'structlog version: {structlog.__version__}')"
