@@ -4,7 +4,7 @@ This guide will help you set up the Scalable Agent Framework on your local machi
 
 ## Prerequisites
 
-- **Python 3.15.5** (latest version)
+- **Python 3.13.5** (latest version)
 - **Git** (for cloning the repository)
 - **uv** (Python package manager) - [Installation instructions below](#installing-uv)
 
@@ -48,8 +48,10 @@ source scripts/activate_uv.sh
 
 This script will:
 - Check if `uv` is installed
+- Verify Python 3.13.5 is available
+- Create/use the `.venv` directory
 - Install all project dependencies using `uv sync`
-- Create a virtual environment automatically
+- Verify installation with latest dependency versions
 
 ### 4. Activate the Virtual Environment
 ```bash
@@ -77,7 +79,7 @@ After setup, your project structure should look like:
 
 ```
 scalable-agent-framework/
-├── proto/                          # Protocol Buffer definitions
+├── protos/                         # Protocol Buffer definitions
 │   ├── common.proto
 │   ├── plan.proto
 │   ├── services.proto
@@ -164,6 +166,46 @@ uv run pytest
 uv run mypy .
 ```
 
+## Dependency Management
+
+### Latest Dependency Versions
+
+The project uses the latest stable versions as of August 2025:
+
+- **grpcio**: 1.74.0
+- **grpcio-tools**: 1.74.0
+- **protobuf**: 6.31.1
+- **pydantic**: 2.7.3
+- **aiohttp**: 3.9.5
+- **structlog**: 24.1.0
+- **asyncio-mqtt**: 0.16.2
+- **aiofiles**: 24.1.0
+- **click**: 8.1.7
+
+### Development Dependencies
+
+- **pytest**: 8.2.2
+- **pytest-asyncio**: 0.24.0
+- **pytest-cov**: 5.0.0
+- **pytest-mock**: 3.14.0
+- **black**: 24.7.0
+- **isort**: 5.13.2
+- **flake8**: 7.0.0
+- **mypy**: 1.11.0
+- **pre-commit**: 3.8.0
+
+### Updating Dependencies
+
+Update all dependencies to their latest versions:
+```bash
+make update-deps
+```
+
+Sync dependencies with the lock file:
+```bash
+make sync
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -172,24 +214,35 @@ uv run mypy .
    - Make sure uv is installed: `curl -LsSf https://astral.sh/uv/install.sh | sh`
    - Add to PATH: `source scripts/activate_uv.sh`
 
-2. **Protobuf generation fails**
-   - Ensure `grpcio-tools` is installed: `uv sync`
-   - Check that `.proto` files are in the `proto/` directory
+2. **Python version mismatch**
+   - The project requires Python 3.13.5
+   - Check your version: `uv run python --version`
+   - Install Python 3.13.5 if needed
 
-3. **Import errors in generated files**
-   - Run `./scripts/gen_proto.sh` to regenerate and fix imports
-   - Check that the `pb/` directory contains all required files
-
-4. **Virtual environment issues**
+3. **Virtual environment issues**
    - Delete `uv.lock` and run `uv sync` to recreate the environment
    - Use `uv run` to run commands in the environment
    - Use `source .venv/bin/activate` to activate for interactive use
 
+4. **Protobuf generation fails**
+   - Ensure `grpcio-tools` is installed: `uv sync`
+   - Check that `.proto` files are in the `protos/` directory
+   - Verify the virtual environment exists: `ls -la .venv`
+
+5. **Import errors in generated files**
+   - Run `./scripts/gen_proto.sh` to regenerate and fix imports
+   - Check that the `pb/` directory contains all required files
+
+6. **Dependency conflicts**
+   - Clear the virtual environment: `rm -rf .venv`
+   - Reinstall: `uv sync`
+   - Check for conflicting packages: `uv run pip list`
+
 ### Getting Help
 
 - Check the [README.md](README.md) for project overview and architecture
-- Review the [docs/](docs/) directory for detailed documentation
-- Examine the [proto/](proto/) files to understand the data structures
+- Review the [docs/](docs) directory for detailed documentation
+- Examine the [protos/](protos) files to understand the data structures
 
 ## Next Steps
 
@@ -213,7 +266,7 @@ See `services/standalone-py/LOGGING_AND_HEALTH.md` for detailed documentation.
 
 ## System Requirements
 
-- **Python**: 3.15.5 (latest version)
+- **Python**: 3.13.5 (latest version)
 - **Memory**: 2GB+ RAM recommended
 - **Storage**: 1GB+ free space
 - **Network**: Internet access for dependency installation

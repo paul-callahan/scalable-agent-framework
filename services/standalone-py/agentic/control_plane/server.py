@@ -13,11 +13,7 @@ from typing import Dict, List, Optional
 
 import grpc
 
-try:
-    from ..pb import services_pb2, services_pb2_grpc
-except ImportError:
-    # Protobuf files not yet generated
-    pass
+from ..pb import services_pb2, services_pb2_grpc
 
 from ..core.logging import configure_logging, get_logger, log_request_response, log_metric, log_error
 from ..core.health import HealthCheckService, HealthCheckServicer, managed_server

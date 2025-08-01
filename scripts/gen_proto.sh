@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-PROTO_DIR="proto"
+PROTO_DIR="protos"
 OUTPUT_DIR="services/standalone-py/agentic/pb"
 PYTHON_PATH="services/standalone-py"
 
@@ -38,15 +38,33 @@ check_dependencies() {
         print_status "Using uv for dependency management..."
         # Use uv run to execute commands in the project's virtual environment
         UV_CMD="uv run"
+        
+        # Check if virtual environment exists
+        if [ ! -d ".venv" ]; then
+            print_error "Virtual environment not found. Please run: uv sync"
+            exit 1
+        fi
+        
+        # Check Python version in virtual environment
+        PYTHON_VERSION=$(uv run python --version 2>&1 | grep -o 'Python [0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+        print_status "Using Python version: $PYTHON_VERSION"
+        
     else
         print_warning "uv not found, falling back to system Python..."
         UV_CMD=""
     fi
     
     # Check if grpcio-tools is available
-    if ! $UV_CMD python -c "import grpc_tools.protoc" &> /dev/null; then
-        print_error "grpcio-tools is not installed. Please run: uv sync"
-        exit 1
+    if [ -z "$UV_CMD" ]; then
+        if ! python3 -c "import grpc_tools.protoc" &> /dev/null; then
+            print_error "grpcio-tools is not installed. Please install with: pip3 install grpcio-tools"
+            exit 1
+        fi
+    else
+        if ! $UV_CMD python -c "import grpc_tools.protoc" &> /dev/null; then
+            print_error "grpcio-tools is not installed. Please run: uv sync"
+            exit 1
+        fi
     fi
     
     print_status "Dependencies check passed"
@@ -70,12 +88,20 @@ generate_proto() {
         if [ -f "$proto_file" ]; then
             print_status "Processing: $proto_file"
             
-            # Generate the protobuf files using --proto_path="proto" to correctly resolve relative imports
-            $UV_CMD python -m grpc_tools.protoc \
-                --python_out="$OUTPUT_DIR" \
-                --grpc_python_out="$OUTPUT_DIR" \
-                --proto_path="$PROTO_DIR" \
-                "$(basename "$proto_file")"
+            # Generate the protobuf files using --proto_path="protos" to correctly resolve relative imports
+            if [ -z "$UV_CMD" ]; then
+                python3 -m grpc_tools.protoc \
+                    --python_out="$OUTPUT_DIR" \
+                    --grpc_python_out="$OUTPUT_DIR" \
+                    --proto_path="$PROTO_DIR" \
+                    "$(basename "$proto_file")"
+            else
+                $UV_CMD python -m grpc_tools.protoc \
+                    --python_out="$OUTPUT_DIR" \
+                    --grpc_python_out="$OUTPUT_DIR" \
+                    --proto_path="$PROTO_DIR" \
+                    "$(basename "$proto_file")"
+            fi
             
             if [ $? -eq 0 ]; then
                 print_status "Generated files for: $(basename "$proto_file")"
@@ -111,7 +137,8 @@ post_process_imports() {
             
             # Process the file to fix import statements
             # This handles cases where protoc generates imports that need to be relative to the pb package
-            $UV_CMD python -c "
+            if [ -z "$UV_CMD" ]; then
+                python3 -c "
 import re
 import sys
 
@@ -150,6 +177,47 @@ fixed_content = fix_imports(content)
 with open('$OUTPUT_DIR/$file', 'w') as f:
     f.write(fixed_content)
 "
+            else
+                $UV_CMD python -c "
+import re
+import sys
+
+def fix_imports(content):
+    # Fix import statements to use relative imports within the pb package
+    lines = content.split('\n')
+    fixed_lines = []
+    
+    for line in lines:
+        # Fix import statements for our generated protobuf modules
+        # Convert 'import common_pb2 as common__pb2' to 'from . import common_pb2 as common__pb2'
+        if 'import ' in line and '_pb2' in line and not line.strip().startswith('from .'):
+            # Handle imports like 'import common_pb2 as common__pb2'
+            if re.match(r'^import (\w+_pb2)', line.strip()):
+                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
+            # Handle imports like 'from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2'
+            elif 'from google.protobuf import' in line and '_pb2' in line:
+                # Keep google protobuf imports as they are
+                pass
+            # Handle other protobuf imports
+            elif '_pb2' in line and not line.strip().startswith('from google'):
+                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
+        
+        fixed_lines.append(line)
+    
+    return '\n'.join(fixed_lines)
+
+# Read the file
+with open('$OUTPUT_DIR/$file', 'r') as f:
+    content = f.read()
+
+# Fix the imports
+fixed_content = fix_imports(content)
+
+# Write back to the file
+with open('$OUTPUT_DIR/$file', 'w') as f:
+    f.write(fixed_content)
+"
+            fi
             
             if [ $? -eq 0 ]; then
                 print_status "✓ Fixed imports in: $file"

@@ -65,11 +65,6 @@ class AgentGraph:
         # Check for minimum viable graph structure
         self._validate_minimum_structure()
         
-        # Check that all nodes have the same tenant_id
-        for node_id, node in self.nodes.items():
-            if node.tenant_id != self.tenant_id:
-                raise ValueError(f"Node {node_id} has different tenant_id: {node.tenant_id}")
-        
         # Check that all edges reference valid nodes
         node_ids = set(self.nodes.keys())
         for edge in self.edges:
@@ -521,8 +516,12 @@ class AgentGraph:
         """
         Serialize the graph to a dictionary.
         
+        Note: Since Task and Plan classes are simplified abstract base classes,
+        only the graph structure and metadata can be serialized, not the actual
+        task/plan implementations.
+        
         Returns:
-            Dictionary representation of the graph
+            Dictionary representation of the graph structure
         """
         return {
             'id': self.id,
@@ -532,7 +531,7 @@ class AgentGraph:
             'nodes': {
                 node_id: {
                     'type': 'task' if isinstance(node, Task) else 'plan',
-                    'data': node.serialize()
+                    'class_name': node.__class__.__name__
                 }
                 for node_id, node in self.nodes.items()
             },
@@ -540,30 +539,51 @@ class AgentGraph:
         }
     
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> 'AgentGraph':
+    def deserialize(cls, data: Dict[str, Any], node_registry: Dict[str, Union[Task, Plan]]) -> 'AgentGraph':
         """
         Deserialize a graph from a dictionary.
         
+        Note: Since Task and Plan classes are simplified abstract base classes,
+        you must provide a node_registry mapping node IDs to actual Task/Plan instances.
+        
         Args:
-            data: Dictionary representation of the graph
+            data: Dictionary representation of the graph structure
+            node_registry: Dictionary mapping node IDs to Task/Plan instances
             
         Returns:
             AgentGraph instance
+            
+        Raises:
+            ValueError: If node_registry doesn't contain all required nodes
         """
-        # Reconstruct nodes
-        nodes = {}
+        # Validate that all nodes are provided in the registry
+        required_nodes = set(data['nodes'].keys())
+        provided_nodes = set(node_registry.keys())
+        
+        if required_nodes != provided_nodes:
+            missing = required_nodes - provided_nodes
+            extra = provided_nodes - required_nodes
+            error_msg = []
+            if missing:
+                error_msg.append(f"Missing nodes in registry: {missing}")
+            if extra:
+                error_msg.append(f"Extra nodes in registry: {extra}")
+            raise ValueError("; ".join(error_msg))
+        
+        # Validate node types match
         for node_id, node_data in data['nodes'].items():
-            if node_data['type'] == 'task':
-                nodes[node_id] = Task.deserialize(node_data['data'])
-            else:
-                nodes[node_id] = Plan.deserialize(node_data['data'])
+            node = node_registry[node_id]
+            expected_type = node_data['type']
+            actual_type = 'task' if isinstance(node, Task) else 'plan'
+            if expected_type != actual_type:
+                raise ValueError(f"Node {node_id} type mismatch: expected {expected_type}, got {actual_type}")
         
         # Reconstruct edges
         edges = [Edge.deserialize(edge_data) for edge_data in data['edges']]
         
         graph = cls(
             tenant_id=data['tenant_id'],
-            nodes=nodes,
+            nodes=node_registry,
             edges=edges,
             version=data['version'],
             metadata=data.get('metadata', {})

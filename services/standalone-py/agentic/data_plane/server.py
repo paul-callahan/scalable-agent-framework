@@ -15,12 +15,7 @@ from typing import Optional
 import grpc
 from google.protobuf import json_format
 
-try:
-    from ..pb import services_pb2, services_pb2_grpc, common_pb2
-    from ..pb import task_pb2, plan_pb2
-except ImportError:
-    # Protobuf files not yet generated
-    pass
+from ..pb import services_pb2, services_pb2_grpc, common_pb2, task_pb2, plan_pb2
 
 from ..core.logging import configure_logging, get_logger, log_request_response, log_metric, log_error
 from ..core.health import HealthCheckService, HealthCheckServicer, managed_server
@@ -66,7 +61,7 @@ class DataPlaneService(services_pb2_grpc.DataPlaneServiceServicer):
                     lifetime_id TEXT,
                     task_type TEXT NOT NULL,
                     parameters TEXT,
-                    result_data TEXT,
+                    result_data BLOB,
                     result_mime_type TEXT,
                     result_size_bytes INTEGER,
                     result_error_message TEXT,
@@ -283,8 +278,6 @@ class DataPlaneService(services_pb2_grpc.DataPlaneServiceServicer):
                     if not row:
                         context.abort(grpc.StatusCode.NOT_FOUND, "TaskExecution not found")
                     
-                    # Reconstruct TaskExecution from database row
-                    # This is a simplified reconstruction - in practice you'd want more robust handling
                     header = common_pb2.ExecutionHeader(
                         id=row[0],
                         tenant_id=row[1],
@@ -294,13 +287,21 @@ class DataPlaneService(services_pb2_grpc.DataPlaneServiceServicer):
                         created_at=row[12]
                     )
                     
+                    # Reconstruct TaskResult
                     result = task_pb2.TaskResult(
                         mime_type=row[8],
                         size_bytes=row[9],
                         error_message=row[10]
                     )
                     
-                    # Update metrics
+                    if row[6] is not None:
+                        # Determine if data is inline or URI based on length
+                        try:
+                            any_msg = json_format.Parse(row[6], task_pb2.TaskResult().inline_data.__class__())
+                            result.inline_data.CopyFrom(any_msg)
+                        except Exception:
+                            result.uri = row[6].decode('utf-8') if isinstance(row[6], (bytes, bytearray)) else row[6]
+                    
                     if self.health_service:
                         self.health_service.update_metric("total_requests", self._request_count)
                     
@@ -351,7 +352,6 @@ class DataPlaneService(services_pb2_grpc.DataPlaneServiceServicer):
                     if not row:
                         context.abort(grpc.StatusCode.NOT_FOUND, "PlanExecution not found")
                     
-                    # Reconstruct PlanExecution from database row
                     header = common_pb2.ExecutionHeader(
                         id=row[0],
                         tenant_id=row[1],
@@ -371,7 +371,6 @@ class DataPlaneService(services_pb2_grpc.DataPlaneServiceServicer):
                         confidence=row[11]
                     )
                     
-                    # Update metrics
                     if self.health_service:
                         self.health_service.update_metric("total_requests", self._request_count)
                     
@@ -444,4 +443,4 @@ def serve(port: int = 50051, log_level: str = "INFO") -> None:
 
 
 if __name__ == "__main__":
-    serve() 
+    serve()

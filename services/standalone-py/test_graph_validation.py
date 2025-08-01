@@ -25,7 +25,12 @@ from agentic.core.plan import Plan, PlanResult
 class MockTask(Task):
     """Mock task for testing."""
     
-    async def execute(self, context=None):
+    def __init__(self, tenant_id: str, task_type: str, parameters: dict = None):
+        self.tenant_id = tenant_id
+        self.task_type = task_type
+        self.parameters = parameters or {}
+    
+    async def execute(self, lastResult: "PlanResult") -> "TaskResult":
         return TaskResult(data="mock_result")
     
     @classmethod
@@ -50,7 +55,12 @@ class MockTask(Task):
 class MockPlan(Plan):
     """Mock plan for testing."""
     
-    async def execute(self, task_result, context=None):
+    def __init__(self, tenant_id: str, plan_type: str, parameters: dict = None):
+        self.tenant_id = tenant_id
+        self.plan_type = plan_type
+        self.parameters = parameters or {}
+    
+    async def plan(self, lastResult: "TaskResult") -> "PlanResult":
         return PlanResult(next_task_ids=["task2"])
     
     @classmethod

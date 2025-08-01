@@ -1,3 +1,9 @@
-grpcio-tools>=1.74.0
-protobuf>=6.31.1
-grpcio>=1.74.0 
+grpcio==1.74.0
+grpcio-tools==1.74.0
+protobuf==6.31.1
+pydantic==2.7.3
+aiohttp==3.9.5
+structlog==24.1.0
+asyncio-mqtt==0.16.2
+aiofiles==24.1.0
+click==8.1.7 
