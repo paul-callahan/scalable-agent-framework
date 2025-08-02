@@ -1,0 +1,148 @@
+version: '3.8'
+
+services:
+  # Kafka and Zookeeper for local development
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  # Control Plane Service
+  control-plane:
+    build:
+      context: ./services/control-plane-py
+      dockerfile: Dockerfile
+    container_name: control-plane
+    ports:
+      - "8001:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CLIENT_ID=control-plane
+      - KAFKA_GROUP_ID=control-plane-group
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    depends_on:
+      - kafka
+    volumes:
+      - ./services/control-plane-py/policies:/app/policies:ro
+    networks:
+      - agentic-network
+
+  # Data Plane Service
+  data-plane:
+    build:
+      context: ./services/data-plane-py
+      dockerfile: Dockerfile
+    container_name: data-plane
+    ports:
+      - "8002:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CLIENT_ID=data-plane
+      - KAFKA_GROUP_ID=data-plane-group
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - DATABASE_URL=postgresql://agentic:agentic@postgres:5432/agentic
+    depends_on:
+      - kafka
+      - postgres
+    networks:
+      - agentic-network
+
+  # Executor Service
+  executor:
+    build:
+      context: ./services/executor-py
+      dockerfile: Dockerfile
+    container_name: executor
+    ports:
+      - "8003:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CLIENT_ID=executor
+      - KAFKA_GROUP_ID=executor-group
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    depends_on:
+      - kafka
+    networks:
+      - agentic-network
+
+  # PostgreSQL for Data Plane
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: agentic
+      POSTGRES_USER: agentic
+      POSTGRES_PASSWORD: agentic
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - agentic-network
+
+  # Kafka UI for monitoring
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - agentic-network
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  postgres-data:
+
+networks:
+  agentic-network:
+    driver: bridge 

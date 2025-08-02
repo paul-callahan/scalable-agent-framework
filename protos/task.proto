@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package agentic.task;
+
+import "common.proto";
+import "google/protobuf/any.proto";
+
+// TaskResult represents the output of a Task execution
+message TaskResult {
+  // Result data - either inline or as a URI reference
+  oneof data {
+    // Inline data for small results
+    google.protobuf.Any inline_data = 1;
+    
+    // URI reference for large results stored externally
+    string uri = 2;
+  }
+  
+  // MIME type of the result data
+  string mime_type = 3;
+  
+  // Size of the result data in bytes
+  uint64 size_bytes = 4;
+  
+  // Optional error message if execution failed
+  string error_message = 5;
+}
+
+// TaskExecution represents a single Task execution with metadata
+message TaskExecution {
+  // Common execution metadata
+  agentic.common.ExecutionHeader header = 1;
+  
+  // Task-specific result data
+  TaskResult result = 2;
+  
+  // Task type identifier for routing and processing
+  string task_type = 3;
+  
+  // Task-specific parameters (serialized as JSON)
+  string parameters = 4;
+}

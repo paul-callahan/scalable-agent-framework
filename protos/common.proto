@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package agentic.common;
+
+import "google/protobuf/timestamp.proto";
+
+// ExecutionHeader contains common metadata for both TaskExecution and PlanExecution
+message ExecutionHeader {
+  // Unique identifier for this execution
+  string id = 1;
+  
+  // ID of the parent execution (empty for root executions)
+  string parent_id = 2;
+  
+  // ID of the AgentGraph being executed
+  string graph_id = 3;
+  
+  // ID of the AgentLifetime instance
+  string lifetime_id = 4;
+  
+  // Tenant identifier for multi-tenancy
+  string tenant_id = 5;
+  
+  // Execution attempt number (1-based)
+  int32 attempt = 6;
+  
+  // Current iteration index within the graph
+  int32 iteration_idx = 7;
+  
+  // ISO-8601 timestamp when execution was created
+  string created_at = 8;
+  
+  // Current execution status
+  ExecutionStatus status = 9;
+  
+  // ID of the edge that led to this execution (for tracking flow)
+  string edge_taken = 10;
+}
+
+// Execution status enumeration
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STATUS_PENDING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
+  EXECUTION_STATUS_SUCCEEDED = 3;
+  EXECUTION_STATUS_FAILED = 4;
+}

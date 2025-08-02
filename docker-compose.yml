@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Control Plane Service
+  control-plane:
+    build:
+      context: ./services/control-plane-py
+      dockerfile: Dockerfile
+    container_name: control-plane
+    ports:
+      - "8001:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    volumes:
+      - ./services/control-plane-py/policies:/app/policies:ro
+    networks:
+      - agentic-network
+
+  # Data Plane Service
+  data-plane:
+    build:
+      context: ./services/data-plane-py
+      dockerfile: Dockerfile
+    container_name: data-plane
+    ports:
+      - "8002:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    networks:
+      - agentic-network
+
+  # Executor Service
+  executor:
+    build:
+      context: ./services/executor-py
+      dockerfile: Dockerfile
+    container_name: executor
+    ports:
+      - "8003:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    networks:
+      - agentic-network
+
+networks:
+  agentic-network:
+    driver: bridge 

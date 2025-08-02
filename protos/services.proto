@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package agentic.services;
+
+import "task.proto";
+import "plan.proto";
+import "google/protobuf/empty.proto";
+
+// DataPlaneService handles persistence of execution records
+service DataPlaneService {
+  // Store a TaskExecution record
+  rpc PutTaskExecution(agentic.task.TaskExecution) returns (Ack);
+  
+  // Store a PlanExecution record
+  rpc PutPlanExecution(agentic.plan.PlanExecution) returns (Ack);
+  
+  // Retrieve a TaskExecution by ID
+  rpc GetTaskExecution(GetTaskExecutionRequest) returns (agentic.task.TaskExecution);
+  
+  // Retrieve a PlanExecution by ID
+  rpc GetPlanExecution(GetPlanExecutionRequest) returns (agentic.plan.PlanExecution);
+}
+
+// ControlPlaneService handles orchestration and routing
+service ControlPlaneService {
+  // Evaluate guardrails for an execution
+  rpc EvaluateGuardrails(GuardrailRequest) returns (GuardrailResponse);
+  
+  // Route execution to appropriate queue
+  rpc RouteExecution(RouteRequest) returns (RouteResponse);
+  
+  // Get execution status
+  rpc GetExecutionStatus(StatusRequest) returns (StatusResponse);
+  
+  // Abort an execution
+  rpc AbortExecution(AbortRequest) returns (Ack);
+}
+
+// Simple acknowledgment response
+message Ack {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request to get a TaskExecution by ID
+message GetTaskExecutionRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+}
+
+// Request to get a PlanExecution by ID
+message GetPlanExecutionRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+}
+
+// Request for guardrail evaluation
+message GuardrailRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+  string execution_type = 3; // "task" or "plan"
+  bytes execution_data = 4;
+}
+
+// Response from guardrail evaluation
+message GuardrailResponse {
+  bool allowed = 1;
+  repeated string violations = 2;
+  string message = 3;
+}
+
+// Request to route an execution
+message RouteRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+  string target_queue = 3;
+  bytes execution_data = 4;
+}
+
+// Response from routing
+message RouteResponse {
+  bool routed = 1;
+  string queue_name = 2;
+  string message = 3;
+}
+
+// Request for execution status
+message StatusRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+}
+
+// Response with execution status
+message StatusResponse {
+  string status = 1;
+  string message = 2;
+  int64 last_updated = 3;
+}
+
+// Request to abort an execution
+message AbortRequest {
+  string execution_id = 1;
+  string tenant_id = 2;
+  string reason = 3;
+}
