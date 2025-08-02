@@ -1,7 +1,7 @@
 # Makefile for the Agentic Framework
 # Provides common development tasks and build automation
 
-.PHONY: help proto install test lint clean format check-deps sync update-deps
+.PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test
 
 # Default target
 help:
@@ -19,6 +19,13 @@ help:
 	@echo "  check-deps - Check if all dependencies are installed"
 	@echo "  build      - Build the Python package using uv"
 	@echo "  dev        - Install in development mode using uv"
+	@echo ""
+	@echo "Microservice targets:"
+	@echo "  microservices-build - Build all Docker images for microservices"
+	@echo "  microservices-up    - Start microservices with docker-compose"
+	@echo "  microservices-down  - Stop and clean up microservices"
+	@echo "  microservices-logs  - View logs from all microservices"
+	@echo "  microservices-test  - Run integration tests for microservices"
 	@echo ""
 
 # Generate Python protobuf code
@@ -130,6 +137,44 @@ pre-commit: format lint test
 tree:
 	@echo "Project structure:"
 	@tree -I '__pycache__|*.pyc|*.egg-info|.git|.pytest_cache|htmlcov|build|dist' -a
+
+# Microservice targets
+
+# Build all Docker images for microservices
+microservices-build:
+	@echo "Building all microservice Docker images..."
+	@./scripts/build_microservices.sh
+
+# Start microservices with docker-compose
+microservices-up:
+	@echo "Starting microservices with docker-compose..."
+	@docker-compose up -d
+
+# Stop and clean up microservices
+microservices-down:
+	@echo "Stopping and cleaning up microservices..."
+	@docker-compose down -v --remove-orphans
+
+# View logs from all microservices
+microservices-logs:
+	@echo "Viewing logs from all microservices..."
+	@docker-compose logs -f
+
+# Run integration tests for microservices
+microservices-test:
+	@echo "Running integration tests for microservices..."
+	@echo "Starting microservices for testing..."
+	@docker-compose up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 30
+	@echo "Running health checks..."
+	@curl -f http://localhost:8001/health || (echo "Control plane health check failed" && exit 1)
+	@curl -f http://localhost:8002/health || (echo "Data plane health check failed" && exit 1)
+	@curl -f http://localhost:8003/health || (echo "Executor health check failed" && exit 1)
+	@echo "All microservices are healthy!"
+	@echo "Cleaning up test environment..."
+	@docker-compose down
+	@echo "Integration tests completed successfully!"
 
 # Show help for specific target
 %:
