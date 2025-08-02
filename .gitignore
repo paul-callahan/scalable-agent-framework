@@ -35,3 +35,17 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db
+
+datecommit.sh
+scripts/gitcommit.sh
+design prompt.txt
+
+# java
+/target/
+/.mvn/
+/**/.mvn
+
+.idea.bak/
+.idea.bak2/
+.idea.save.good
+/**/mvnw

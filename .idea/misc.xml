@@ -3,6 +3,18 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.13 (.venv)" />
   </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/services/control_plane-java/pom.xml" />
+        <option value="$PROJECT_DIR$/services/task_executor-java/pom.xml" />
+        <option value="$PROJECT_DIR$/services/plan_executor-java/pom.xml" />
+        <option value="$PROJECT_DIR$/services/common-java/pom.xml" />
+        <option value="$PROJECT_DIR$/services/data_plane-java/pom.xml" />
+      </list>
+    </option>
+  </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-24" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
