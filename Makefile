@@ -20,12 +20,21 @@ help:
 	@echo "  build      - Build the Python package using uv"
 	@echo "  dev        - Install in development mode using uv"
 	@echo ""
-	@echo "Microservice targets:"
+	@echo "Microservice targets (Python):"
 	@echo "  microservices-build - Build all Docker images for microservices"
 	@echo "  microservices-up    - Start microservices with docker-compose"
 	@echo "  microservices-down  - Stop and clean up microservices"
 	@echo "  microservices-logs  - View logs from all microservices"
 	@echo "  microservices-test  - Run integration tests for microservices"
+	@echo ""
+	@echo "Java Microservice targets:"
+	@echo "  java-build          - Build all Java microservice Docker images using Maven"
+	@echo "  java-up             - Start Java microservices with docker-compose"
+	@echo "  java-down           - Stop and clean up Java microservices"
+	@echo "  java-logs           - View logs from all Java microservices"
+	@echo "  java-test           - Run integration tests for Java microservices"
+	@echo "  java-proto          - Generate Java protobuf classes using Maven"
+	@echo "  java-clean          - Clean Maven builds"
 	@echo ""
 
 # Generate Python protobuf code
@@ -140,27 +149,27 @@ tree:
 
 # Microservice targets
 
-# Build all Docker images for microservices
+# Build all Docker images for microservices (Python)
 microservices-build:
 	@echo "Building all microservice Docker images..."
 	@./scripts/build_microservices.sh
 
-# Start microservices with docker-compose
+# Start microservices with docker-compose (Python)
 microservices-up:
 	@echo "Starting microservices with docker-compose..."
 	@docker-compose up -d
 
-# Stop and clean up microservices
+# Stop and clean up microservices (Python)
 microservices-down:
 	@echo "Stopping and cleaning up microservices..."
 	@docker-compose down -v --remove-orphans
 
-# View logs from all microservices
+# View logs from all microservices (Python)
 microservices-logs:
 	@echo "Viewing logs from all microservices..."
 	@docker-compose logs -f
 
-# Run integration tests for microservices
+# Run integration tests for microservices (Python)
 microservices-test:
 	@echo "Running integration tests for microservices..."
 	@echo "Starting microservices for testing..."
@@ -175,6 +184,55 @@ microservices-test:
 	@echo "Cleaning up test environment..."
 	@docker-compose down
 	@echo "Integration tests completed successfully!"
+
+# Java Microservice targets
+
+# Build all Java microservice Docker images using Maven
+java-build:
+	@echo "Building all Java microservice Docker images..."
+	@./scripts/build_java_microservices.sh --all
+
+# Start Java microservices with docker-compose
+java-up:
+	@echo "Starting Java microservices with docker-compose..."
+	@docker-compose -f docker-compose-java.yml up -d
+
+# Stop and clean up Java microservices
+java-down:
+	@echo "Stopping and cleaning up Java microservices..."
+	@docker-compose -f docker-compose-java.yml down -v --remove-orphans
+
+# View logs from all Java microservices
+java-logs:
+	@echo "Viewing logs from all Java microservices..."
+	@docker-compose -f docker-compose-java.yml logs -f
+
+# Run integration tests for Java microservices
+java-test:
+	@echo "Running integration tests for Java microservices..."
+	@echo "Starting Java microservices for testing..."
+	@docker-compose -f docker-compose-java.yml up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 60
+	@echo "Running health checks..."
+	@curl -f http://localhost:8081/actuator/health || (echo "Data plane health check failed" && exit 1)
+	@curl -f http://localhost:8082/actuator/health || (echo "Control plane health check failed" && exit 1)
+	@curl -f http://localhost:8083/actuator/health || (echo "Task executor health check failed" && exit 1)
+	@curl -f http://localhost:8084/actuator/health || (echo "Plan executor health check failed" && exit 1)
+	@echo "All Java microservices are healthy!"
+	@echo "Cleaning up test environment..."
+	@docker-compose -f docker-compose-java.yml down
+	@echo "Java integration tests completed successfully!"
+
+# Generate Java protobuf classes using Maven
+java-proto:
+	@echo "Generating Java protobuf classes..."
+	@./scripts/build_java_microservices.sh --protobuf
+
+# Clean Maven builds
+java-clean:
+	@echo "Cleaning Maven builds..."
+	@./scripts/build_java_microservices.sh --clean
 
 # Show help for specific target
 %:
