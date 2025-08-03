@@ -29,7 +29,7 @@ wheels/
 
 # IDE
 .vscode/
-.idea/
+.idea/workspace.xml
 *.swp
 *.swo
 
