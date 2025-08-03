@@ -66,6 +66,9 @@ public class TaskResultListener {
                 return;
             }
             
+            // Store TaskResult in cache for upstream reference
+            planExecutorService.cacheTaskResult(taskResult);
+            
             // Execute plans based on TaskResult
             boolean success = planExecutorService.executePlansFromTaskResult(taskResult, tenantId);
             

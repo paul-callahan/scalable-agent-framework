@@ -81,6 +81,11 @@ public class PlanExecutionEntity {
     @Column(name = "confidence")
     private Double confidence;
     
+    // Foreign key list to TaskResult objects
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "upstream_task_result_ids", columnDefinition = "jsonb")
+    private List<String> upstreamTaskResultIds;
+    
     // Auto-managed timestamps
     @Column(name = "db_created_at", nullable = false, updatable = false)
     private Instant dbCreatedAt;
@@ -237,6 +242,14 @@ public class PlanExecutionEntity {
     
     public void setConfidence(Double confidence) {
         this.confidence = confidence;
+    }
+    
+    public List<String> getUpstreamTaskResultIds() {
+        return upstreamTaskResultIds;
+    }
+    
+    public void setUpstreamTaskResultIds(List<String> upstreamTaskResultIds) {
+        this.upstreamTaskResultIds = upstreamTaskResultIds;
     }
     
     public Instant getDbCreatedAt() {
