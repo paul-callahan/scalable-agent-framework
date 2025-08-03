@@ -38,7 +38,7 @@ services:
   # Executor Service
   executor:
     build:
-      context: ./services/executor-py
+      context: ./services/executor_old-py
       dockerfile: Dockerfile
     container_name: executor
     ports:
