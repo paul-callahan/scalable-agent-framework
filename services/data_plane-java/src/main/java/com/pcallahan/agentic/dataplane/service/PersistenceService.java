@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.dataplane.entity.PlanExecutionEntity;
 import com.pcallahan.agentic.dataplane.entity.TaskExecutionEntity;
+import com.pcallahan.agentic.dataplane.entity.TaskResultEntity;
 import com.pcallahan.agentic.dataplane.repository.PlanExecutionRepository;
 import com.pcallahan.agentic.dataplane.repository.TaskExecutionRepository;
+import com.pcallahan.agentic.dataplane.repository.TaskResultRepository;
 import agentic.plan.Plan.PlanExecution;
 import agentic.task.Task.TaskExecution;
+import agentic.task.Task.TaskResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Service class that orchestrates the persistence workflow.
@@ -29,15 +33,18 @@ public class PersistenceService {
     
     private final TaskExecutionRepository taskExecutionRepository;
     private final PlanExecutionRepository planExecutionRepository;
+    private final TaskResultRepository taskResultRepository;
     private final ObjectMapper objectMapper;
     
     @Autowired
     public PersistenceService(
             TaskExecutionRepository taskExecutionRepository,
             PlanExecutionRepository planExecutionRepository,
+            TaskResultRepository taskResultRepository,
             ObjectMapper objectMapper) {
         this.taskExecutionRepository = taskExecutionRepository;
         this.planExecutionRepository = planExecutionRepository;
+        this.taskResultRepository = taskResultRepository;
         this.objectMapper = objectMapper;
     }
     
@@ -53,8 +60,17 @@ public class PersistenceService {
         try {
             logger.debug("Processing TaskExecution {} for tenant {}", taskExecution.getHeader().getId(), tenantId);
             
+            // Extract TaskResult and save it separately
+            TaskResultEntity savedTaskResult = null;
+            if (taskExecution.hasResult()) {
+                TaskResult taskResult = taskExecution.getResult();
+                TaskResultEntity taskResultEntity = convertToTaskResultEntity(taskResult, tenantId);
+                savedTaskResult = taskResultRepository.save(taskResultEntity);
+                logger.debug("Saved TaskResult {} to database", savedTaskResult.getId());
+            }
+            
             // Convert protobuf to JPA entity
-            TaskExecutionEntity entity = convertToTaskExecutionEntity(taskExecution, tenantId);
+            TaskExecutionEntity entity = convertToTaskExecutionEntity(taskExecution, tenantId, savedTaskResult);
             
             // Save to database
             TaskExecutionEntity savedEntity = taskExecutionRepository.save(entity);
@@ -104,9 +120,10 @@ public class PersistenceService {
      * 
      * @param taskExecution the protobuf message
      * @param tenantId the tenant identifier
+     * @param savedTaskResult the saved TaskResult entity (can be null)
      * @return the JPA entity
      */
-    private TaskExecutionEntity convertToTaskExecutionEntity(TaskExecution taskExecution, String tenantId) {
+    private TaskExecutionEntity convertToTaskExecutionEntity(TaskExecution taskExecution, String tenantId, TaskResultEntity savedTaskResult) {
         TaskExecutionEntity entity = new TaskExecutionEntity();
         
         // Set basic fields from header
@@ -126,13 +143,9 @@ public class PersistenceService {
         entity.setTaskType(taskExecution.getTaskType());
         entity.setParameters(convertParameters(taskExecution.getParameters()));
         
-        // Set result fields
-        if (taskExecution.hasResult()) {
-            var result = taskExecution.getResult();
-            entity.setResultData(convertResultData(result));
-            entity.setResultMimeType(result.getMimeType());
-            entity.setResultSizeBytes(result.getSizeBytes());
-            entity.setErrorMessage(result.getErrorMessage());
+        // Set task result ID using the saved entity's ID
+        if (savedTaskResult != null) {
+            entity.setTaskResultId(savedTaskResult.getId());
         }
         
         return entity;
@@ -173,6 +186,14 @@ public class PersistenceService {
             entity.setResultMetadata(convertResultMetadata(result.getMetadata()));
             entity.setErrorMessage(result.getErrorMessage());
             entity.setConfidence((double) result.getConfidence());
+            
+            // Extract upstream TaskResult IDs
+            if (!result.getUpstreamTasksResultsList().isEmpty()) {
+                var upstreamTaskResultIds = result.getUpstreamTasksResultsList().stream()
+                    .map(TaskResult::getId)
+                    .toList();
+                entity.setUpstreamTaskResultIds(upstreamTaskResultIds);
+            }
         }
         
         return entity;
@@ -250,6 +271,28 @@ public class PersistenceService {
         }
         
         return data;
+    }
+    
+    /**
+     * Convert TaskResult protobuf to TaskResultEntity.
+     * 
+     * @param taskResult the TaskResult protobuf
+     * @param tenantId the tenant identifier
+     * @return the TaskResultEntity
+     */
+    private TaskResultEntity convertToTaskResultEntity(TaskResult taskResult, String tenantId) {
+        TaskResultEntity entity = new TaskResultEntity();
+        
+        // Generate ID if not provided
+        String taskResultId = taskResult.getId().isEmpty() ? UUID.randomUUID().toString() : taskResult.getId();
+        entity.setId(taskResultId);
+        entity.setTenantId(tenantId);
+        entity.setMimeType(taskResult.getMimeType());
+        entity.setSizeBytes(taskResult.getSizeBytes());
+        entity.setErrorMessage(taskResult.getErrorMessage());
+        entity.setResultData(convertResultData(taskResult));
+        
+        return entity;
     }
     
     /**

@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.pcallahan.agentic</groupId>
         <artifactId>agentic-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>com.pcallahan.agentic</groupId>
             <artifactId>common-java</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         
         <!-- Test dependencies -->

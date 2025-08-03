@@ -62,19 +62,9 @@ public class TaskExecutionEntity {
     @Column(name = "parameters", columnDefinition = "jsonb")
     private Map<String, Object> parameters;
     
-    // Result fields
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "result_data", columnDefinition = "jsonb")
-    private Map<String, Object> resultData;
-    
-    @Column(name = "result_mime_type", length = 100)
-    private String resultMimeType;
-    
-    @Column(name = "result_size_bytes")
-    private Long resultSizeBytes;
-    
-    @Column(name = "error_message", length = 1000)
-    private String errorMessage;
+    // Foreign key to TaskResult
+    @Column(name = "task_result_id", length = 36)
+    private String taskResultId;
     
     // Auto-managed timestamps
     @Column(name = "db_created_at", nullable = false, updatable = false)
@@ -194,36 +184,12 @@ public class TaskExecutionEntity {
         this.parameters = parameters;
     }
     
-    public Map<String, Object> getResultData() {
-        return resultData;
+    public String getTaskResultId() {
+        return taskResultId;
     }
     
-    public void setResultData(Map<String, Object> resultData) {
-        this.resultData = resultData;
-    }
-    
-    public String getResultMimeType() {
-        return resultMimeType;
-    }
-    
-    public void setResultMimeType(String resultMimeType) {
-        this.resultMimeType = resultMimeType;
-    }
-    
-    public Long getResultSizeBytes() {
-        return resultSizeBytes;
-    }
-    
-    public void setResultSizeBytes(Long resultSizeBytes) {
-        this.resultSizeBytes = resultSizeBytes;
-    }
-    
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-    
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public void setTaskResultId(String taskResultId) {
+        this.taskResultId = taskResultId;
     }
     
     public Instant getDbCreatedAt() {
