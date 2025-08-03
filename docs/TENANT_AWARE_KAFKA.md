@@ -21,7 +21,7 @@ All topics follow the pattern: `{message-type}-{tenant-id}`
 - `task-executions-{tenantId}` - Task execution messages
 - `plan-executions-{tenantId}` - Plan execution messages  
 - `persisted-task-executions-{tenantId}` - Persisted task execution messages
-- `plan-control-{tenantId}` - Plan control messages
+- `persisted-plan-executions-{tenantId}` - Persisted plan execution messages
 - `task-results-{tenantId}` - Task result messages
 - `plan-results-{tenantId}` - Plan result messages
 - `task-executions-dlq-{tenantId}` - Task execution dead letter queue
@@ -37,7 +37,7 @@ kafka:
     task-executions: "task-executions-.*"
     plan-executions: "plan-executions-.*"
     persisted-task-executions: "persisted-task-executions-.*"
-    plan-control: "plan-control-.*"
+    persisted-plan-executions: "persisted-plan-executions-.*"
     task-results: "task-results-.*"
     plan-results: "plan-results-.*"
     task-executions-dlq: "task-executions-dlq-.*"

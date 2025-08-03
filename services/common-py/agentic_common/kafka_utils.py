@@ -37,9 +37,9 @@ def get_persisted_task_executions_topic(tenant_id: str) -> str:
     return f"persisted-task-executions_{tenant_id}"
 
 
-def get_plan_control_topic(tenant_id: str) -> str:
-    """Get the plan control topic name for a tenant."""
-    return f"tenant_tenant_plan-control_{tenant_id}"
+def get_persisted_plan_executions_topic(tenant_id: str) -> str:
+    """Get the persisted plan executions topic name for a tenant."""
+    return f"persisted-plan-executions_{tenant_id}"
 
 
 async def create_kafka_producer(

@@ -9,10 +9,10 @@ This package provides shared functionality used across all microservices includi
 """
 
 from .kafka_utils import (
-    get_plan_control_topic,
+    get_persisted_plan_executions_topic,
+    get_persisted_task_executions_topic,
     get_plan_execution_topic,
     get_plan_results_topic,
-    get_task_control_topic,
     get_task_execution_topic,
     get_task_results_topic,
 )
@@ -25,8 +25,8 @@ __all__ = [
     "get_task_results_topic",
     "get_plan_execution_topic",
     "get_plan_results_topic",
-    "get_task_control_topic",
-    "get_plan_control_topic",
+    "get_persisted_task_executions_topic",
+    "get_persisted_plan_executions_topic",
     # Health check utilities
     "create_health_router",
     # Logging utilities

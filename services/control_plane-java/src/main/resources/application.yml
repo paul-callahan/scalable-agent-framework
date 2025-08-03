@@ -25,7 +25,7 @@ spring:
 kafka:
   topic-patterns:
     persisted-task-executions: "persisted-task-executions-.*"
-    plan-control: "plan-control-.*"
+    persisted-plan-executions: "persisted-plan-executions-.*"
 
 logging:
   level:

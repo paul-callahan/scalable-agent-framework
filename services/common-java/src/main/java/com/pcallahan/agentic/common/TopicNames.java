@@ -10,7 +10,7 @@ import java.util.Map;
  * 
  * The system uses only tenant-specific topics with the pattern {prefix}-{tenantId}
  * where prefix is one of: task-executions, plan-executions, persisted-task-executions, 
- * plan-control, task-results, plan-results.
+ * persisted-plan-executions, task-results, plan-results.
  */
 public class TopicNames {
     
@@ -51,13 +51,13 @@ public class TopicNames {
     }
     
     /**
-     * Generate plan control topic name for a tenant.
+     * Generate persisted plan executions topic name for a tenant.
      * 
      * @param tenantId the tenant identifier
-     * @return topic name in format: plan-control-{tenantId}
+     * @return topic name in format: persisted-plan-executions-{tenantId}
      */
-    public static String planControl(String tenantId) {
-        return "plan-control-" + tenantId;
+    public static String persistedPlanExecutions(String tenantId) {
+        return "persisted-plan-executions-" + tenantId;
     }
     
     /**
@@ -204,7 +204,7 @@ public class TopicNames {
                 return prefix.equals("task-executions") || 
                        prefix.equals("plan-executions") || 
                        prefix.equals("persisted-task-executions") || 
-                       prefix.equals("plan-control") ||
+                       prefix.equals("persisted-plan-executions") ||
                        prefix.equals("task-results") ||
                        prefix.equals("plan-results");
             }

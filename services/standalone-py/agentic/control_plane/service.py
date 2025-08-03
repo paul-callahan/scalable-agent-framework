@@ -248,9 +248,9 @@ class ControlPlaneService:
             self.logger.error(f"Error processing task control message: {e}")
             raise
     
-    async def _process_plan_control(self, message_bytes: bytes, tenant_id: str) -> None:
+    async def _process_persisted_plan_executions(self, message_bytes: bytes, tenant_id: str) -> None:
         """
-        Process a plan control message from the queue.
+        Process a persisted plan executions message from the queue.
         
         Args:
             message_bytes: Serialized control message bytes
@@ -260,7 +260,7 @@ class ControlPlaneService:
             # Deserialize the message
             request_data = json.loads(message_bytes.decode('utf-8'))
             
-            self.logger.debug(f"Processing plan control message: {request_data.get('execution_id', '')}")
+            self.logger.debug(f"Processing persisted plan executions message: {request_data.get('execution_id', '')}")
             
             # Evaluate guardrails
             guardrail_result = await self._evaluate_guardrails(request_data)
@@ -273,7 +273,7 @@ class ControlPlaneService:
             
         except Exception as e:
             self._errors += 1
-            self.logger.error(f"Error processing plan control message: {e}")
+            self.logger.error(f"Error processing persisted plan executions message: {e}")
             raise
     
     async def _task_control_consumer_loop(self, tenant_id: str) -> None:
@@ -295,23 +295,23 @@ class ControlPlaneService:
             self.logger.error(f"Task control consumer error for tenant {tenant_id}: {e}")
             raise
     
-    async def _plan_control_consumer_loop(self, tenant_id: str) -> None:
+    async def _persisted_plan_executions_consumer_loop(self, tenant_id: str) -> None:
         """
-        Consumer loop for plan control messages.
+        Consumer loop for persisted plan executions messages.
         
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"plan-control_{tenant_id}"
-        self.logger.info(f"Starting plan control consumer for topic: {topic}")
+        topic = f"persisted-plan-executions_{tenant_id}"
+        self.logger.info(f"Starting persisted plan executions consumer for topic: {topic}")
         
         try:
             async for message_bytes in self.broker.subscribe(topic):
-                await self._process_plan_control(message_bytes, tenant_id)
+                await self._process_persisted_plan_executions(message_bytes, tenant_id)
         except asyncio.CancelledError:
-            self.logger.info(f"Plan control consumer cancelled for tenant: {tenant_id}")
+            self.logger.info(f"Persisted plan executions consumer cancelled for tenant: {tenant_id}")
         except Exception as e:
-            self.logger.error(f"Plan control consumer error for tenant {tenant_id}: {e}")
+            self.logger.error(f"Persisted plan executions consumer error for tenant {tenant_id}: {e}")
             raise
     
     async def start(self, tenant_id: str = "default") -> None:
@@ -330,7 +330,7 @@ class ControlPlaneService:
         
         # Start consumer tasks
         self._task_consumer_task = asyncio.create_task(self._task_control_consumer_loop(tenant_id))
-        self._plan_consumer_task = asyncio.create_task(self._plan_control_consumer_loop(tenant_id))
+        self._plan_consumer_task = asyncio.create_task(self._persisted_plan_executions_consumer_loop(tenant_id))
         
         self.logger.info("Control plane service started successfully")
     

@@ -36,7 +36,7 @@ graph TB
     
     %% Service Connections
     Kafka -- "topic persisted-task-executions-{}" --> ControlPlane
-    Kafka -- "topic plan-control-{}" --> ControlPlane
+    Kafka -- "topic persisted-plan-executions-{}" --> ControlPlane
     ControlPlane -- "topic task-results-{}" --> Kafka
     ControlPlane -- "topic plan-results-{}" --> Kafka
 
@@ -49,7 +49,7 @@ graph TB
     Kafka -- "topic plan-executions-{}" --> DataPlane
     Kafka -- "topic task-executions-{}" --> DataPlane
     DataPlane -- "topic persisted-task-executions-{}" --> Kafka
-    DataPlane -- "topic plan-control-{}" --> Kafka
+    DataPlane -- "topic persisted-plan-executions-{}" --> Kafka
 
     DataPlane --> PostgreSQL
 ```
@@ -97,7 +97,7 @@ sequenceDiagram
     PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
     DP->>K: Consume PlanExecution (protobuf)
     DP->>DP: Persist to database
-    DP->>K: Republish PlanExecution (protobuf) → plan-control-{tenantId}
+    DP->>K: Republish PlanExecution (protobuf) → persisted-plan-executions-{tenantId}
     CP->>K: Consume PlanExecution (protobuf)
     CP->>CP: Evaluate guardrails
     CP->>CP: Extract PlanResult from PlanExecution.result
@@ -115,7 +115,7 @@ sequenceDiagram
 
 ### Control Topics
 - `persisted-task-executions-{tenantId}` - DataPlane forwards TaskExecution protobuf messages to ControlPlane
-- `plan-control-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
+- `persisted-plan-executions-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
 
 ### Result Topics
 - `task-results-{tenantId}` - ControlPlane publishes TaskResult protobuf messages for PlanExecutor
@@ -187,7 +187,7 @@ sequenceDiagram
 - **task-executions-{tenantId}**: `TaskExecution` messages (including `TaskResult`) from Task Executor for the Data Plane
 - **plan-executions-{tenantId}**: `PlanExecution` messages (including `PlanResult`) from Plan Executor for the Data Plane
 - **persisted-task-executions-{tenantId}**: Persisted `TaskExecution` messages from Data Plane to Control Plane
-- **plan-control-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
+- **persisted-plan-executions-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
 - **task-results-{tenantId}**: `TaskResult` messages from Control Plane to the Plan Executor (**note the crossover**)
 - **plan-results-{tenantId}**: `PlanResult` messages from Control Plane to the Task Executor (**note the crossover**)
 

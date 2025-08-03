@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 /**
  * Kafka listener for PlanExecution messages from plan-executors.
  * Consumes messages from plan-executions-{tenantId} topics and persists them to the database.
- * Publishes PlanExecution protobuf messages to plan-control-{tenantId} topics for the control plane.
+ * Publishes PlanExecution protobuf messages to persisted-plan-executions-{tenantId} topics for the control plane.
  */
 @Component
 public class PlanExecutionListener {

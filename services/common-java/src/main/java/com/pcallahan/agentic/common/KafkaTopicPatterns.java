@@ -24,7 +24,7 @@ public class KafkaTopicPatterns {
     private String taskExecutions = "task-executions-.*";
     private String planExecutions = "plan-executions-.*";
     private String persistedTaskExecutions = "persisted-task-executions-.*";
-    private String planControl = "plan-control-.*";
+    private String persistedPlanExecutions = "persisted-plan-executions-.*";
     private String taskResults = "task-results-.*";
     private String planResults = "plan-results-.*";
     
@@ -56,13 +56,13 @@ public class KafkaTopicPatterns {
         logger.debug("Set persisted task executions pattern: {}", persistedTaskExecutions);
     }
     
-    public String getPlanControlPattern() {
-        return planControl;
+    public String getPersistedPlanExecutionsPattern() {
+        return persistedPlanExecutions;
     }
     
-    public void setPlanControl(String planControl) {
-        this.planControl = planControl;
-        logger.debug("Set plan control pattern: {}", planControl);
+    public void setPersistedPlanExecutions(String persistedPlanExecutions) {
+        this.persistedPlanExecutions = persistedPlanExecutions;
+        logger.debug("Set persisted plan executions pattern: {}", persistedPlanExecutions);
     }
     
     public String getTaskResultsPattern() {
@@ -93,7 +93,7 @@ public class KafkaTopicPatterns {
             "taskExecutions", taskExecutions,
             "planExecutions", planExecutions,
             "persistedTaskExecutions", persistedTaskExecutions,
-            "planControl", planControl,
+            "persistedPlanExecutions", persistedPlanExecutions,
             "taskResults", taskResults,
             "planResults", planResults
         );
@@ -122,8 +122,8 @@ public class KafkaTopicPatterns {
             isValid = false;
         }
         
-        if (planControl == null || planControl.isEmpty()) {
-            logger.error("Plan control pattern is not configured");
+        if (persistedPlanExecutions == null || persistedPlanExecutions.isEmpty()) {
+            logger.error("Persisted plan executions pattern is not configured");
             isValid = false;
         }
         

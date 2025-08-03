@@ -23,7 +23,7 @@ The standalone implementation replaces gRPC services with an in-memory message b
    - Provides async message processing with error handling
 
 3. **ControlPlaneService** (`agentic/control_plane/service.py`)
-   - Consumes from `persisted-task-executions_{tenantId}` and `plan-control_{tenantId}` queues
+   - Consumes from `persisted-task-executions_{tenantId}` and `persisted-plan-executions_{tenantId}` queues
    - Evaluates guardrails (rate limiting, content filtering, etc.)
    - Routes approved executions to result queues
    - Publishes rejection messages with reasons for failed guardrails
@@ -51,7 +51,7 @@ Task Execution Flow:
 
 Plan Execution Flow:
 1. PlanExecutor publishes PlanExecution to plan-executions_{tenantId}
-2. DataPlane consumes, persists, forwards to plan-control_{tenantId}
+2. DataPlane consumes, persists, forwards to persisted-plan-executions_{tenantId}
 3. ControlPlane evaluates guardrails, publishes to plan-results_{tenantId}
 4. PlanExecutor consumes result, executes plan, publishes back to plan-executions_{tenantId}
 ```

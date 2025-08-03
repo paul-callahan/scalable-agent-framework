@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  * Kafka consumer for the Control Plane service.
  * 
  * This consumer:
- * - Listens to data plane topics for execution messages (persisted-task-executions-{tenantId}, plan-control-{tenantId})
+ * - Listens to data plane topics for execution messages (persisted-task-executions-{tenantId}, persisted-plan-executions-{tenantId})
  * - Processes execution messages for guardrail evaluation
  * - Routes messages to appropriate handlers via ExecutionRouter
  * 
@@ -92,7 +92,7 @@ public class ControlPlaneConsumer {
      * @param acknowledgment manual acknowledgment
      */
     @KafkaListener(
-        topics = "#{@kafkaTopicPatterns.planControlPattern}",
+        topics = "#{@kafkaTopicPatterns.persistedPlanExecutionsPattern}",
         groupId = "control-plane-consumer-group",
         containerFactory = "tenantAwareKafkaListenerContainerFactory"
     )
