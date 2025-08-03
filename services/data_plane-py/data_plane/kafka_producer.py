@@ -73,7 +73,7 @@ class DataPlaneProducer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"task-control_{tenant_id}"
+            topic = f"persisted-task-executions_{tenant_id}"
             
             # Create lightweight reference message
             message = {

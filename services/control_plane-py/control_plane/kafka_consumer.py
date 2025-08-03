@@ -2,7 +2,7 @@
 Kafka consumer for control plane microservice.
 
 This module implements Kafka consumer for control plane topics using
-aiokafka==0.11.0. Subscribe to task-control_* and plan-control_* topics
+aiokafka==0.11.0. Subscribe to persisted-task-executions_* and plan-control_* topics
 using pattern matching.
 """
 
@@ -53,7 +53,7 @@ class ControlPlaneConsumer:
         try:
             # Create consumer for control plane topics
             topics = [
-                "task-control_*",  # Pattern for tenant-specific topics
+                "persisted-task-executions_*",  # Pattern for tenant-specific topics
                 "plan-control_*",  # Pattern for tenant-specific topics
             ]
             
@@ -138,7 +138,7 @@ class ControlPlaneConsumer:
             message_data["tenant_id"] = tenant_id
             
             # Determine execution type from topic
-            if message.topic.startswith("task-control_"):
+            if message.topic.startswith("persisted-task-executions_"):
                 message_data["type"] = "task"
             elif message.topic.startswith("plan-control_"):
                 message_data["type"] = "plan"

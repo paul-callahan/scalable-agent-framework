@@ -9,7 +9,7 @@ import java.util.Map;
  * Provides consistent topic naming and tenant ID extraction methods.
  * 
  * The system uses only tenant-specific topics with the pattern {prefix}-{tenantId}
- * where prefix is one of: task-executions, plan-executions, task-control, 
+ * where prefix is one of: task-executions, plan-executions, persisted-task-executions, 
  * plan-control, task-results, plan-results.
  */
 public class TopicNames {
@@ -41,13 +41,13 @@ public class TopicNames {
     }
     
     /**
-     * Generate task control topic name for a tenant.
+     * Generate persisted task executions topic name for a tenant.
      * 
      * @param tenantId the tenant identifier
-     * @return topic name in format: task-control-{tenantId}
+     * @return topic name in format: persisted-task-executions-{tenantId}
      */
-    public static String taskControl(String tenantId) {
-        return "task-control-" + tenantId;
+    public static String persistedTaskExecutions(String tenantId) {
+        return "persisted-task-executions-" + tenantId;
     }
     
     /**
@@ -203,7 +203,7 @@ public class TopicNames {
                 String prefix = parts[0] + "-" + parts[1];
                 return prefix.equals("task-executions") || 
                        prefix.equals("plan-executions") || 
-                       prefix.equals("task-control") || 
+                       prefix.equals("persisted-task-executions") || 
                        prefix.equals("plan-control") ||
                        prefix.equals("task-results") ||
                        prefix.equals("plan-results");

@@ -23,7 +23,7 @@ public class KafkaTopicPatterns {
     // Topic patterns for different message types
     private String taskExecutions = "task-executions-.*";
     private String planExecutions = "plan-executions-.*";
-    private String taskControl = "task-control-.*";
+    private String persistedTaskExecutions = "persisted-task-executions-.*";
     private String planControl = "plan-control-.*";
     private String taskResults = "task-results-.*";
     private String planResults = "plan-results-.*";
@@ -47,13 +47,13 @@ public class KafkaTopicPatterns {
         logger.debug("Set plan executions pattern: {}", planExecutions);
     }
     
-    public String getTaskControlPattern() {
-        return taskControl;
+    public String getPersistedTaskExecutionsPattern() {
+        return persistedTaskExecutions;
     }
     
-    public void setTaskControl(String taskControl) {
-        this.taskControl = taskControl;
-        logger.debug("Set task control pattern: {}", taskControl);
+    public void setPersistedTaskExecutions(String persistedTaskExecutions) {
+        this.persistedTaskExecutions = persistedTaskExecutions;
+        logger.debug("Set persisted task executions pattern: {}", persistedTaskExecutions);
     }
     
     public String getPlanControlPattern() {
@@ -92,7 +92,7 @@ public class KafkaTopicPatterns {
         return Map.of(
             "taskExecutions", taskExecutions,
             "planExecutions", planExecutions,
-            "taskControl", taskControl,
+            "persistedTaskExecutions", persistedTaskExecutions,
             "planControl", planControl,
             "taskResults", taskResults,
             "planResults", planResults
@@ -117,8 +117,8 @@ public class KafkaTopicPatterns {
             isValid = false;
         }
         
-        if (taskControl == null || taskControl.isEmpty()) {
-            logger.error("Task control pattern is not configured");
+        if (persistedTaskExecutions == null || persistedTaskExecutions.isEmpty()) {
+            logger.error("Persisted task executions pattern is not configured");
             isValid = false;
         }
         

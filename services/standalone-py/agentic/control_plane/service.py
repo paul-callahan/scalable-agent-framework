@@ -283,7 +283,7 @@ class ControlPlaneService:
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"task-control_{tenant_id}"
+        topic = f"persisted-task-executions_{tenant_id}"
         self.logger.info(f"Starting task control consumer for topic: {topic}")
         
         try:

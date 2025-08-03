@@ -20,7 +20,7 @@ All topics follow the pattern: `{message-type}-{tenant-id}`
 **Supported Topic Types:**
 - `task-executions-{tenantId}` - Task execution messages
 - `plan-executions-{tenantId}` - Plan execution messages  
-- `task-control-{tenantId}` - Task control messages
+- `persisted-task-executions-{tenantId}` - Persisted task execution messages
 - `plan-control-{tenantId}` - Plan control messages
 - `task-results-{tenantId}` - Task result messages
 - `plan-results-{tenantId}` - Plan result messages
@@ -36,7 +36,7 @@ kafka:
   topic-patterns:
     task-executions: "task-executions-.*"
     plan-executions: "plan-executions-.*"
-    task-control: "task-control-.*"
+    persisted-task-executions: "persisted-task-executions-.*"
     plan-control: "plan-control-.*"
     task-results: "task-results-.*"
     plan-results: "plan-results-.*"
@@ -118,8 +118,8 @@ kafka:
 #### Usage in Listeners:
 ```java
 @KafkaListener(
-    topics = "#{@kafkaTopicPatterns.taskControlPattern}",
-    groupId = "control-plane-task-control",
+    topics = "#{@kafkaTopicPatterns.persistedTaskExecutionsPattern}",
+    groupId = "control-plane-persisted-task-executions",
     containerFactory = "tenantAwareKafkaListenerContainerFactory"
 )
 public void handleTaskExecution(String message, 

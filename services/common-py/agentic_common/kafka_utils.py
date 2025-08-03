@@ -32,9 +32,9 @@ def get_plan_results_topic(tenant_id: str) -> str:
     return f"tenant_tenant_plan-results_{tenant_id}"
 
 
-def get_task_control_topic(tenant_id: str) -> str:
-    """Get the task control topic name for a tenant."""
-    return f"task-control_{tenant_id}"
+def get_persisted_task_executions_topic(tenant_id: str) -> str:
+    """Get the persisted task executions topic name for a tenant."""
+    return f"persisted-task-executions_{tenant_id}"
 
 
 def get_plan_control_topic(tenant_id: str) -> str:

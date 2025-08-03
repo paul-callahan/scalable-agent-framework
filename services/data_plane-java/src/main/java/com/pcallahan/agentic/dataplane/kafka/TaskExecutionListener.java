@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 /**
  * Kafka listener for TaskExecution messages from task-executors.
  * Consumes messages from task-executions-{tenantId} topics and persists them to the database.
- * Publishes TaskExecution protobuf messages to task-control-{tenantId} topics for the control plane.
+ * Publishes TaskExecution protobuf messages to persisted-task-executions-{tenantId} topics for the control plane.
  */
 @Component
 public class TaskExecutionListener {
