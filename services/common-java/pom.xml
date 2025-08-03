@@ -80,8 +80,8 @@
                 <version>3.4.1</version>
                 <configuration>
                     <protocVersion>4.31.1</protocVersion>
-                    <protocArtifact>com.google.protobuf:protoc:4.31.1:exe:${os.detected.classifier}</protocArtifact>
-                    <outputDirectory>${project.build.directory}/generated-sources/protobuf/java</outputDirectory>
+<!--                    <protocArtifact>com.google.protobuf:protoc:4.31.1:exe:${os.detected.classifier}</protocArtifact>-->
+<!--                    <outputDirectory>${project.build.directory}/generated-sources/protobuf/java</outputDirectory>-->
                     <sourceDirectories>
                         <sourceDirectory>${project.basedir}/../../protos</sourceDirectory>
                     </sourceDirectories>

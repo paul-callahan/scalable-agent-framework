@@ -3,20 +3,24 @@ syntax = "proto3";
 package agentic.plan;
 
 import "common.proto";
+import "task.proto";
 
 // PlanResult represents the output of a Plan execution
 message PlanResult {
+  // Upstream TaskResult objects that led to this plan decision
+  repeated agentic.task.TaskResult upstream_tasks_results = 1;
+  
   // IDs of the next tasks to execute
-  repeated string next_task_ids = 1;
+  repeated string next_task_ids = 2;
   
   // Optional metadata for the plan execution
-  map<string, string> metadata = 2;
+  map<string, string> metadata = 3;
   
   // Optional error message if planning failed
-  string error_message = 3;
+  string error_message = 4;
   
   // Planning confidence score (0.0 to 1.0)
-  float confidence = 4;
+  float confidence = 5;
 }
 
 // PlanExecution represents a single Plan execution with metadata

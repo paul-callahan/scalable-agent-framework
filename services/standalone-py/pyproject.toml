@@ -21,8 +21,6 @@ classifiers = [
 ]
 requires-python = ">=3.13.5"
 dependencies = [
-    "grpcio==1.74.0",
-    "grpcio-tools==1.74.0",
     "protobuf==6.31.1",
     "asyncio-mqtt==0.16.2",
     "aiofiles==24.1.0",
@@ -56,8 +54,9 @@ docs = [
 ]
 
 [project.scripts]
-agentic-data-plane = "agentic.data_plane.server:serve"
-agentic-control-plane = "agentic.control_plane.server:serve"
+agentic-data-plane = "agentic.data_plane.server:main"
+agentic-control-plane = "agentic.control_plane.server:main"
+agentic-standalone = "agentic.standalone_main:main"
 
 [project.urls]
 Homepage = "https://github.com/agentic/framework"

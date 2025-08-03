@@ -7,23 +7,26 @@ import "google/protobuf/any.proto";
 
 // TaskResult represents the output of a Task execution
 message TaskResult {
+  // Unique identifier for the TaskResult
+  string id = 1;
+  
   // Result data - either inline or as a URI reference
   oneof data {
     // Inline data for small results
-    google.protobuf.Any inline_data = 1;
+    google.protobuf.Any inline_data = 2;
     
     // URI reference for large results stored externally
-    string uri = 2;
+    string uri = 3;
   }
   
   // MIME type of the result data
-  string mime_type = 3;
+  string mime_type = 4;
   
   // Size of the result data in bytes
-  uint64 size_bytes = 4;
+  uint64 size_bytes = 5;
   
   // Optional error message if execution failed
-  string error_message = 5;
+  string error_message = 6;
 }
 
 // TaskExecution represents a single Task execution with metadata
