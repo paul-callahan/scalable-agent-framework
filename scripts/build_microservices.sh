@@ -22,7 +22,7 @@ SERVICES_DIR="$PROJECT_ROOT/services"
 declare -A SERVICES=(
     ["control-plane"]="control-plane-py"
     ["data-plane"]="data-plane-py"
-    ["executor"]="executor-py"
+    ["executor"]="executor_old-py"
 )
 
 # Function to print colored output
