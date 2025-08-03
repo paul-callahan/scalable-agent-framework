@@ -16,6 +16,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="agentic-parent" options="-parameters" />
       <module name="common-java" options="-parameters" />
       <module name="control_plane-java" options="-parameters" />
       <module name="data_plane-java" options="-parameters" />

@@ -2,7 +2,16 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/scalable-agent-framework.iml" filepath="$PROJECT_DIR$/.idea/scalable-agent-framework.iml" />
+      <module fileurl="file://$PROJECT_DIR$/agentic-parent.iml" filepath="$PROJECT_DIR$/agentic-parent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/common-java/common-java.iml" filepath="$PROJECT_DIR$/services/common-java/common-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/common-py/common-py.iml" filepath="$PROJECT_DIR$/services/common-py/common-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/control_plane-java/control_plane-java.iml" filepath="$PROJECT_DIR$/services/control_plane-java/control_plane-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/control_plane-py/control_plane-py.iml" filepath="$PROJECT_DIR$/services/control_plane-py/control_plane-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/data_plane-py/data_plane-py.iml" filepath="$PROJECT_DIR$/services/data_plane-py/data_plane-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/executor_old-py/executor_old-py.iml" filepath="$PROJECT_DIR$/services/executor_old-py/executor_old-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/plan_executor-java/plan_executor-java.iml" filepath="$PROJECT_DIR$/services/plan_executor-java/plan_executor-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/standalone-py/standalone-py.iml" filepath="$PROJECT_DIR$/services/standalone-py/standalone-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/task_executor-java/task_executor-java.iml" filepath="$PROJECT_DIR$/services/task_executor-java/task_executor-java.iml" />
     </modules>
   </component>
 </project>

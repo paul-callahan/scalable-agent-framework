@@ -12,6 +12,7 @@
         <option value="$PROJECT_DIR$/services/plan_executor-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/common-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/data_plane-java/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
