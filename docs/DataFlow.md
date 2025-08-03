@@ -1,262 +1,231 @@
-# Data Flow Documentation
+# Architecture and Data Flow Documentation
 
-This document describes the message flow and data architecture of the Scalable Agent Framework, which consists of three main microservices: Control Plane, Data Plane, and Executor.
+## Overview
 
-## Architecture Overview
+This document describes the corrected protobuf-based data flow between microservices in the scalable agent framework. The system uses Protocol Buffers for all message serialization to ensure type safety and performance benefits.
 
-The framework follows a microservices architecture with event-driven communication using Apache Kafka as the message broker. Each service has specific responsibilities and communicates through well-defined message patterns.
+## Services Architecture
 
+The system consists of the following microservices:
+
+1. **DataPlane** - Persists execution data and forwards protobuf messages to control topics
+2. **ControlPlane** - Evaluates guardrails and routes messages between PlanExecutors and TaskExecutors
+3. **TaskExecutor** - Executes individual tasks and publishes TaskExecution protobuf messages
+4. **PlanExecutor** - Executes planning logic and publishes PlanExecution protobuf messages
+
+This diagram shows the high-level architecture of the microservices in the Scalable Agent Framework.
+
+```mermaid
+graph TB
+
+    %% Main Services
+    subgraph "Microservices"
+        ControlPlane(Control Plane)
+        DataPlane(Data Plane)
+        PlanExecutor(Plan Executor)
+        TaskExecutor(Task Executor)
+
+        Kafka[Apache Kafka<br/>Message Broker]
+        PostgreSQL[(PostgreSQL<br/>Data Store)]
+    end
+
+    subgraph "Kafka"
+
+    end
+    
+    
+    %% Service Connections
+    Kafka -- "topic task-control-{}" --> ControlPlane
+    Kafka -- "topic plan-control-{}" --> ControlPlane
+    ControlPlane -- "topic task-results-{}" --> Kafka
+    ControlPlane -- "topic plan-results-{}" --> Kafka
+
+    Kafka -- "topic task-results-{}" --> PlanExecutor
+    PlanExecutor -- "topic plan-executions-{}" --> Kafka
+
+    Kafka -- "topic plan-results-{}" --> TaskExecutor
+    TaskExecutor -- "topic task-executions-{}" --> Kafka
+
+    Kafka -- "topic plan-executions-{}" --> DataPlane
+    Kafka -- "topic task-executions-{}" --> DataPlane
+    DataPlane -- "topic task-control-{}" --> Kafka
+    DataPlane -- "topic plan-control-{}" --> Kafka
+
+    DataPlane --> PostgreSQL
 ```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Control Plane│    │  Data Plane  │    │   Executor   │
-│              │    │              │    │              │
-│ • Guardrails │    │ • Persistence│    │ • Task Exec  │
-│ • Routing    │    │ • State Mgmt │    │ • Plan Exec  │
-│ • Policies   │    │ • Metadata   │    │ • Registry   │
-└──────────────┘    └──────────────┘    └──────────────┘
-       │                     │                     │
-       └─────────────────────┼─────────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │     Kafka       │
-                    │   Message Bus   │
-                    └─────────────────┘
+
+
+## Message Flow
+
+### 1. Task Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant TE as TaskExecutor
+    participant DP as DataPlane
+    participant CP as ControlPlane
+    participant PE as PlanExecutor
+    participant K as Kafka Topics
+
+    Note over TE,PE: Task Execution Flow
+
+    TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
+    DP->>K: Consume TaskExecution (protobuf)
+    DP->>DP: Persist to database
+    DP->>K: Republish TaskExecution (protobuf) → task-control-{tenantId}
+    CP->>K: Consume TaskExecution (protobuf)
+    CP->>CP: Evaluate guardrails
+    CP->>CP: Extract TaskResult from TaskExecution.result
+    CP->>K: Publish TaskResult (protobuf) → task-results-{tenantId}
+    PE->>K: Consume TaskResult (protobuf)
+    PE->>PE: Execute plan logic
+    PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
 ```
+
+### 2. Plan Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant PE as PlanExecutor
+    participant DP as DataPlane
+    participant CP as ControlPlane
+    participant TE as TaskExecutor
+    participant K as Kafka Topics
+
+    Note over PE,TE: Plan Execution Flow
+
+    PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
+    DP->>K: Consume PlanExecution (protobuf)
+    DP->>DP: Persist to database
+    DP->>K: Republish PlanExecution (protobuf) → plan-control-{tenantId}
+    CP->>K: Consume PlanExecution (protobuf)
+    CP->>CP: Evaluate guardrails
+    CP->>CP: Extract PlanResult from PlanExecution.result
+    CP->>K: Publish PlanResult (protobuf) → plan-results-{tenantId}
+    TE->>K: Consume PlanResult (protobuf)
+    TE->>TE: Execute task logic
+    TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
+```
+
+## Topic Architecture
+
+### Data Plane Topics
+- `task-executions-{tenantId}` - TaskExecutor publishes TaskExecution protobuf messages
+- `plan-executions-{tenantId}` - PlanExecutor publishes PlanExecution protobuf messages
+
+### Control Topics
+- `task-control-{tenantId}` - DataPlane forwards TaskExecution protobuf messages to ControlPlane
+- `plan-control-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
+
+### Result Topics
+- `task-results-{tenantId}` - ControlPlane publishes TaskResult protobuf messages for PlanExecutor
+- `plan-results-{tenantId}` - ControlPlane publishes PlanResult protobuf messages for TaskExecutor
+
+## Protobuf Message Structures
+
+### [TaskExecution](../protos/task.proto#L30-L42)
+### [TaskResult](../protos/task.proto#L9-L30)
+### [PlanExecution](../protos/plan.proto#L27-L42)
+### [PlanResult](../protos/plan.proto#L9-L27)
+
 
 ## Service Responsibilities
 
-### Control Plane
-- **Guardrails**: Enforces policies and constraints on agent behavior
-- **Routing**: Determines which tasks/plans should be executed
-- **Policy Management**: Loads and applies execution policies
-- **Request Validation**: Validates incoming requests against policies
-
-### Data Plane
+### DataPlane
+- Consumes TaskExecution and PlanExecution protobuf messages from executors
+- Persists execution data to database using JPA entities
+- Forwards protobuf messages to control topics without modification
+- Uses ProtobufUtils for serialization/deserialization
 - **Persistence**: Stores task results, plan states, and metadata
 - **State Management**: Maintains execution state and history
 - **Metadata Storage**: Stores task/plan definitions and configurations
 - **Data Retrieval**: Provides APIs for querying execution data
 
-### Executor
+### ControlPlane
+- Consumes TaskExecution and PlanExecution protobuf messages from data plane
+- Evaluates guardrails using protobuf message data
+- Extracts TaskResult from TaskExecution.result and PlanResult from PlanExecution.result
+- Publishes TaskResult and PlanResult protobuf messages to result topics
+- Uses ProtobufUtils for serialization/deserialization
+- **Guardrails**: Enforces policies and constraints on agent behavior
+- **Routing**: Determines which tasks/plans should be executed
+- **Policy Management**: Loads and applies execution policies
+- **Request Validation**: Validates incoming requests against policies
+
+### TaskExecutor
+- Consumes PlanResult protobuf messages from control plane
+- Executes tasks based on PlanResult.nextTaskIds
+- Publishes TaskExecution protobuf messages to data plane
+- Uses ProtobufUtils for serialization/deserialization
 - **Task Execution**: Executes individual tasks based on registered implementations
-- **Plan Execution**: Orchestrates plan execution and task sequencing
-- **Registry Management**: Maintains registry of available tasks and plans
+- **Registry Management**: Maintains registry of available tasks
 - **Result Processing**: Processes and forwards execution results
+- **Task Handlers**: Executes different types of tasks (text generation, code execution, data processing)
 
-## Message Flow
+### PlanExecutor
+- Consumes TaskResult protobuf messages from control plane
+- Executes planning logic based on TaskResult data
+- Publishes PlanExecution protobuf messages to data plane
+- Uses ProtobufUtils for serialization/deserialization
+- **Plan Execution**: Orchestrates plan execution and task sequencing
+- **Registry Management**: Maintains registry of available plans
+- **Result Processing**: Processes and forwards execution results
+- **Plan Handlers**: Executes different types of plans (sequential, conditional, parallel)
 
-### 1. Initial Request Flow
+## Output Message Flow from Executors to Data and Control Planes
 
-```
-Client Request → Control Plane → Policy Check → Route to Executor
-```
+1. **Task Execution Flow**: Task Executor → Data Plane → Control Plane
+2. **Plan Execution Flow**: Plan Executor → Data Plane → Control Plane
 
-1. **Client Request**: External client sends request to Control Plane
-2. **Policy Validation**: Control Plane validates request against policies
-3. **Routing Decision**: Control Plane determines appropriate executor
-4. **Task/Plan Selection**: Control Plane selects appropriate task or plan
+## Input Message Flow from Control Plane to Task and Plan Executors
 
-### 2. Task Execution Flow
-
-```
-Control Plane → Kafka → Executor → Task Execution → Result → Kafka → Data Plane
-```
-
-1. **Task Message**: Control Plane publishes task message to Kafka
-2. **Executor Consumption**: Executor consumes task message
-3. **Task Execution**: Executor executes registered task implementation
-4. **Result Publication**: Executor publishes result to Kafka
-5. **Data Persistence**: Data Plane consumes and stores result
-
-### 3. Plan Execution Flow
-
-```
-Control Plane → Kafka → Executor → Plan Execution → Task Sequence → Results → Kafka → Data Plane
-```
-
-1. **Plan Message**: Control Plane publishes plan message to Kafka
-2. **Executor Consumption**: Executor consumes plan message
-3. **Plan Execution**: Executor executes plan and determines next tasks
-4. **Task Sequencing**: Executor publishes subsequent task messages
-5. **Result Aggregation**: Results are aggregated and stored
-
-### 4. State Management Flow
-
-```
-Data Plane ← Kafka ← State Updates ← All Services
-```
-
-1. **State Updates**: All services publish state changes to Kafka
-2. **Data Plane Consumption**: Data Plane consumes state updates
-3. **Persistence**: Data Plane stores state in PostgreSQL
-4. **Query Interface**: Data Plane provides APIs for state queries
+1. **Control Flow**: Data Plane → Control Plane → Executors
+2. **Result Flow**: Executors → Data Plane → Control Plane
 
 ## Kafka Topics
 
-### Input Topics
-- `task-requests`: Task execution requests from Control Plane
-- `plan-requests`: Plan execution requests from Control Plane
-- `state-updates`: State change notifications from all services
+- **task-executions-{tenantId}**: `TaskExecution` messages (including `TaskResult`) from Task Executor for the Data Plane
+- **plan-executions-{tenantId}**: `PlanExecution` messages (including `PlanResult`) from Plan Executor for the Data Plane
+- **task-control-{tenantId}**: Persisted `TaskExecution` messages from Data Plane to Control Plane
+- **plan-control-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
+- **task-results-{tenantId}**: `TaskResult` messages from Control Plane to the Plan Executor (**note the crossove**r)
+- **plan-results-{tenantId}**: `PlanResult` messages from Control Plane to the Task Executor (**note the crossover**)
 
-### Output Topics
-- `task-results`: Task execution results from Executor
-- `plan-results`: Plan execution results from Executor
-- `execution-events`: General execution events and logs
+## Key Implementation Details
 
-## Message Formats
+### Protobuf Serialization
+All services use `ProtobufUtils` for consistent serialization/deserialization:
+- `ProtobufUtils.serializeTaskExecution()` / `deserializeTaskExecution()`
+- `ProtobufUtils.serializePlanExecution()` / `deserializePlanExecution()`
+- `ProtobufUtils.serializeTaskResult()` / `deserializeTaskResult()`
+- `ProtobufUtils.serializePlanResult()` / `deserializePlanResult()`
 
-### Task Request Message
-```json
-{
-  "task_id": "unique-task-id",
-  "task_type": "example_task",
-  "parameters": {
-    "input_data": "example input"
-  },
-  "metadata": {
-    "request_id": "client-request-id",
-    "timestamp": "2024-01-01T00:00:00Z",
-    "priority": "normal"
-  }
-}
-```
+### Kafka Configuration
+- All producers use `KafkaTemplate<String, byte[]>` for protobuf messages
+- All consumers use `ConsumerRecord<String, byte[]>` for protobuf messages
+- Topic patterns use tenant-aware routing with `{tenantId}` placeholders
 
-### Task Result Message
-```json
-{
-  "task_id": "unique-task-id",
-  "result": {
-    "data": {
-      "output": "task result data"
-    },
-    "mime_type": "application/json",
-    "size_bytes": 1024
-  },
-  "status": "completed",
-  "metadata": {
-    "execution_time_ms": 150,
-    "timestamp": "2024-01-01T00:00:01Z"
-  }
-}
-```
+### Error Handling
+- Failed deserialization results in message acknowledgment to prevent infinite loops
+- Guardrail evaluation failures are logged but don't block message flow
+- Database persistence failures are logged but don't block message forwarding
 
-### Plan Request Message
-```json
-{
-  "plan_id": "unique-plan-id",
-  "plan_type": "example_plan",
-  "context": {
-    "previous_results": [],
-    "current_state": "initial"
-  },
-  "metadata": {
-    "request_id": "client-request-id",
-    "timestamp": "2024-01-01T00:00:00Z"
-  }
-}
-```
+### Database Persistence
+- TaskExecutionEntity and PlanExecutionEntity mirror protobuf structures
+- JPA entities include all protobuf fields with appropriate type mappings
+- JSON fields store complex protobuf data as serialized JSON strings
 
-### Plan Result Message
-```json
-{
-  "plan_id": "unique-plan-id",
-  "result": {
-    "next_task_ids": ["task-1", "task-2"],
-    "metadata": {
-      "plan_type": "example",
-      "confidence": 0.9
-    }
-  },
-  "status": "completed",
-  "metadata": {
-    "execution_time_ms": 300,
-    "timestamp": "2024-01-01T00:00:01Z"
-  }
-}
-```
+## Benefits of Protobuf Implementation
 
-## Error Handling
-
-### Retry Mechanisms
-- **Kafka Consumer**: Automatic retry with exponential backoff
-- **Task Execution**: Configurable retry policies per task type
-- **Plan Execution**: Graceful degradation for failed tasks
-
-### Dead Letter Queues
-- **Failed Messages**: Unprocessable messages sent to DLQ
-- **Monitoring**: DLQ monitoring for system health
-- **Recovery**: Manual reprocessing of DLQ messages
-
-### Circuit Breakers
-- **Service Health**: Health checks for all services
-- **Graceful Degradation**: Fallback mechanisms for failed services
-- **Monitoring**: Real-time health monitoring and alerting
-
-## Performance Considerations
-
-### Scalability
-- **Horizontal Scaling**: Each service can be scaled independently
-- **Partitioning**: Kafka topics can be partitioned for parallel processing
-- **Load Balancing**: Multiple executor instances for task distribution
-
-### Latency
-- **Async Processing**: Non-blocking message processing
-- **Connection Pooling**: Efficient database and Kafka connections
-- **Caching**: Result caching for frequently accessed data
-
-### Throughput
-- **Batch Processing**: Batch operations for high-volume scenarios
-- **Message Batching**: Kafka producer batching for efficiency
-- **Database Optimization**: Indexed queries and connection pooling
+1. **Type Safety** - Compile-time validation of message structures
+2. **Performance** - Efficient binary serialization/deserialization
+3. **Schema Evolution** - Backward/forward compatibility for message changes
+4. **Consistency** - Uniform message format across all services
+5. **Validation** - Built-in message validation and error handling
 
 ## Monitoring and Observability
 
-### Metrics
-- **Message Throughput**: Messages per second per topic
-- **Execution Latency**: Task and plan execution times
-- **Error Rates**: Failed executions and retry counts
-- **Resource Usage**: CPU, memory, and disk usage
-
-### Logging
-- **Structured Logging**: JSON-formatted logs with correlation IDs
-- **Request Tracing**: End-to-end request tracing
-- **Audit Trail**: Complete execution audit trail
-
-### Health Checks
-- **Service Health**: HTTP health endpoints for all services
-- **Kafka Connectivity**: Kafka producer/consumer health
-- **Database Connectivity**: Database connection health
-
-## Security Considerations
-
-### Authentication
-- **Service-to-Service**: Mutual TLS for inter-service communication
-- **API Authentication**: JWT tokens for external API access
-- **Kafka Security**: SASL/SSL for Kafka authentication
-
-### Authorization
-- **Policy Enforcement**: Fine-grained access control policies
-- **Resource Isolation**: Service-level resource isolation
-- **Audit Logging**: Comprehensive audit trail
-
-### Data Protection
-- **Encryption**: Data encryption at rest and in transit
-- **PII Handling**: Proper handling of personally identifiable information
-- **Data Retention**: Configurable data retention policies
-
-## Development and Testing
-
-### Local Development
-- **Docker Compose**: Complete local environment setup
-- **Hot Reloading**: Development mode with code hot reloading
-- **Debugging**: Integrated debugging support
-
-### Testing
-- **Unit Tests**: Comprehensive unit test coverage
-- **Integration Tests**: End-to-end integration testing
-- **Load Testing**: Performance and scalability testing
-
-### Deployment
-- **CI/CD**: Automated build and deployment pipelines
-- **Environment Management**: Separate environments for dev/staging/prod
-- **Rollback**: Automated rollback capabilities 
+- All services log protobuf message processing with execution IDs
+- Kafka topic metrics track message throughput and latency
+- Database persistence metrics monitor storage performance
+- Guardrail evaluation results are logged for audit trails
