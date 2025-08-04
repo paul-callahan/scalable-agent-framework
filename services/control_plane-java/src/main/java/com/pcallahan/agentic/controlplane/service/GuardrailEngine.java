@@ -44,8 +44,8 @@ public class GuardrailEngine {
      */
     public boolean evaluateTaskExecution(TaskExecution taskExecution, String tenantId) {
         try {
-            logger.debug("Evaluating guardrails for TaskExecution {} for tenant: {}", 
-                taskExecution.getHeader().getId(), tenantId);
+            logger.debug("Evaluating guardrails for TaskExecution {}/{} for tenant: {}", 
+                taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             
             // TODO: Implement actual guardrail evaluation
             // - Check token limits from taskExecution.getResult().getSizeBytes()
@@ -53,13 +53,13 @@ public class GuardrailEngine {
             // - Verify execution permissions from taskExecution.getHeader()
             
             // For now, always approve
-            logger.debug("TaskExecution {} approved by guardrails for tenant: {}", 
-                taskExecution.getHeader().getId(), tenantId);
+            logger.debug("TaskExecution {}/{} approved by guardrails for tenant: {}", 
+                taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             return true;
             
         } catch (Exception e) {
-            logger.error("Error evaluating guardrails for TaskExecution {} for tenant {}: {}", 
-                taskExecution.getHeader().getId(), tenantId, e.getMessage(), e);
+            logger.error("Error evaluating guardrails for TaskExecution {}/{} for tenant {}: {}", 
+                taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId, e.getMessage(), e);
             return false;
         }
     }
@@ -73,8 +73,8 @@ public class GuardrailEngine {
      */
     public boolean evaluatePlanExecution(PlanExecution planExecution, String tenantId) {
         try {
-            logger.debug("Evaluating guardrails for PlanExecution {} for tenant: {}", 
-                planExecution.getHeader().getId(), tenantId);
+            logger.debug("Evaluating guardrails for PlanExecution {}/{} for tenant: {}", 
+                planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             
             // TODO: Implement actual guardrail evaluation
             // - Check plan complexity limits from planExecution.getResult().getNextTaskIdsList()
@@ -82,13 +82,13 @@ public class GuardrailEngine {
             // - Verify execution permissions from planExecution.getHeader()
             
             // For now, always approve
-            logger.debug("PlanExecution {} approved by guardrails for tenant: {}", 
-                planExecution.getHeader().getId(), tenantId);
+            logger.debug("PlanExecution {}/{} approved by guardrails for tenant: {}", 
+                planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             return true;
             
         } catch (Exception e) {
-            logger.error("Error evaluating guardrails for PlanExecution {} for tenant {}: {}", 
-                planExecution.getHeader().getId(), tenantId, e.getMessage(), e);
+            logger.error("Error evaluating guardrails for PlanExecution {}/{} for tenant {}: {}", 
+                planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId, e.getMessage(), e);
             return false;
         }
     }

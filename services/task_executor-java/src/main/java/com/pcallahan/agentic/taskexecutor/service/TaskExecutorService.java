@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Service responsible for executing tasks based on PlanExecution messages.
@@ -23,6 +25,8 @@ import java.util.UUID;
  * - Executes tasks based on PlanExecution.result.nextTaskIds
  * - Produces TaskExecution protobuf messages to Kafka via TaskExecutionProducer
  * - Manages task execution lifecycle and error handling
+ * - Enhances parent relationship population with actual upstream execution data
+ * - Stateless design for horizontal scaling
  */
 @Service
 public class TaskExecutorService {
@@ -176,13 +180,13 @@ public class TaskExecutorService {
     }
     
     /**
-     * Default task handler implementation
+     * Default task handler implementation with enhanced parent relationship population
      */
     private static class DefaultTaskHandler implements TaskHandler {
         @Override
         public TaskExecution execute(PlanExecution planExecution, String tenantId) {
             // TODO: Implement actual task execution logic
-            // For now, create a simple success response
+            // For now, create a simple success response with enhanced parent relationships
             
             // Extract PlanResult from PlanExecution
             PlanResult planResult = planExecution.getResult();
@@ -193,14 +197,43 @@ public class TaskExecutorService {
                 .setSizeBytes(0)
                 .build();
             
+            // Enhanced parent relationship population using actual PlanExecution data
+            String parentPlanExecId = planExecution.getHeader().getExecId();
+            String parentPlanName = planExecution.getHeader().getName();
+            
+            // Extract additional context from upstream task results
+            List<String> upstreamTaskNames = new ArrayList<>();
+            if (planResult.getUpstreamTasksResultsCount() > 0) {
+                logger.debug("Plan execution {} has {} upstream task results", 
+                    parentPlanExecId, planResult.getUpstreamTasksResultsCount());
+                
+                // Extract task names from upstream results for additional context
+                for (TaskResult upstreamResult : planResult.getUpstreamTasksResultsList()) {
+                    if (!upstreamResult.getId().isEmpty()) {
+                        // Use task ID as a proxy for task name if available
+                        upstreamTaskNames.add("task-" + upstreamResult.getId());
+                    }
+                }
+            }
+            
+            // Log parent relationship information
+            logger.debug("Task execution will have parent plan: {} (exec_id: {})", 
+                parentPlanName, parentPlanExecId);
+            if (!upstreamTaskNames.isEmpty()) {
+                logger.debug("Upstream task context: {}", upstreamTaskNames);
+            }
+            
             return TaskExecution.newBuilder()
                 .setHeader(ExecutionHeader.newBuilder()
-                    .setId(UUID.randomUUID().toString())
+                    .setExecId(UUID.randomUUID().toString())
+                    .setName("default_task")
                     .setTenantId(tenantId)
                     .setCreatedAt(Instant.now().toString())
                     .build())
                 .setResult(taskResult)
                 .setTaskType("default")
+                .setParentPlanExecId(parentPlanExecId)
+                .setParentPlanName(parentPlanName)
                 .build();
         }
     }

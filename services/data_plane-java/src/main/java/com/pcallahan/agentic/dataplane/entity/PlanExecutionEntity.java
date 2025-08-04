@@ -19,13 +19,17 @@ import java.util.Map;
     @Index(name = "idx_plan_executions_graph_id", columnList = "graph_id"),
     @Index(name = "idx_plan_executions_status", columnList = "status"),
     @Index(name = "idx_plan_executions_created_at", columnList = "created_at"),
-    @Index(name = "idx_plan_executions_input_task_id", columnList = "input_task_id")
+    @Index(name = "idx_plan_executions_input_task_id", columnList = "input_task_id"),
+    @Index(name = "idx_plan_executions_parent_task_names", columnList = "parent_task_names")
 })
 public class PlanExecutionEntity {
     
     @Id
-    @Column(name = "id", length = 36)
-    private String id;
+    @Column(name = "exec_id", length = 36)
+    private String execId;
+    
+    @Column(name = "name", length = 100, nullable = false)
+    private String name;
     
     @Column(name = "parent_id", length = 36)
     private String parentId;
@@ -61,6 +65,11 @@ public class PlanExecutionEntity {
     
     @Column(name = "input_task_id", length = 36)
     private String inputTaskId;
+    
+    // Parent relationship tracking field
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "parent_task_names", columnDefinition = "jsonb")
+    private List<String> parentTaskNames;
     
     // Result fields
     @JdbcTypeCode(SqlTypes.JSON)
@@ -104,12 +113,20 @@ public class PlanExecutionEntity {
     }
     
     // Getters and Setters
-    public String getId() {
-        return id;
+    public String getExecId() {
+        return execId;
     }
     
-    public void setId(String id) {
-        this.id = id;
+    public void setExecId(String execId) {
+        this.execId = execId;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
     }
     
     public String getParentId() {
@@ -198,6 +215,14 @@ public class PlanExecutionEntity {
     
     public void setInputTaskId(String inputTaskId) {
         this.inputTaskId = inputTaskId;
+    }
+    
+    public List<String> getParentTaskNames() {
+        return parentTaskNames;
+    }
+    
+    public void setParentTaskNames(List<String> parentTaskNames) {
+        this.parentTaskNames = parentTaskNames;
     }
     
     public List<String> getResultNextTaskIds() {

@@ -81,15 +81,15 @@ public class TaskExecutionListener {
             boolean success = persistenceService.processTaskExecution(taskExecution, tenantId);
             
             if (success) {
-                logger.debug("Successfully processed TaskExecution {} for tenant {}", 
-                    taskExecution.getHeader().getId(), tenantId);
+                logger.debug("Successfully processed TaskExecution {}/{} for tenant {}", 
+                    taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
                 
                 // Publish TaskExecution protobuf message to control plane
                 controlPlaneProducer.publishTaskExecution(tenantId, taskExecution);
                     
             } else {
-                logger.error("Failed to process TaskExecution {} for tenant {}", 
-                    taskExecution.getHeader().getId(), tenantId);
+                logger.error("Failed to process TaskExecution {}/{} for tenant {}", 
+                    taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             }
             
             // Acknowledge the message

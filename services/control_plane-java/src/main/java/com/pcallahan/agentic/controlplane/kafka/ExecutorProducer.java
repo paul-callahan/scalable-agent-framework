@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
  * This producer correctly routes protobuf messages:
  * - TaskExecution messages to controlled-task-executions-{tenantId} topics (for PlanExecutor to consume)
  * - PlanExecution messages to controlled-plan-executions-{tenantId} topics (for TaskExecutor to consume)
+ * - Enhanced with proper parent relationship handling and logging
  */
 @Component
 public class ExecutorProducer {
@@ -49,11 +50,14 @@ public class ExecutorProducer {
                 throw new RuntimeException("Failed to serialize TaskExecution");
             }
             
-            String messageId = "task-execution-" + System.currentTimeMillis();
+            String messageKey = taskExecution.getHeader().getName();
             
-            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, messageId);
+            // Log enhanced parent relationship information
+            logParentRelationshipInfo("TaskExecution", taskExecution, tenantId);
             
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageId, message);
+            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, messageKey);
+            
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
@@ -80,11 +84,14 @@ public class ExecutorProducer {
                 throw new RuntimeException("Failed to serialize PlanExecution");
             }
             
-            String messageId = "plan-execution-" + System.currentTimeMillis();
+            String messageKey = planExecution.getHeader().getName();
             
-            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, messageId);
+            // Log enhanced parent relationship information
+            logParentRelationshipInfo("PlanExecution", planExecution, tenantId);
             
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageId, message);
+            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, messageKey);
+            
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
@@ -92,6 +99,47 @@ public class ExecutorProducer {
             CompletableFuture<SendResult<String, byte[]>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
+        }
+    }
+    
+    /**
+     * Log enhanced parent relationship information for TaskExecution messages
+     * 
+     * @param messageType the type of message
+     * @param taskExecution the TaskExecution message
+     * @param tenantId the tenant identifier
+     */
+    private void logParentRelationshipInfo(String messageType, TaskExecution taskExecution, String tenantId) {
+        if (taskExecution != null) {
+            String parentPlanExecId = taskExecution.getParentPlanExecId();
+            String parentPlanName = taskExecution.getParentPlanName();
+            
+            logger.debug("{} parent relationships for tenant {}: plan_exec_id={}, plan_name={}", 
+                messageType, tenantId, parentPlanExecId, parentPlanName);
+        }
+    }
+    
+    /**
+     * Log enhanced parent relationship information for PlanExecution messages
+     * 
+     * @param messageType the type of message
+     * @param planExecution the PlanExecution message
+     * @param tenantId the tenant identifier
+     */
+    private void logParentRelationshipInfo(String messageType, PlanExecution planExecution, String tenantId) {
+        if (planExecution != null) {
+            var parentTaskNames = planExecution.getParentTaskNamesList();
+            String inputTaskId = planExecution.getInputTaskId();
+            
+            logger.debug("{} parent relationships for tenant {}: parent_task_names={}, input_task_id={}", 
+                messageType, tenantId, parentTaskNames, inputTaskId);
+            
+            // Log upstream task results information
+            if (planExecution.hasResult()) {
+                var upstreamResults = planExecution.getResult().getUpstreamTasksResultsList();
+                logger.debug("{} has {} upstream task results for tenant {}", 
+                    messageType, upstreamResults.size(), tenantId);
+            }
         }
     }
     

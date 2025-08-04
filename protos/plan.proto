@@ -28,12 +28,15 @@ message PlanExecution {
   // Common execution metadata
   agentic.common.ExecutionHeader header = 1;
   
+  // Names of one or more parent/upstream TaskExecution.header.name values
+  repeated string parent_task_names = 2;
+  
   // Plan-specific result data
-  PlanResult result = 2;
+  PlanResult result = 3;
   
   // Plan type identifier for routing and processing
-  string plan_type = 3;
+  string plan_type = 4;
   
   // Input task result that triggered this plan
-  string input_task_id = 4;
+  string input_task_id = 5;
 }

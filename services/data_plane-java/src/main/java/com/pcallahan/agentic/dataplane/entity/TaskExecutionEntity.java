@@ -18,13 +18,18 @@ import java.util.Map;
     @Index(name = "idx_task_executions_lifetime_id", columnList = "lifetime_id"),
     @Index(name = "idx_task_executions_graph_id", columnList = "graph_id"),
     @Index(name = "idx_task_executions_status", columnList = "status"),
-    @Index(name = "idx_task_executions_created_at", columnList = "created_at")
+    @Index(name = "idx_task_executions_created_at", columnList = "created_at"),
+    @Index(name = "idx_task_executions_parent_plan_exec_id", columnList = "parent_plan_exec_id"),
+    @Index(name = "idx_task_executions_parent_plan_name", columnList = "parent_plan_name")
 })
 public class TaskExecutionEntity {
     
     @Id
-    @Column(name = "id", length = 36)
-    private String id;
+    @Column(name = "exec_id", length = 36)
+    private String execId;
+    
+    @Column(name = "name", length = 100, nullable = false)
+    private String name;
     
     @Column(name = "parent_id", length = 36)
     private String parentId;
@@ -62,6 +67,13 @@ public class TaskExecutionEntity {
     @Column(name = "task_result_id", length = 36)
     private String taskResultId;
     
+    // Parent relationship tracking fields
+    @Column(name = "parent_plan_exec_id", length = 36)
+    private String parentPlanExecId;
+    
+    @Column(name = "parent_plan_name", length = 100)
+    private String parentPlanName;
+    
     // Auto-managed timestamps
     @Column(name = "db_created_at", nullable = false, updatable = false)
     private Instant dbCreatedAt;
@@ -84,12 +96,20 @@ public class TaskExecutionEntity {
     }
     
     // Getters and Setters
-    public String getId() {
-        return id;
+    public String getExecId() {
+        return execId;
     }
     
-    public void setId(String id) {
-        this.id = id;
+    public void setExecId(String execId) {
+        this.execId = execId;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
     }
     
     public String getParentId() {
@@ -178,6 +198,22 @@ public class TaskExecutionEntity {
     
     public void setTaskResultId(String taskResultId) {
         this.taskResultId = taskResultId;
+    }
+    
+    public String getParentPlanExecId() {
+        return parentPlanExecId;
+    }
+    
+    public void setParentPlanExecId(String parentPlanExecId) {
+        this.parentPlanExecId = parentPlanExecId;
+    }
+    
+    public String getParentPlanName() {
+        return parentPlanName;
+    }
+    
+    public void setParentPlanName(String parentPlanName) {
+        this.parentPlanName = parentPlanName;
     }
     
     public Instant getDbCreatedAt() {

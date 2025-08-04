@@ -56,7 +56,7 @@ from agentic.core.logging import log_request_response
 with log_request_response(
     logger,
     "PutTaskExecution",
-    request_id=request.header.id,
+    request_id=request.header.exec_id,
     tenant_id=request.header.tenant_id,
     task_type=request.task_type
 ):

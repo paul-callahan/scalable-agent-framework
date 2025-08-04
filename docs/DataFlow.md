@@ -4,6 +4,14 @@
 
 This document describes the corrected protobuf-based data flow between microservices in the scalable agent framework. The system uses Protocol Buffers for all message serialization to ensure type safety and performance benefits.
 
+## Enhanced Parent-Child Relationship Tracking
+
+The system now includes enhanced parent-child relationship tracking between TaskExecutions and PlanExecutions:
+
+- **TaskExecution** tracks its parent PlanExecution via `parent_plan_exec_id` and `parent_plan_name` fields
+- **PlanExecution** tracks its parent TaskExecutions via `parent_task_names` field (repeated string)
+- **ExecutionHeader** now has `name` field (unique identifier of the Plan/Task that created this execution) and `exec_id` field (renamed from `id`)
+
 ## Services Architecture
 
 The system consists of the following microservices:
@@ -57,7 +65,7 @@ graph TB
 
 ## Message Flow
 
-### 1. Task Execution Flow
+### 1. Task Execution Flow with Parent Tracking
 
 ```mermaid
 sequenceDiagram
@@ -67,22 +75,21 @@ sequenceDiagram
     participant PE as PlanExecutor
     participant K as Kafka Topics
 
-    Note over TE,PE: Task Execution Flow
+    Note over TE,PE: Task Execution Flow with Enhanced Parent Tracking
 
-    TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
+    PE->>K: PlanExecution (with header.name, header.exec_id) → controlled-plan-executions-{tenantId}
+    TE->>K: Consume PlanExecution (protobuf)
+    TE->>TE: Create TaskExecution with:<br/>- header.name = task_name<br/>- header.exec_id = new UUID<br/>- parent_plan_exec_id = plan.header.exec_id<br/>- parent_plan_name = plan.header.name
+    TE->>K: TaskExecution (with parent plan info) → task-executions-{tenantId}
     DP->>K: Consume TaskExecution (protobuf)
-    DP->>DP: Persist to database
+    DP->>DP: Persist to database with parent_plan_exec_id, parent_plan_name fields
     DP->>K: Republish TaskExecution (protobuf) → persisted-task-executions-{tenantId}
     CP->>K: Consume TaskExecution (protobuf)
     CP->>CP: Evaluate guardrails
     CP->>K: Publish TaskExecution (protobuf) → controlled-task-executions-{tenantId}
-    PE->>K: Consume TaskExecution (protobuf)
-    PE->>PE: Extract TaskResult from TaskExecution.result
-    PE->>PE: Execute plan logic
-    PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
 ```
 
-### 2. Plan Execution Flow
+### 2. Plan Execution Flow with Parent Tracking
 
 ```mermaid
 sequenceDiagram
@@ -92,20 +99,70 @@ sequenceDiagram
     participant TE as TaskExecutor
     participant K as Kafka Topics
 
-    Note over PE,TE: Plan Execution Flow
+    Note over PE,TE: Plan Execution Flow with Enhanced Parent Tracking
 
-    PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
+    TE->>K: TaskExecution (with header.name, header.exec_id) → controlled-task-executions-{tenantId}
+    PE->>K: Consume TaskExecution (protobuf)
+    PE->>PE: Create PlanExecution with:<br/>- header.name = plan_name<br/>- header.exec_id = new UUID<br/>- parent_task_names = [task.header.name, ...]
+    PE->>K: PlanExecution (with parent task info) → plan-executions-{tenantId}
     DP->>K: Consume PlanExecution (protobuf)
-    DP->>DP: Persist to database
+    DP->>DP: Persist to database with parent_task_names field
     DP->>K: Republish PlanExecution (protobuf) → persisted-plan-executions-{tenantId}
     CP->>K: Consume PlanExecution (protobuf)
     CP->>CP: Evaluate guardrails
     CP->>K: Publish PlanExecution (protobuf) → controlled-plan-executions-{tenantId}
-    TE->>K: Consume PlanExecution (protobuf)
-    TE->>TE: Extract PlanResult from PlanExecution.result
-    TE->>TE: Execute task logic
-    TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
 ```
+
+## Protobuf Message Structure
+
+### ExecutionHeader (common.proto)
+```protobuf
+message ExecutionHeader {
+  string name = 1;           // Unique identifier of the Plan/Task that created this execution
+  string exec_id = 2;        // Unique identifier for this execution (renamed from id)
+  string parent_id = 3;      // ID of the parent execution (empty for root executions)
+  string graph_id = 4;       // ID of the AgentGraph being executed
+  string lifetime_id = 5;    // ID of the AgentLifetime instance
+  string tenant_id = 6;      // Tenant identifier for multi-tenancy
+  int32 attempt = 7;         // Execution attempt number (1-based)
+  int32 iteration_idx = 8;   // Current iteration index within the graph
+  string created_at = 9;     // ISO-8601 timestamp when execution was created
+  ExecutionStatus status = 10; // Current execution status
+  string edge_taken = 11;    // ID of the edge that led to this execution
+}
+```
+
+### TaskExecution (task.proto)
+```protobuf
+message TaskExecution {
+  agentic.common.ExecutionHeader header = 1;
+  string parent_plan_exec_id = 2;    // Execution ID of the parent/upstream PlanExecution.exec_id
+  TaskResult result = 3;
+  string task_type = 4;
+  string parent_plan_name = 5;       // Name from the parent/upstream PlanExecution.header.name
+}
+```
+
+### PlanExecution (plan.proto)
+```protobuf
+message PlanExecution {
+  agentic.common.ExecutionHeader header = 1;
+  repeated string parent_task_names = 2;  // Names of one or more parent/upstream TaskExecution.header.name values
+  PlanResult result = 3;
+  string plan_type = 4;
+  string input_task_id = 5;
+}
+```
+
+## Key Changes
+
+1. **ExecutionHeader.id → exec_id**: The execution identifier field has been renamed for clarity
+2. **ExecutionHeader.name**: New field to identify the Plan/Task definition that created this execution
+3. **TaskExecution.parent_plan_exec_id**: Tracks the execution ID of the parent PlanExecution
+4. **TaskExecution.parent_plan_name**: Tracks the name of the parent PlanExecution
+5. **PlanExecution.parent_task_names**: Tracks the names of parent TaskExecutions (repeated field)
+
+These changes enable comprehensive parent-child relationship tracking throughout the execution flow, allowing for better debugging, monitoring, and data lineage analysis.
 
 ## Topic Architecture
 

@@ -66,8 +66,7 @@ public class TaskResultListener {
                 return;
             }
             
-            // Store TaskExecution in cache for upstream reference
-            planExecutorService.cacheTaskExecution(taskExecution);
+            // Note: TaskExecution is processed directly without caching for stateless design
             
             // Execute plans based on TaskExecution
             boolean success = planExecutorService.executePlansFromTaskExecution(taskExecution, tenantId);

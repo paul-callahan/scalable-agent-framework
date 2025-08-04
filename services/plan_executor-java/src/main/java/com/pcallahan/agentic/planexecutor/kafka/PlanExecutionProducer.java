@@ -49,7 +49,7 @@ public class PlanExecutionProducer {
                 return future;
             }
             
-            String messageKey = planExecution.getHeader().getId();
+            String messageKey = planExecution.getHeader().getName();
             
             logger.debug("Publishing PlanExecution to topic {}: {}", topic, messageKey);
             
