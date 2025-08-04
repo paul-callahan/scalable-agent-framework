@@ -242,7 +242,7 @@ def sample_plan_input_full() -> PlanInput:
         plan_name="decide_which_llm_to_use",
         task_executions=[TaskExecution(
             header=ExecutionHeader(
-                name="call_llm",
+                name="previous_task_name",
                 tenant_id="evil_corp",
                 exec_id="1234f",
             ),

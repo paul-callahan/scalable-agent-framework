@@ -16,6 +16,9 @@
         <module name="admin-java" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="agentic-parent" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -27,6 +30,7 @@
       <module name="graph_builder-java" options="-parameters" />
       <module name="integration_tests-java" options="-parameters" />
       <module name="plan_executor-java" options="-parameters" />
+      <module name="scalable-agent-framework" options="-parameters" />
       <module name="task_executor-java" options="-parameters" />
     </option>
   </component>
