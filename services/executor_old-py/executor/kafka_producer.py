@@ -5,8 +5,10 @@ This module implements Kafka producer for emitting execution results
 using aiokafka==0.11.0 with proper error handling and retry logic.
 """
 
-import json
-from typing import Any, Dict, Optional
+from typing import Optional
+
+from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common import ProtobufUtils
 
 from aiokafka import AIOKafkaProducer
 from structlog import get_logger
@@ -53,15 +55,15 @@ class ExecutorProducer:
     async def publish_task_execution(
         self,
         tenant_id: str,
-        task_execution: Dict[str, Any],
+        task_execution: TaskExecution,
         **kwargs
     ) -> None:
         """
-        Publish TaskExecution to data plane.
+        Publish TaskExecution protobuf to data plane.
         
         Args:
             tenant_id: Tenant identifier
-            task_execution: TaskExecution data
+            task_execution: TaskExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
@@ -70,19 +72,11 @@ class ExecutorProducer:
         try:
             topic = f"task-executions_{tenant_id}"
             
-            # Add metadata to message
-            message = {
-                **task_execution,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = task_execution.get("execution_id", "unknown")
+            execution_id = task_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -102,8 +96,7 @@ class ExecutorProducer:
             
             logger.info("TaskExecution published", 
                        execution_id=execution_id,
-                       tenant_id=tenant_id,
-                       task_type=task_execution.get("task_type"))
+                       tenant_id=tenant_id)
             
         except Exception as e:
             logger.error("Failed to publish TaskExecution", 
@@ -115,15 +108,15 @@ class ExecutorProducer:
     async def publish_plan_execution(
         self,
         tenant_id: str,
-        plan_execution: Dict[str, Any],
+        plan_execution: PlanExecution,
         **kwargs
     ) -> None:
         """
-        Publish PlanExecution to data plane.
+        Publish PlanExecution protobuf to data plane.
         
         Args:
             tenant_id: Tenant identifier
-            plan_execution: PlanExecution data
+            plan_execution: PlanExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
@@ -132,19 +125,11 @@ class ExecutorProducer:
         try:
             topic = f"plan-executions_{tenant_id}"
             
-            # Add metadata to message
-            message = {
-                **plan_execution,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = plan_execution.get("execution_id", "unknown")
+            execution_id = plan_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -164,8 +149,7 @@ class ExecutorProducer:
             
             logger.info("PlanExecution published", 
                        execution_id=execution_id,
-                       tenant_id=tenant_id,
-                       plan_type=plan_execution.get("plan_type"))
+                       tenant_id=tenant_id)
             
         except Exception as e:
             logger.error("Failed to publish PlanExecution", 

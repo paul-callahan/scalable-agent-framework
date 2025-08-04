@@ -25,40 +25,35 @@ from agentic.core.plan import Plan, PlanResult
 class MockTask(Task):
     """Mock task for testing."""
     
-    def __init__(self, tenant_id: str, task_type: str, parameters: dict = None):
+    def __init__(self, tenant_id: str, task_type: str):
         self.tenant_id = tenant_id
         self.task_type = task_type
-        self.parameters = parameters or {}
     
     async def execute(self, lastResult: "PlanResult") -> "TaskResult":
-        return TaskResult(data="mock_result")
+        return TaskResult(data={"result": "mock execution"})
     
     @classmethod
     def deserialize(cls, data):
         return cls(
             tenant_id=data['tenant_id'],
-            task_type=data['task_type'],
-            parameters=data.get('parameters', {})
+            task_type=data['task_type']
         )
     
     @classmethod
     def from_protobuf(cls, proto):
         """Create a MockTask from a protobuf message."""
-        import json
         return cls(
             tenant_id=proto.header.tenant_id,
-            task_type=proto.task_type,
-            parameters=json.loads(proto.parameters) if proto.parameters else {}
+            task_type=proto.task_type
         )
 
 
 class MockPlan(Plan):
     """Mock plan for testing."""
     
-    def __init__(self, tenant_id: str, plan_type: str, parameters: dict = None):
+    def __init__(self, tenant_id: str, plan_type: str):
         self.tenant_id = tenant_id
         self.plan_type = plan_type
-        self.parameters = parameters or {}
     
     async def plan(self, lastResult: "TaskResult") -> "PlanResult":
         return PlanResult(next_task_ids=["task2"])
@@ -67,18 +62,15 @@ class MockPlan(Plan):
     def deserialize(cls, data):
         return cls(
             tenant_id=data['tenant_id'],
-            plan_type=data['plan_type'],
-            parameters=data.get('parameters', {})
+            plan_type=data['plan_type']
         )
     
     @classmethod
     def from_protobuf(cls, proto):
         """Create a MockPlan from a protobuf message."""
-        import json
         return cls(
             tenant_id=proto.header.tenant_id,
-            plan_type=proto.plan_type,
-            parameters=json.loads(proto.parameters) if proto.parameters else {}
+            plan_type=proto.plan_type
         )
 
 

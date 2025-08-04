@@ -7,8 +7,9 @@ using pattern matching.
 """
 
 import asyncio
-import json
 from typing import Optional
+
+from agentic_common.pb import TaskExecution, PlanExecution
 
 from aiokafka import AIOKafkaConsumer
 from structlog import get_logger
@@ -63,8 +64,8 @@ class ExecutorConsumer:
         try:
             # Create consumer for executor topics
             topics = [
-                "task-results_*",  # Pattern for tenant-specific topics
-                "plan-results_*",  # Pattern for tenant-specific topics
+                "controlled-task-executions_*",  # Pattern for tenant-specific topics
+                "controlled-plan-executions_*",  # Pattern for tenant-specific topics
             ]
             
             self.consumer = await create_kafka_consumer(
@@ -135,37 +136,35 @@ class ExecutorConsumer:
         )
         
         try:
-            # Deserialize JSON message
-            message_data = json.loads(message.value.decode('utf-8'))
-            
             # Extract tenant_id from topic
             tenant_id = message.topic.split("_", 1)[1]
             
-            # Add tenant_id to message data
-            message_data["tenant_id"] = tenant_id
-            
-            # Determine message type and route to appropriate processor
-            if message.topic.startswith("task-results_"):
+            # Determine message type and deserialize protobuf
+            if message.topic.startswith("controlled-task-executions_"):
+                task_execution = TaskExecution.FromString(message.value)
                 if self.task_processor:
-                    await self.task_processor(message_data)
+                    await self.task_processor({
+                        "tenant_id": tenant_id,
+                        "task_execution": task_execution
+                    })
                 else:
                     logger.warning("No task processor set")
                     
-            elif message.topic.startswith("plan-results_"):
+            elif message.topic.startswith("controlled-plan-executions_"):
+                plan_execution = PlanExecution.FromString(message.value)
                 if self.plan_processor:
-                    await self.plan_processor(message_data)
+                    await self.plan_processor({
+                        "tenant_id": tenant_id,
+                        "plan_execution": plan_execution
+                    })
                 else:
                     logger.warning("No plan processor set")
                     
             else:
                 logger.warning("Unknown topic", topic=message.topic)
             
-        except json.JSONDecodeError as e:
-            logger.error("Failed to decode JSON message", 
-                        topic=message.topic,
-                        error=str(e))
         except Exception as e:
-            logger.error("Failed to process executor message", 
+            logger.error("Failed to deserialize protobuf message", 
                         topic=message.topic,
                         error=str(e))
             raise

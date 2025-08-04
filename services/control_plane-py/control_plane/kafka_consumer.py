@@ -7,8 +7,10 @@ using pattern matching.
 """
 
 import asyncio
-import json
 from typing import Optional
+
+from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common import ProtobufUtils
 
 from aiokafka import AIOKafkaConsumer
 from structlog import get_logger
@@ -128,20 +130,24 @@ class ControlPlaneConsumer:
         )
         
         try:
-            # Deserialize JSON message
-            message_data = json.loads(message.value.decode('utf-8'))
-            
             # Extract tenant_id from topic
             tenant_id = message.topic.split("_", 1)[1]
             
-            # Add tenant_id to message data
-            message_data["tenant_id"] = tenant_id
-            
-            # Determine execution type from topic
+            # Determine execution type from topic and deserialize protobuf
             if message.topic.startswith("persisted-task-executions_"):
-                message_data["type"] = "task"
+                task_execution = ProtobufUtils.deserialize_task_execution(message.value)
+                message_data = {
+                    "type": "task",
+                    "tenant_id": tenant_id,
+                    "task_execution": task_execution
+                }
             elif message.topic.startswith("persisted-plan-executions_"):
-                message_data["type"] = "plan"
+                plan_execution = ProtobufUtils.deserialize_plan_execution(message.value)
+                message_data = {
+                    "type": "plan", 
+                    "tenant_id": tenant_id,
+                    "plan_execution": plan_execution
+                }
             else:
                 logger.warning("Unknown topic", topic=message.topic)
                 return
@@ -150,12 +156,8 @@ class ControlPlaneConsumer:
             if self.message_processor:
                 await self.message_processor(message_data)
             
-        except json.JSONDecodeError as e:
-            logger.error("Failed to decode JSON message", 
-                        topic=message.topic,
-                        error=str(e))
         except Exception as e:
-            logger.error("Failed to process control message", 
+            logger.error("Failed to deserialize protobuf message", 
                         topic=message.topic,
                         error=str(e))
             raise

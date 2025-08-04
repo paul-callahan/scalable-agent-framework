@@ -36,7 +36,4 @@ message PlanExecution {
   
   // Input task result that triggered this plan
   string input_task_id = 4;
-  
-  // Plan-specific parameters (serialized as JSON)
-  string parameters = 5;
 }

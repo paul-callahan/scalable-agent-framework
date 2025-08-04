@@ -39,7 +39,4 @@ message TaskExecution {
   
   // Task type identifier for routing and processing
   string task_type = 3;
-  
-  // Task-specific parameters (serialized as JSON)
-  string parameters = 4;
 }

@@ -8,7 +8,9 @@ env/
 # Python
 __pycache__/
 *.py[cod]
-*.pb.py
+**/*.pb.py
+**/*_pb2.py
+**/*_pb2_grpc.py
 *$py.class
 *.so
 .Python

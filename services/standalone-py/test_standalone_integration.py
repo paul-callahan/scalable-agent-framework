@@ -72,7 +72,6 @@ async def test_standalone_integration():
     task_execution.header.status = common_pb2.EXECUTION_STATUS_PENDING
     task_execution.header.created_at = datetime.utcnow().isoformat()
     task_execution.task_type = "test_task"
-    task_execution.parameters = json.dumps({"test_param": "test_value"})
     
     # Publish to task-executions queue
     task_executions_topic = f"task-executions_{tenant_id}"
@@ -94,7 +93,6 @@ async def test_standalone_integration():
     plan_execution.header.status = common_pb2.EXECUTION_STATUS_PENDING
     plan_execution.header.created_at = datetime.utcnow().isoformat()
     plan_execution.plan_type = "test_plan"
-    plan_execution.parameters = json.dumps({"plan_param": "plan_value"})
     plan_execution.input_task_id = task_execution.header.id
     
     # Publish to plan-executions queue

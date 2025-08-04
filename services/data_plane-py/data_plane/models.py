@@ -59,7 +59,6 @@ class TaskExecution(Base):
     
     # Task-specific fields
     task_type: Mapped[str] = mapped_column(String(255), nullable=False)
-    parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string
     
     # Result data (stored as JSONB for flexibility)
     result_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
@@ -104,7 +103,6 @@ class TaskExecution(Base):
             "status": self.status,
             "edge_taken": self.edge_taken,
             "task_type": self.task_type,
-            "parameters": self.parameters,
             "result_data": self.result_data,
             "result_mime_type": self.result_mime_type,
             "result_size_bytes": self.result_size_bytes,
@@ -144,7 +142,6 @@ class PlanExecution(Base):
     # Plan-specific fields
     plan_type: Mapped[str] = mapped_column(String(255), nullable=False)
     input_task_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string
     
     # Result data (stored as JSONB for flexibility)
     result_next_task_ids: Mapped[Optional[list[str]]] = mapped_column(JSONB, nullable=True)
@@ -191,7 +188,6 @@ class PlanExecution(Base):
             "edge_taken": self.edge_taken,
             "plan_type": self.plan_type,
             "input_task_id": self.input_task_id,
-            "parameters": self.parameters,
             "result_next_task_ids": self.result_next_task_ids,
             "result_metadata": self.result_metadata,
             "error_message": self.error_message,

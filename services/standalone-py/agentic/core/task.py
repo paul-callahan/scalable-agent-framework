@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Union
 
 from ..pb import task_pb2
 from google.protobuf import any_pb2
+from agentic_common import ProtobufUtils
 
 # PlanResult is imported as a string type annotation to avoid circular imports
 
@@ -73,50 +74,14 @@ class TaskResult:
         Returns:
             TaskResult protobuf message
         """
-        result = task_pb2.TaskResult(
+        # Use consistent protobuf utilities for creation
+        return ProtobufUtils.create_task_result(
             mime_type=self.mime_type,
             size_bytes=self.size_bytes,
-            error_message=self.error_message or ""
+            error_message=self.error_message or "",
+            inline_data=self.data if not isinstance(self.data, str) else None,
+            uri=self.data if isinstance(self.data, str) else ""
         )
-
-        if isinstance(self.data, str):
-            # URI reference
-            result.uri = self.data
-        elif self.data is not None:
-            # Inline data
-            any_msg = any_pb2.Any()
-            try:
-                any_msg.Pack(self.data)
-                result.inline_data.CopyFrom(any_msg)
-            except Exception as e:
-                # Fallback to JSON serialization if protobuf packing fails
-                try:
-                    json_data = json.dumps(self.data)
-                    # Create a simple protobuf message with JSON data
-                    from google.protobuf import struct_pb2
-                    json_struct = struct_pb2.Value()
-                    json_struct.string_value = json_data
-                    any_msg.Pack(json_struct)
-                    result.inline_data.CopyFrom(any_msg)
-                    # Update MIME type to indicate JSON fallback
-                    result.mime_type = "application/json"
-                except Exception as json_error:
-                    # If JSON serialization also fails, store error information
-                    error_data = {
-                        "error": "Serialization failed",
-                        "original_error": str(e),
-                        "json_error": str(json_error),
-                        "data_type": type(self.data).__name__
-                    }
-                    from google.protobuf import struct_pb2
-                    error_struct = struct_pb2.Value()
-                    error_struct.string_value = json.dumps(error_data)
-                    any_msg.Pack(error_struct)
-                    result.inline_data.CopyFrom(any_msg)
-                    result.mime_type = "application/json"
-                    result.error_message = f"Data serialization failed: {str(e)}"
-
-        return result
 
     @classmethod
     def from_protobuf(cls, proto: "task_pb2.TaskResult") -> "TaskResult":

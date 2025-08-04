@@ -15,6 +15,7 @@ from structlog import get_logger
 
 from agentic_common.kafka_utils import create_kafka_consumer
 from agentic_common.logging_config import log_kafka_message
+from agentic_common import ProtobufUtils
 from .database import get_async_session
 from .models import PlanExecution, TaskExecution
 
@@ -132,9 +133,8 @@ class DataPlaneConsumer:
             message: Kafka message containing TaskExecution
         """
         try:
-            # Deserialize protobuf message
-            task_execution = TaskExecution()
-            task_execution.ParseFromString(message.value)
+            # Deserialize protobuf message using consistent utilities
+            task_execution = ProtobufUtils.deserialize_task_execution(message.value)
             
             # Extract tenant_id from topic
             tenant_id = message.topic.split("_", 1)[1]
@@ -153,7 +153,6 @@ class DataPlaneConsumer:
                     status=task_execution.header.status.name,
                     edge_taken=task_execution.header.edge_taken or None,
                     task_type=task_execution.task_type,
-                    parameters=task_execution.parameters or None,
                     result_data=self._extract_task_result_data(task_execution.result),
                     result_mime_type=task_execution.result.mime_type or None,
                     result_size_bytes=task_execution.result.size_bytes or None,
@@ -182,9 +181,8 @@ class DataPlaneConsumer:
             message: Kafka message containing PlanExecution
         """
         try:
-            # Deserialize protobuf message
-            plan_execution = PlanExecution()
-            plan_execution.ParseFromString(message.value)
+            # Deserialize protobuf message using consistent utilities
+            plan_execution = ProtobufUtils.deserialize_plan_execution(message.value)
             
             # Extract tenant_id from topic
             tenant_id = message.topic.split("_", 1)[1]
@@ -204,7 +202,6 @@ class DataPlaneConsumer:
                     edge_taken=plan_execution.header.edge_taken or None,
                     plan_type=plan_execution.plan_type,
                     input_task_id=plan_execution.input_task_id or None,
-                    parameters=plan_execution.parameters or None,
                     result_next_task_ids=list(plan_execution.result.next_task_ids),
                     result_metadata=dict(plan_execution.result.metadata),
                     error_message=plan_execution.result.error_message or None,
