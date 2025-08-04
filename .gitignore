@@ -48,8 +48,14 @@ design prompt.txt
 **/target/
 **/.mvn/
 **/.mvn
+**/mvnw
 
+# logs
+**/*.log
+
+# misc
 .idea.bak/
 .idea.bak2/
 .idea.save.good
-**/mvnw
+foo
+

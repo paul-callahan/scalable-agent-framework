@@ -6,12 +6,13 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="data_plane-java" />
         <module name="plan_executor-java" />
         <module name="task_executor-java" />
+        <module name="integration_tests-java" />
         <module name="common-java" />
-        <module name="graph_builder-java" />
         <module name="control_plane-java" />
+        <module name="data_plane-java" />
+        <module name="graph_builder-java" />
       </profile>
     </annotationProcessing>
   </component>
@@ -22,6 +23,7 @@
       <module name="control_plane-java" options="-parameters" />
       <module name="data_plane-java" options="-parameters" />
       <module name="graph_builder-java" options="-parameters" />
+      <module name="integration_tests-java" options="-parameters" />
       <module name="plan_executor-java" options="-parameters" />
       <module name="task_executor-java" options="-parameters" />
     </option>
