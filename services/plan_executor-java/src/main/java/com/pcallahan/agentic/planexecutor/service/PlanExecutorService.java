@@ -1,6 +1,7 @@
 package com.pcallahan.agentic.planexecutor.service;
 
 import com.pcallahan.agentic.planexecutor.kafka.PlanExecutionProducer;
+import agentic.task.Task.TaskExecution;
 import agentic.task.Task.TaskResult;
 import agentic.plan.Plan.PlanExecution;
 import agentic.plan.Plan.PlanResult;
@@ -17,11 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
- * Service responsible for executing plans based on TaskResult messages.
+ * Service responsible for executing plans based on TaskExecution messages.
  * 
  * This service:
- * - Consumes TaskResult protobuf messages from Kafka via TaskResultListener
- * - Executes plans based on TaskResult data
+ * - Consumes TaskExecution protobuf messages from Kafka via TaskResultListener
+ * - Executes plans based on TaskExecution data
  * - Produces PlanExecution protobuf messages to Kafka via PlanExecutionProducer
  * - Manages plan execution lifecycle and error handling
  */
@@ -32,7 +33,7 @@ public class PlanExecutorService {
     
     private final PlanExecutionProducer planExecutionProducer;
     private final Map<String, PlanHandler> planHandlers = new ConcurrentHashMap<>();
-    private final Map<String, TaskResult> taskResultCache = new ConcurrentHashMap<>();
+    private final Map<String, TaskExecution> taskExecutionCache = new ConcurrentHashMap<>();
     
     public PlanExecutorService(PlanExecutionProducer planExecutionProducer) {
         this.planExecutionProducer = planExecutionProducer;
@@ -40,27 +41,30 @@ public class PlanExecutorService {
     }
     
     /**
-     * Execute plans from a TaskResult protobuf message
+     * Execute plans from a TaskExecution protobuf message
      * 
-     * @param taskResult the TaskResult protobuf message containing plans to execute
+     * @param taskExecution the TaskExecution protobuf message containing plans to execute
      * @param tenantId the tenant identifier
      * @return true if execution was successful, false otherwise
      */
-    public boolean executePlansFromTaskResult(TaskResult taskResult, String tenantId) {
-        logger.info("Executing plans from TaskResult protobuf for tenant: {}", tenantId);
+    public boolean executePlansFromTaskExecution(TaskExecution taskExecution, String tenantId) {
+        logger.info("Executing plans from TaskExecution protobuf for tenant: {}", tenantId);
         
         try {
+            // Extract TaskResult from TaskExecution
+            TaskResult taskResult = taskExecution.getResult();
+            
             // Check if there's an error in the task result
             if (!taskResult.getErrorMessage().isEmpty()) {
-                logger.error("TaskResult contains error for tenant {}: {}", tenantId, taskResult.getErrorMessage());
+                logger.error("TaskExecution contains error for tenant {}: {}", tenantId, taskResult.getErrorMessage());
                 return false;
             }
             
-            logger.debug("TaskResult protobuf for tenant {}: mime_type={}, size_bytes={}", 
+            logger.debug("TaskExecution protobuf for tenant {}: mime_type={}, size_bytes={}", 
                 tenantId, taskResult.getMimeType(), taskResult.getSizeBytes());
             
             // Determine plan type from task result data
-            String planType = extractPlanType(taskResult);
+            String planType = extractPlanType(taskExecution);
             PlanHandler handler = planHandlers.get(planType);
             
             if (handler == null) {
@@ -69,7 +73,7 @@ public class PlanExecutorService {
             }
             
             // Execute the plan using the handler
-            PlanExecution planExecution = handler.execute(taskResult, tenantId);
+            PlanExecution planExecution = handler.execute(taskExecution, tenantId);
             if (planExecution == null) {
                 logger.error("Plan handler returned null for tenant: {}", tenantId);
                 return false;
@@ -91,7 +95,7 @@ public class PlanExecutorService {
             return true;
             
         } catch (Exception e) {
-            logger.error("Error executing plans from TaskResult protobuf for tenant: {}", tenantId, e);
+            logger.error("Error executing plans from TaskExecution protobuf for tenant: {}", tenantId, e);
             return false;
         }
     }
@@ -110,36 +114,36 @@ public class PlanExecutorService {
     }
     
     /**
-     * Cache a TaskResult for upstream reference
+     * Cache a TaskExecution for upstream reference
      * 
-     * @param taskResult the TaskResult to cache
+     * @param taskExecution the TaskExecution to cache
      */
-    public void cacheTaskResult(TaskResult taskResult) {
-        taskResultCache.put(taskResult.getId(), taskResult);
+    public void cacheTaskExecution(TaskExecution taskExecution) {
+        taskExecutionCache.put(taskExecution.getResult().getId(), taskExecution);
     }
     
     /**
-     * Extract plan type from TaskResult
+     * Extract plan type from TaskExecution
      */
-    private String extractPlanType(TaskResult taskResult) {
-        // TODO: Implement actual plan type extraction from TaskResult data
+    private String extractPlanType(TaskExecution taskExecution) {
+        // TODO: Implement actual plan type extraction from TaskExecution data
         // For now, return default
         return "default";
     }
     
     /**
      * Interface for plan handlers
-     * Updated to take TaskResult and return PlanExecution
+     * Updated to take TaskExecution and return PlanExecution
      */
     public interface PlanHandler {
         /**
-         * Execute a plan based on TaskResult
+         * Execute a plan based on TaskExecution
          * 
-         * @param taskResult the TaskResult that triggered this plan
+         * @param taskExecution the TaskExecution that triggered this plan
          * @param tenantId the tenant identifier
          * @return PlanExecution protobuf message
          */
-        PlanExecution execute(TaskResult taskResult, String tenantId);
+        PlanExecution execute(TaskExecution taskExecution, String tenantId);
     }
     
     /**
@@ -147,12 +151,15 @@ public class PlanExecutorService {
      */
     private class DefaultPlanHandler implements PlanHandler {
         @Override
-        public PlanExecution execute(TaskResult taskResult, String tenantId) {
+        public PlanExecution execute(TaskExecution taskExecution, String tenantId) {
             // TODO: Implement actual plan execution logic
             // For now, create a simple success response with upstream TaskResults
             
+            // Extract TaskResult from TaskExecution
+            TaskResult taskResult = taskExecution.getResult();
+            
             // Retrieve relevant TaskResults from cache based on execution context
-            List<TaskResult> upstreamTaskResults = retrieveRelevantTaskResults(taskResult, tenantId);
+            List<TaskResult> upstreamTaskResults = retrieveRelevantTaskResults(taskExecution, tenantId);
             
             PlanResult planResult = PlanResult.newBuilder()
                 .addAllUpstreamTasksResults(upstreamTaskResults)
@@ -170,25 +177,28 @@ public class PlanExecutorService {
                 .setResult(planResult)
                 .setPlanType("default")
                 .setInputTaskId(taskResult.getId())
-                .setParameters("{}")
                 .build();
         }
         
         /**
          * Retrieve relevant TaskResults from cache based on execution context
          * 
-         * @param currentTaskResult the current TaskResult that triggered the plan
+         * @param currentTaskExecution the current TaskExecution that triggered the plan
          * @param tenantId the tenant identifier
          * @return list of relevant upstream TaskResults
          */
-        private List<TaskResult> retrieveRelevantTaskResults(TaskResult currentTaskResult, String tenantId) {
+        private List<TaskResult> retrieveRelevantTaskResults(TaskExecution currentTaskExecution, String tenantId) {
             List<TaskResult> relevantResults = new ArrayList<>();
+            
+            // Extract TaskResult from current TaskExecution
+            TaskResult currentTaskResult = currentTaskExecution.getResult();
             
             // Extract execution context from current task result
             // Note: TaskResult doesn't directly contain ExecutionHeader, so we'll use
             // the tenantId and other available fields to determine relevance
             
-            for (TaskResult cachedResult : taskResultCache.values()) {
+            for (TaskExecution cachedExecution : taskExecutionCache.values()) {
+                TaskResult cachedResult = cachedExecution.getResult();
                 if (isRelevantTaskResult(cachedResult, currentTaskResult, tenantId)) {
                     relevantResults.add(cachedResult);
                 }

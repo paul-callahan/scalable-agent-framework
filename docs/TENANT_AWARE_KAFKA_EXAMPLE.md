@@ -15,7 +15,7 @@ kafka:
   topic-patterns:
     task-executions: "task-executions-.*"
     task-results: "task-results-.*"
-    task-control: "task-control-.*"
+    persisted-task-executions: "persisted-task-executions-.*"
 ```
 
 ## Step 2: Create Tenant-Specific Topics
@@ -26,12 +26,12 @@ Create Kafka topics for each tenant:
 # Create topics for Tenant A
 kafka-topics.sh --create --topic task-executions-tenant-a --partitions 3 --replication-factor 2
 kafka-topics.sh --create --topic task-results-tenant-a --partitions 3 --replication-factor 2
-kafka-topics.sh --create --topic task-control-tenant-a --partitions 3 --replication-factor 2
+kafka-topics.sh --create --topic persisted-task-executions-tenant-a --partitions 3 --replication-factor 2
 
 # Create topics for Tenant B
 kafka-topics.sh --create --topic task-executions-tenant-b --partitions 3 --replication-factor 2
 kafka-topics.sh --create --topic task-results-tenant-b --partitions 3 --replication-factor 2
-kafka-topics.sh --create --topic task-control-tenant-b --partitions 3 --replication-factor 2
+kafka-topics.sh --create --topic persisted-task-executions-tenant-b --partitions 3 --replication-factor 2
 ```
 
 ## Step 3: Implement Tenant-Aware Kafka Listener

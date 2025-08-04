@@ -6,12 +6,12 @@ spring:
     name: plan_executor-java
   
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: plan-executor-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       enable-auto-commit: false
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -24,7 +24,7 @@ spring:
 
 kafka:
   topic-patterns:
-    task-results: "task-results-.*"
+    controlled-task-executions: "controlled-task-executions-.*"
 
 logging:
   level:

@@ -73,7 +73,7 @@ class DataPlaneProducer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"task-control_{tenant_id}"
+            topic = f"persisted-task-executions_{tenant_id}"
             
             # Create lightweight reference message
             message = {
@@ -118,7 +118,7 @@ class DataPlaneProducer:
                         error=str(e))
             raise
     
-    async def publish_plan_control_reference(
+    async def publish_persisted_plan_executions_reference(
         self,
         tenant_id: str,
         execution_id: str,
@@ -127,7 +127,7 @@ class DataPlaneProducer:
         **kwargs
     ) -> None:
         """
-        Publish plan control reference to control plane.
+        Publish persisted plan executions reference to control plane.
         
         Args:
             tenant_id: Tenant identifier
@@ -140,7 +140,7 @@ class DataPlaneProducer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"plan-control_{tenant_id}"
+            topic = f"persisted-plan-executions_{tenant_id}"
             
             # Create lightweight reference message
             message = {
@@ -173,13 +173,13 @@ class DataPlaneProducer:
                 execution_id=execution_id,
             )
             
-            logger.info("Plan control reference published", 
+            logger.info("Persisted plan executions reference published", 
                        execution_id=execution_id,
                        tenant_id=tenant_id,
                        plan_type=plan_type)
             
         except Exception as e:
-            logger.error("Failed to publish plan control reference", 
+            logger.error("Failed to publish persisted plan executions reference", 
                         execution_id=execution_id,
                         tenant_id=tenant_id,
                         error=str(e))

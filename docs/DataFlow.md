@@ -9,7 +9,7 @@ This document describes the corrected protobuf-based data flow between microserv
 The system consists of the following microservices:
 
 1. **DataPlane** - Persists execution data and forwards protobuf messages to control topics
-2. **ControlPlane** - Evaluates guardrails and routes messages between PlanExecutors and TaskExecutors
+2. **ControlPlane** - Evaluates guardrails and routes full execution messages between PlanExecutors and TaskExecutors
 3. **TaskExecutor** - Executes individual tasks and publishes TaskExecution protobuf messages
 4. **PlanExecutor** - Executes planning logic and publishes PlanExecution protobuf messages
 
@@ -35,21 +35,21 @@ graph TB
     
     
     %% Service Connections
-    Kafka -- "topic task-control-{}" --> ControlPlane
-    Kafka -- "topic plan-control-{}" --> ControlPlane
-    ControlPlane -- "topic task-results-{}" --> Kafka
-    ControlPlane -- "topic plan-results-{}" --> Kafka
+    Kafka -- "topic persisted-task-executions-{}" --> ControlPlane
+    Kafka -- "topic persisted-plan-executions-{}" --> ControlPlane
+    ControlPlane -- "topic controlled-task-executions-{}" --> Kafka
+    ControlPlane -- "topic controlled-plan-executions-{}" --> Kafka
 
-    Kafka -- "topic task-results-{}" --> PlanExecutor
+    Kafka -- "topic controlled-task-executions-{}" --> PlanExecutor
     PlanExecutor -- "topic plan-executions-{}" --> Kafka
 
-    Kafka -- "topic plan-results-{}" --> TaskExecutor
+    Kafka -- "topic controlled-plan-executions-{}" --> TaskExecutor
     TaskExecutor -- "topic task-executions-{}" --> Kafka
 
     Kafka -- "topic plan-executions-{}" --> DataPlane
     Kafka -- "topic task-executions-{}" --> DataPlane
-    DataPlane -- "topic task-control-{}" --> Kafka
-    DataPlane -- "topic plan-control-{}" --> Kafka
+    DataPlane -- "topic persisted-task-executions-{}" --> Kafka
+    DataPlane -- "topic persisted-plan-executions-{}" --> Kafka
 
     DataPlane --> PostgreSQL
 ```
@@ -72,12 +72,12 @@ sequenceDiagram
     TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
     DP->>K: Consume TaskExecution (protobuf)
     DP->>DP: Persist to database
-    DP->>K: Republish TaskExecution (protobuf) → task-control-{tenantId}
+    DP->>K: Republish TaskExecution (protobuf) → persisted-task-executions-{tenantId}
     CP->>K: Consume TaskExecution (protobuf)
     CP->>CP: Evaluate guardrails
-    CP->>CP: Extract TaskResult from TaskExecution.result
-    CP->>K: Publish TaskResult (protobuf) → task-results-{tenantId}
-    PE->>K: Consume TaskResult (protobuf)
+    CP->>K: Publish TaskExecution (protobuf) → controlled-task-executions-{tenantId}
+    PE->>K: Consume TaskExecution (protobuf)
+    PE->>PE: Extract TaskResult from TaskExecution.result
     PE->>PE: Execute plan logic
     PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
 ```
@@ -97,12 +97,12 @@ sequenceDiagram
     PE->>K: PlanExecution (protobuf) → plan-executions-{tenantId}
     DP->>K: Consume PlanExecution (protobuf)
     DP->>DP: Persist to database
-    DP->>K: Republish PlanExecution (protobuf) → plan-control-{tenantId}
+    DP->>K: Republish PlanExecution (protobuf) → persisted-plan-executions-{tenantId}
     CP->>K: Consume PlanExecution (protobuf)
     CP->>CP: Evaluate guardrails
-    CP->>CP: Extract PlanResult from PlanExecution.result
-    CP->>K: Publish PlanResult (protobuf) → plan-results-{tenantId}
-    TE->>K: Consume PlanResult (protobuf)
+    CP->>K: Publish PlanExecution (protobuf) → controlled-plan-executions-{tenantId}
+    TE->>K: Consume PlanExecution (protobuf)
+    TE->>TE: Extract PlanResult from PlanExecution.result
     TE->>TE: Execute task logic
     TE->>K: TaskExecution (protobuf) → task-executions-{tenantId}
 ```
@@ -114,12 +114,12 @@ sequenceDiagram
 - `plan-executions-{tenantId}` - PlanExecutor publishes PlanExecution protobuf messages
 
 ### Control Topics
-- `task-control-{tenantId}` - DataPlane forwards TaskExecution protobuf messages to ControlPlane
-- `plan-control-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
+- `persisted-task-executions-{tenantId}` - DataPlane forwards TaskExecution protobuf messages to ControlPlane
+- `persisted-plan-executions-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
 
-### Result Topics
-- `task-results-{tenantId}` - ControlPlane publishes TaskResult protobuf messages for PlanExecutor
-- `plan-results-{tenantId}` - ControlPlane publishes PlanResult protobuf messages for TaskExecutor
+### Control Topics
+- `controlled-task-executions-{tenantId}` - ControlPlane publishes TaskExecution protobuf messages for PlanExecutor
+- `controlled-plan-executions-{tenantId}` - ControlPlane publishes PlanExecution protobuf messages for TaskExecutor
 
 ## Protobuf Message Structures
 
@@ -144,8 +144,7 @@ sequenceDiagram
 ### ControlPlane
 - Consumes TaskExecution and PlanExecution protobuf messages from data plane
 - Evaluates guardrails using protobuf message data
-- Extracts TaskResult from TaskExecution.result and PlanResult from PlanExecution.result
-- Publishes TaskResult and PlanResult protobuf messages to result topics
+- Publishes full TaskExecution and PlanExecution protobuf messages to controlled topics
 - Uses ProtobufUtils for serialization/deserialization
 - **Guardrails**: Enforces policies and constraints on agent behavior
 - **Routing**: Determines which tasks/plans should be executed
@@ -153,7 +152,8 @@ sequenceDiagram
 - **Request Validation**: Validates incoming requests against policies
 
 ### TaskExecutor
-- Consumes PlanResult protobuf messages from control plane
+- Consumes PlanExecution protobuf messages from control plane
+- Extracts PlanResult from PlanExecution.result for task execution
 - Executes tasks based on PlanResult.nextTaskIds
 - Publishes TaskExecution protobuf messages to data plane
 - Uses ProtobufUtils for serialization/deserialization
@@ -163,7 +163,8 @@ sequenceDiagram
 - **Task Handlers**: Executes different types of tasks (text generation, code execution, data processing)
 
 ### PlanExecutor
-- Consumes TaskResult protobuf messages from control plane
+- Consumes TaskExecution protobuf messages from control plane
+- Extracts TaskResult from TaskExecution.result for plan execution
 - Executes planning logic based on TaskResult data
 - Publishes PlanExecution protobuf messages to data plane
 - Uses ProtobufUtils for serialization/deserialization
@@ -186,10 +187,10 @@ sequenceDiagram
 
 - **task-executions-{tenantId}**: `TaskExecution` messages (including `TaskResult`) from Task Executor for the Data Plane
 - **plan-executions-{tenantId}**: `PlanExecution` messages (including `PlanResult`) from Plan Executor for the Data Plane
-- **task-control-{tenantId}**: Persisted `TaskExecution` messages from Data Plane to Control Plane
-- **plan-control-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
-- **task-results-{tenantId}**: `TaskResult` messages from Control Plane to the Plan Executor (**note the crossove**r)
-- **plan-results-{tenantId}**: `PlanResult` messages from Control Plane to the Task Executor (**note the crossover**)
+- **persisted-task-executions-{tenantId}**: Persisted `TaskExecution` messages from Data Plane to Control Plane
+- **persisted-plan-executions-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
+- **controlled-task-executions-{tenantId}**: `TaskExecution` messages from Control Plane to the Plan Executor (**note the crossover**)
+- **controlled-plan-executions-{tenantId}**: `PlanExecution` messages from Control Plane to the Task Executor (**note the crossover**)
 
 ## Key Implementation Details
 

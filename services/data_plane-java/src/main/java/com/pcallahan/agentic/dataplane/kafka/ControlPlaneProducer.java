@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Kafka producer service for publishing protobuf messages to control plane topics.
- * Sends TaskExecution and PlanExecution protobuf messages to task-control-{tenantId} and plan-control-{tenantId} topics.
+ * Sends TaskExecution and PlanExecution protobuf messages to persisted-task-executions-{tenantId} and persisted-plan-executions-{tenantId} topics.
  */
 @Service
 public class ControlPlaneProducer {
@@ -31,7 +31,7 @@ public class ControlPlaneProducer {
     }
     
     /**
-     * Publish a TaskExecution protobuf message to the task-control topic.
+     * Publish a TaskExecution protobuf message to the persisted-task-executions topic.
      * 
      * @param tenantId the tenant identifier
      * @param taskExecution the TaskExecution protobuf message to publish
@@ -41,7 +41,7 @@ public class ControlPlaneProducer {
             String tenantId, TaskExecution taskExecution) {
         
         try {
-            String topic = TopicNames.taskControl(tenantId);
+            String topic = TopicNames.persistedTaskExecutions(tenantId);
             String executionId = taskExecution.getHeader().getId();
             
             byte[] message = ProtobufUtils.serializeTaskExecution(taskExecution);
@@ -64,7 +64,7 @@ public class ControlPlaneProducer {
     }
     
     /**
-     * Publish a PlanExecution protobuf message to the plan-control topic.
+     * Publish a PlanExecution protobuf message to the persisted-plan-executions topic.
      * 
      * @param tenantId the tenant identifier
      * @param planExecution the PlanExecution protobuf message to publish
@@ -74,7 +74,7 @@ public class ControlPlaneProducer {
             String tenantId, PlanExecution planExecution) {
         
         try {
-            String topic = TopicNames.planControl(tenantId);
+            String topic = TopicNames.persistedPlanExecutions(tenantId);
             String executionId = planExecution.getHeader().getId();
             
             byte[] message = ProtobufUtils.serializePlanExecution(planExecution);

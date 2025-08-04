@@ -12,8 +12,14 @@ from typing import Any, Dict, Optional
 from aiokafka import AIOKafkaProducer
 from structlog import get_logger
 
-from agentic_common.kafka_utils import create_kafka_producer
+from agentic_common.kafka_utils import (
+    create_kafka_producer,
+    get_controlled_task_executions_topic,
+    get_controlled_plan_executions_topic,
+)
 from agentic_common.logging_config import log_kafka_message
+from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common import ProtobufUtils
 
 logger = get_logger(__name__)
 
@@ -51,39 +57,31 @@ class ControlPlaneProducer:
             await self.producer.close()
             logger.info("Control plane producer stopped")
     
-    async def publish_task_result(
+    async def publish_task_execution(
         self,
         tenant_id: str,
-        task_result: Dict[str, Any],
+        task_execution: TaskExecution,
         **kwargs
     ) -> None:
         """
-        Publish TaskResult to plan-results topic.
+        Publish TaskExecution to controlled-task-executions topic.
         
         Args:
             tenant_id: Tenant identifier
-            task_result: TaskResult data
+            task_execution: TaskExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"plan-results_{tenant_id}"
+            topic = get_controlled_task_executions_topic(tenant_id)
             
-            # Add metadata to message
-            message = {
-                **task_result,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = task_result.get("execution_id", "unknown")
+            execution_id = task_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -101,50 +99,42 @@ class ControlPlaneProducer:
                 execution_id=execution_id,
             )
             
-            logger.info("TaskResult published to plan-results", 
+            logger.info("TaskExecution published to controlled-task-executions", 
                        execution_id=execution_id,
                        tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish TaskResult", 
-                        task_result=task_result,
+            logger.error("Failed to publish TaskExecution", 
+                        task_execution=task_execution,
                         tenant_id=tenant_id,
                         error=str(e))
             raise
     
-    async def publish_plan_result(
+    async def publish_plan_execution(
         self,
         tenant_id: str,
-        plan_result: Dict[str, Any],
+        plan_execution: PlanExecution,
         **kwargs
     ) -> None:
         """
-        Publish PlanResult to task-results topic.
+        Publish PlanExecution to controlled-plan-executions topic.
         
         Args:
             tenant_id: Tenant identifier
-            plan_result: PlanResult data
+            plan_execution: PlanExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"task-results_{tenant_id}"
+            topic = get_controlled_plan_executions_topic(tenant_id)
             
-            # Add metadata to message
-            message = {
-                **plan_result,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = plan_result.get("execution_id", "unknown")
+            execution_id = plan_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -162,13 +152,13 @@ class ControlPlaneProducer:
                 execution_id=execution_id,
             )
             
-            logger.info("PlanResult published to task-results", 
+            logger.info("PlanExecution published to controlled-plan-executions", 
                        execution_id=execution_id,
                        tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish PlanResult", 
-                        plan_result=plan_result,
+            logger.error("Failed to publish PlanExecution", 
+                        plan_execution=plan_execution,
                         tenant_id=tenant_id,
                         error=str(e))
             raise
@@ -190,9 +180,9 @@ class ControlPlaneProducer:
         execution_type = execution_data.get("type")
         
         if execution_type == "task":
-            await self.publish_task_result(tenant_id, execution_data, **kwargs)
+            await self.publish_task_execution(tenant_id, execution_data, **kwargs)
         elif execution_type == "plan":
-            await self.publish_plan_result(tenant_id, execution_data, **kwargs)
+            await self.publish_plan_execution(tenant_id, execution_data, **kwargs)
         else:
             logger.warning("Unknown execution type for publishing", 
                           execution_type=execution_type,

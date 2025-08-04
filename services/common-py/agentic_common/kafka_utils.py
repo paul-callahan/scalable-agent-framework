@@ -17,29 +17,45 @@ def get_task_execution_topic(tenant_id: str) -> str:
     return f"task-executions_{tenant_id}"
 
 
-def get_task_results_topic(tenant_id: str) -> str:
-    """Get the task results topic name for a tenant."""
-    return f"task-results_{tenant_id}"
+def get_controlled_task_executions_topic(tenant_id: str) -> str:
+    """Get the controlled task executions topic name for a tenant."""
+    return f"controlled-task-executions-{tenant_id}"
 
 
 def get_plan_execution_topic(tenant_id: str) -> str:
     """Get the plan execution topic name for a tenant."""
-    return f"tenant_tenant_plan-executions_{tenant_id}"
+    return f"plan-executions_{tenant_id}"
+
+
+def get_controlled_plan_executions_topic(tenant_id: str) -> str:
+    """Get the controlled plan executions topic name for a tenant."""
+    return f"controlled-plan-executions-{tenant_id}"
+
+
+def get_persisted_task_executions_topic(tenant_id: str) -> str:
+    """Get the persisted task executions topic name for a tenant."""
+    return f"persisted-task-executions_{tenant_id}"
+
+
+def get_persisted_plan_executions_topic(tenant_id: str) -> str:
+    """Get the persisted plan executions topic name for a tenant."""
+    return f"persisted-plan-executions_{tenant_id}"
+
+
+def get_task_results_topic(tenant_id: str) -> str:
+    """Get the task results topic name for a tenant.
+    
+    @deprecated Use get_controlled_task_executions_topic instead
+    """
+    return f"task-results_{tenant_id}"
 
 
 def get_plan_results_topic(tenant_id: str) -> str:
-    """Get the plan results topic name for a tenant."""
-    return f"tenant_tenant_plan-results_{tenant_id}"
-
-
-def get_task_control_topic(tenant_id: str) -> str:
-    """Get the task control topic name for a tenant."""
-    return f"task-control_{tenant_id}"
-
-
-def get_plan_control_topic(tenant_id: str) -> str:
-    """Get the plan control topic name for a tenant."""
-    return f"tenant_tenant_plan-control_{tenant_id}"
+    """Get the plan results topic name for a tenant.
+    
+    @deprecated Use get_controlled_plan_executions_topic instead
+    """
+    return f"plan-results_{tenant_id}"
 
 
 async def create_kafka_producer(

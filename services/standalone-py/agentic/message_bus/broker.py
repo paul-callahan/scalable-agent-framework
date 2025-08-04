@@ -94,7 +94,7 @@ class InMemoryBroker:
         Subscribe to messages from a topic.
         
         Args:
-            topic: Topic name (supports wildcards like 'task-control_*')
+            topic: Topic name (supports wildcards like 'persisted-task-executions_*')
             
         Yields:
             Serialized protobuf message bytes

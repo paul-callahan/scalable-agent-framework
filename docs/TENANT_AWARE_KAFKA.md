@@ -20,10 +20,10 @@ All topics follow the pattern: `{message-type}-{tenant-id}`
 **Supported Topic Types:**
 - `task-executions-{tenantId}` - Task execution messages
 - `plan-executions-{tenantId}` - Plan execution messages  
-- `task-control-{tenantId}` - Task control messages
-- `plan-control-{tenantId}` - Plan control messages
-- `task-results-{tenantId}` - Task result messages
-- `plan-results-{tenantId}` - Plan result messages
+- `persisted-task-executions-{tenantId}` - Persisted task execution messages
+- `persisted-plan-executions-{tenantId}` - Persisted plan execution messages
+- `controlled-task-executions-{tenantId}` - Controlled task execution messages
+- `controlled-plan-executions-{tenantId}` - Controlled plan execution messages
 - `task-executions-dlq-{tenantId}` - Task execution dead letter queue
 - `plan-executions-dlq-{tenantId}` - Plan execution dead letter queue
 
@@ -36,10 +36,10 @@ kafka:
   topic-patterns:
     task-executions: "task-executions-.*"
     plan-executions: "plan-executions-.*"
-    task-control: "task-control-.*"
-    plan-control: "plan-control-.*"
-    task-results: "task-results-.*"
-    plan-results: "plan-results-.*"
+    persisted-task-executions: "persisted-task-executions-.*"
+    persisted-plan-executions: "persisted-plan-executions-.*"
+    controlled-task-executions: "controlled-task-executions-.*"
+    controlled-plan-executions: "controlled-plan-executions-.*"
     task-executions-dlq: "task-executions-dlq-.*"
     plan-executions-dlq: "plan-executions-dlq-.*"
 ```
@@ -118,8 +118,8 @@ kafka:
 #### Usage in Listeners:
 ```java
 @KafkaListener(
-    topics = "#{@kafkaTopicPatterns.taskControlPattern}",
-    groupId = "control-plane-task-control",
+    topics = "#{@kafkaTopicPatterns.persistedTaskExecutionsPattern}",
+    groupId = "control-plane-persisted-task-executions",
     containerFactory = "tenantAwareKafkaListenerContainerFactory"
 )
 public void handleTaskExecution(String message, 

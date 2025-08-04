@@ -225,7 +225,7 @@ class DataPlaneService:
             }
             
             # Serialize and publish to control queue
-            control_topic = f"task-control_{tenant_id}"
+            control_topic = f"persisted-task-executions_{tenant_id}"
             reference_bytes = json.dumps(reference_message).encode('utf-8')
             await self.broker.publish(control_topic, reference_bytes)
             
@@ -266,7 +266,7 @@ class DataPlaneService:
             }
             
             # Serialize and publish to control queue
-            control_topic = f"plan-control_{tenant_id}"
+            control_topic = f"persisted-plan-executions_{tenant_id}"
             reference_bytes = json.dumps(reference_message).encode('utf-8')
             await self.broker.publish(control_topic, reference_bytes)
             
