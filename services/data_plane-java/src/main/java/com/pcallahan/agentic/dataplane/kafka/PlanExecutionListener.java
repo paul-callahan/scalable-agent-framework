@@ -81,15 +81,15 @@ public class PlanExecutionListener {
             boolean success = persistenceService.processPlanExecution(planExecution, tenantId);
             
             if (success) {
-                logger.debug("Successfully processed PlanExecution {} for tenant {}", 
-                    planExecution.getHeader().getId(), tenantId);
+                logger.debug("Successfully processed PlanExecution {}/{} for tenant {}", 
+                    planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
                 
                 // Publish PlanExecution protobuf message to control plane
                 controlPlaneProducer.publishPlanExecution(tenantId, planExecution);
                     
             } else {
-                logger.error("Failed to process PlanExecution {} for tenant {}", 
-                    planExecution.getHeader().getId(), tenantId);
+                logger.error("Failed to process PlanExecution {}/{} for tenant {}", 
+                    planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             }
             
             // Acknowledge the message

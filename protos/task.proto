@@ -34,9 +34,15 @@ message TaskExecution {
   // Common execution metadata
   agentic.common.ExecutionHeader header = 1;
   
+  // Execution ID of the parent/upstream PlanExecution.exec_id
+  string parent_plan_exec_id = 2;
+  
   // Task-specific result data
-  TaskResult result = 2;
+  TaskResult result = 3;
   
   // Task type identifier for routing and processing
-  string task_type = 3;
+  string task_type = 4;
+  
+  // Name from the parent/upstream PlanExecution.header.name
+  string parent_plan_name = 5;
 }

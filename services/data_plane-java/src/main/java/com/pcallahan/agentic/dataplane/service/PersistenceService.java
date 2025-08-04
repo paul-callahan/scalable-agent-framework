@@ -59,7 +59,7 @@ public class PersistenceService {
     @Transactional
     public boolean processTaskExecution(TaskExecution taskExecution, String tenantId) {
         try {
-            logger.debug("Processing TaskExecution {} for tenant {}", taskExecution.getHeader().getId(), tenantId);
+            logger.debug("Processing TaskExecution {}/{} for tenant {}", taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             
             // Extract TaskResult and save it separately
             TaskResultEntity savedTaskResult = null;
@@ -75,14 +75,15 @@ public class PersistenceService {
             
             // Save to database
             TaskExecutionEntity savedEntity = taskExecutionRepository.save(entity);
-            logger.debug("Saved TaskExecution {} to database", savedEntity.getId());
+            logger.debug("Saved TaskExecution {}/{} to database", savedEntity.getName(), savedEntity.getExecId());
             
-            logger.info("Successfully processed TaskExecution {} for tenant {}", taskExecution.getHeader().getId(), tenantId);
+            logger.info("Successfully processed TaskExecution {}/{} for tenant {}", taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             return true;
             
         } catch (Exception e) {
-            logger.error("Failed to process TaskExecution {} for tenant {}: {}", 
-                taskExecution.getHeader().getId(), tenantId, e.getMessage(), e);
+            logger.error("Failed to process TaskExecution {}/{}  for tenant {}: {}",
+                taskExecution.getHeader().getName(), 
+                taskExecution.getHeader().getExecId(), tenantId, e.getMessage(), e);
             return false;
         }
     }
@@ -97,21 +98,22 @@ public class PersistenceService {
     @Transactional
     public boolean processPlanExecution(PlanExecution planExecution, String tenantId) {
         try {
-            logger.debug("Processing PlanExecution {} for tenant {}", planExecution.getHeader().getId(), tenantId);
+            logger.debug("Processing PlanExecution {}/{} for tenant {}", planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             
             // Convert protobuf to JPA entity
             PlanExecutionEntity entity = convertToPlanExecutionEntity(planExecution, tenantId);
             
             // Save to database
             PlanExecutionEntity savedEntity = planExecutionRepository.save(entity);
-            logger.debug("Saved PlanExecution {} to database", savedEntity.getId());
+            logger.debug("Saved PlanExecution {}/{} to database", savedEntity.getName(), savedEntity.getExecId());
             
-            logger.info("Successfully processed PlanExecution {} for tenant {}", planExecution.getHeader().getId(), tenantId);
+            logger.info("Successfully processed PlanExecution {}/{} for tenant {}", planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             return true;
             
         } catch (Exception e) {
-            logger.error("Failed to process PlanExecution {} for tenant {}: {}", 
-                planExecution.getHeader().getId(), tenantId, e.getMessage(), e);
+            logger.error("Failed to process PlanExecution {}/{} for tenant {}: {}",
+                planExecution.getHeader().getName(),
+                planExecution.getHeader().getExecId(), tenantId, e.getMessage(), e);
             return false;
         }
     }
@@ -129,7 +131,8 @@ public class PersistenceService {
         
         // Set basic fields from header
         var header = taskExecution.getHeader();
-        entity.setId(header.getId());
+        entity.setExecId(header.getExecId());  
+        entity.setName(header.getName());
         entity.setParentId(header.getParentId());
         entity.setGraphId(header.getGraphId());
         entity.setLifetimeId(header.getLifetimeId());
@@ -148,6 +151,10 @@ public class PersistenceService {
             entity.setTaskResultId(savedTaskResult.getId());
         }
         
+        // Set parent relationship fields
+        entity.setParentPlanExecId(taskExecution.getParentPlanExecId());
+        entity.setParentPlanName(taskExecution.getParentPlanName());
+        
         return entity;
     }
     
@@ -163,7 +170,8 @@ public class PersistenceService {
         
         // Set basic fields from header
         var header = planExecution.getHeader();
-        entity.setId(header.getId());
+        entity.setExecId(header.getExecId());
+        entity.setName(header.getName());
         entity.setParentId(header.getParentId());
         entity.setGraphId(header.getGraphId());
         entity.setLifetimeId(header.getLifetimeId());
@@ -177,6 +185,9 @@ public class PersistenceService {
         // Set plan-specific fields
         entity.setPlanType(planExecution.getPlanType());
         entity.setInputTaskId(planExecution.getInputTaskId());
+        
+        // Set parent relationship fields
+        entity.setParentTaskNames(planExecution.getParentTaskNamesList());
         
         // Set result fields
         if (planExecution.hasResult()) {

@@ -42,16 +42,16 @@ public class ControlPlaneProducer {
         
         try {
             String topic = TopicNames.persistedTaskExecutions(tenantId);
-            String executionId = taskExecution.getHeader().getId();
+            String messageKey = taskExecution.getHeader().getName();
             
             byte[] message = ProtobufUtils.serializeTaskExecution(taskExecution);
             if (message == null) {
                 throw new RuntimeException("Failed to serialize TaskExecution");
             }
             
-            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, executionId);
+            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, messageKey);
             
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, executionId, message);
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
@@ -75,16 +75,16 @@ public class ControlPlaneProducer {
         
         try {
             String topic = TopicNames.persistedPlanExecutions(tenantId);
-            String executionId = planExecution.getHeader().getId();
+            String messageKey = planExecution.getHeader().getName();
             
             byte[] message = ProtobufUtils.serializePlanExecution(planExecution);
             if (message == null) {
                 throw new RuntimeException("Failed to serialize PlanExecution");
             }
             
-            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, executionId);
+            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, messageKey);
             
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, executionId, message);
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {

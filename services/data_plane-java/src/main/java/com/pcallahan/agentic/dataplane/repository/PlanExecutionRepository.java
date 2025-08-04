@@ -216,4 +216,13 @@ public interface PlanExecutionRepository extends JpaRepository<PlanExecutionEnti
      */
     @Query("SELECT p FROM PlanExecutionEntity p WHERE p.tenantId = :tenantId AND p.confidence >= :minConfidence")
     Page<PlanExecutionEntity> findByTenantIdAndConfidenceGreaterThanEqual(@Param("tenantId") String tenantId, @Param("minConfidence") Double minConfidence, Pageable pageable);
+    
+    /**
+     * Find plan execution by tenant and execution ID.
+     * 
+     * @param tenantId the tenant identifier
+     * @param execId the execution identifier
+     * @return optional containing the plan execution
+     */
+    Optional<PlanExecutionEntity> findByTenantIdAndExecId(String tenantId, String execId);
 } 

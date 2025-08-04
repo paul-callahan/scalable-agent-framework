@@ -49,7 +49,7 @@ public class TaskExecutionProducer {
                 return future;
             }
             
-            String messageKey = taskExecution.getHeader().getId();
+            String messageKey = taskExecution.getHeader().getName();
             
             logger.debug("Publishing TaskExecution to topic {}: {}", topic, messageKey);
             
