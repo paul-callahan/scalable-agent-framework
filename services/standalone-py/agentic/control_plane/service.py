@@ -6,7 +6,6 @@ evaluates guardrails, and routes approved executions to result queues.
 """
 
 import asyncio
-import json
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -188,34 +187,62 @@ class ControlPlaneService:
         execution_type = request_data.get('execution_type', '')
         
         if not guardrail_result['allowed']:
-            # Publish rejection message
-            rejection_message = {
-                'execution_id': request_data.get('execution_id', ''),
-                'tenant_id': tenant_id,
-                'execution_type': execution_type,
-                'status': 'rejected',
-                'reason': '; '.join(guardrail_result['violations']),
-                'timestamp': datetime.utcnow().isoformat()
-            }
+            # Create rejection protobuf message
+            rejection_header = common_pb2.ExecutionHeader(
+                id=request_data.get('execution_id', ''),
+                tenant_id=tenant_id,
+                timestamp=datetime.utcnow().isoformat()
+            )
+            
+            if execution_type == 'task':
+                rejection_result = task_pb2.TaskResult(
+                    id=request_data.get('execution_id', ''),
+                    error_message='; '.join(guardrail_result['violations'])
+                )
+                rejection_message = task_pb2.TaskExecution(
+                    header=rejection_header,
+                    result=rejection_result
+                )
+            else:  # plan
+                rejection_result = plan_pb2.PlanResult(
+                    error_message='; '.join(guardrail_result['violations'])
+                )
+                rejection_message = plan_pb2.PlanExecution(
+                    header=rejection_header,
+                    result=rejection_result
+                )
             
             result_topic = f"{execution_type}-results_{tenant_id}"
-            rejection_bytes = json.dumps(rejection_message).encode('utf-8')
+            rejection_bytes = rejection_message.SerializeToString()
             await self.broker.publish(result_topic, rejection_bytes)
             
-            self.logger.warning(f"Execution rejected: {rejection_message['reason']}")
+            self.logger.warning(f"Execution rejected: {rejection_result.error_message}")
             return
         
-        # Publish approval message
-        approval_message = {
-            'execution_id': request_data.get('execution_id', ''),
-            'tenant_id': tenant_id,
-            'execution_type': execution_type,
-            'status': 'approved',
-            'timestamp': datetime.utcnow().isoformat()
-        }
+        # Create approval protobuf message
+        approval_header = common_pb2.ExecutionHeader(
+            id=request_data.get('execution_id', ''),
+            tenant_id=tenant_id,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+        if execution_type == 'task':
+            approval_result = task_pb2.TaskResult(
+                id=request_data.get('execution_id', '')
+            )
+            approval_message = task_pb2.TaskExecution(
+                header=approval_header,
+                result=approval_result
+            )
+        else:  # plan
+            approval_result = plan_pb2.PlanResult()
+            approval_message = plan_pb2.PlanExecution(
+                header=approval_header,
+                result=approval_result
+            )
         
         result_topic = f"{execution_type}-results_{tenant_id}"
-        approval_bytes = json.dumps(approval_message).encode('utf-8')
+        approval_bytes = approval_message.SerializeToString()
         await self.broker.publish(result_topic, approval_bytes)
         
         self.logger.debug(f"Execution approved: {request_data.get('execution_id', '')}")
@@ -225,12 +252,20 @@ class ControlPlaneService:
         Process a task control message from the queue.
         
         Args:
-            message_bytes: Serialized control message bytes
+            message_bytes: Serialized protobuf message bytes
             tenant_id: Tenant identifier
         """
         try:
-            # Deserialize the message
-            request_data = json.loads(message_bytes.decode('utf-8'))
+            # Deserialize the protobuf message
+            task_execution = task_pb2.TaskExecution.FromString(message_bytes)
+            
+            # Convert to request_data format for guardrail evaluation
+            request_data = {
+                'execution_id': task_execution.header.id,
+                'tenant_id': task_execution.header.tenant_id,
+                'execution_type': 'task',
+                'task_type': task_execution.task_type
+            }
             
             self.logger.debug(f"Processing task control message: {request_data.get('execution_id', '')}")
             
@@ -253,12 +288,20 @@ class ControlPlaneService:
         Process a persisted plan executions message from the queue.
         
         Args:
-            message_bytes: Serialized control message bytes
+            message_bytes: Serialized protobuf message bytes
             tenant_id: Tenant identifier
         """
         try:
-            # Deserialize the message
-            request_data = json.loads(message_bytes.decode('utf-8'))
+            # Deserialize the protobuf message
+            plan_execution = plan_pb2.PlanExecution.FromString(message_bytes)
+            
+            # Convert to request_data format for guardrail evaluation
+            request_data = {
+                'execution_id': plan_execution.header.id,
+                'tenant_id': plan_execution.header.tenant_id,
+                'execution_type': 'plan',
+                'plan_type': plan_execution.plan_type
+            }
             
             self.logger.debug(f"Processing persisted plan executions message: {request_data.get('execution_id', '')}")
             

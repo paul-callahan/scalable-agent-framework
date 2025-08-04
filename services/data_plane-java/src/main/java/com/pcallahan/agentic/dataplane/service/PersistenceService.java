@@ -1,6 +1,7 @@
 package com.pcallahan.agentic.dataplane.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.dataplane.entity.PlanExecutionEntity;
 import com.pcallahan.agentic.dataplane.entity.TaskExecutionEntity;
@@ -141,7 +142,6 @@ public class PersistenceService {
         
         // Set task-specific fields
         entity.setTaskType(taskExecution.getTaskType());
-        entity.setParameters(convertParameters(taskExecution.getParameters()));
         
         // Set task result ID using the saved entity's ID
         if (savedTaskResult != null) {
@@ -177,7 +177,6 @@ public class PersistenceService {
         // Set plan-specific fields
         entity.setPlanType(planExecution.getPlanType());
         entity.setInputTaskId(planExecution.getInputTaskId());
-        entity.setParameters(convertParameters(planExecution.getParameters()));
         
         // Set result fields
         if (planExecution.hasResult()) {
@@ -229,24 +228,6 @@ public class PersistenceService {
             case EXECUTION_STATUS_FAILED -> PlanExecutionEntity.ExecutionStatus.EXECUTION_STATUS_FAILED;
             default -> PlanExecutionEntity.ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
         };
-    }
-    
-    /**
-     * Convert protobuf parameters to Map.
-     * 
-     * @param parameters the protobuf parameters string
-     * @return the parameters map
-     */
-    private Map<String, Object> convertParameters(String parameters) {
-        try {
-            if (parameters == null || parameters.isEmpty()) {
-                return new HashMap<>();
-            }
-            return objectMapper.readValue(parameters, Map.class);
-        } catch (Exception e) {
-            logger.warn("Failed to parse parameters JSON: {}", parameters, e);
-            return new HashMap<>();
-        }
     }
     
     /**

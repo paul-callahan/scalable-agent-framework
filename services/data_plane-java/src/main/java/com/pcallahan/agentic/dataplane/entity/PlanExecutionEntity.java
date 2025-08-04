@@ -62,10 +62,6 @@ public class PlanExecutionEntity {
     @Column(name = "input_task_id", length = 36)
     private String inputTaskId;
     
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "parameters", columnDefinition = "jsonb")
-    private Map<String, Object> parameters;
-    
     // Result fields
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "result_next_task_ids", columnDefinition = "jsonb")
@@ -202,14 +198,6 @@ public class PlanExecutionEntity {
     
     public void setInputTaskId(String inputTaskId) {
         this.inputTaskId = inputTaskId;
-    }
-    
-    public Map<String, Object> getParameters() {
-        return parameters;
-    }
-    
-    public void setParameters(Map<String, Object> parameters) {
-        this.parameters = parameters;
     }
     
     public List<String> getResultNextTaskIds() {

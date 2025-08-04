@@ -58,10 +58,6 @@ public class TaskExecutionEntity {
     @Column(name = "task_type", length = 100, nullable = false)
     private String taskType;
     
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "parameters", columnDefinition = "jsonb")
-    private Map<String, Object> parameters;
-    
     // Foreign key to TaskResult
     @Column(name = "task_result_id", length = 36)
     private String taskResultId;
@@ -174,14 +170,6 @@ public class TaskExecutionEntity {
     
     public void setTaskType(String taskType) {
         this.taskType = taskType;
-    }
-    
-    public Map<String, Object> getParameters() {
-        return parameters;
-    }
-    
-    public void setParameters(Map<String, Object> parameters) {
-        this.parameters = parameters;
     }
     
     public String getTaskResultId() {

@@ -15,6 +15,7 @@ from typing import Optional
 from ..message_bus import InMemoryBroker
 from ..pb import task_pb2, plan_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
+from agentic_common import ProtobufUtils
 
 
 class DataPlaneService:
@@ -60,7 +61,6 @@ class DataPlaneService:
                     graph_id TEXT,
                     lifetime_id TEXT,
                     task_type TEXT NOT NULL,
-                    parameters TEXT,
                     result_data BLOB,
                     result_mime_type TEXT,
                     result_size_bytes INTEGER,
@@ -78,7 +78,6 @@ class DataPlaneService:
                     graph_id TEXT,
                     lifetime_id TEXT,
                     plan_type TEXT NOT NULL,
-                    parameters TEXT,
                     input_task_id TEXT,
                     next_task_ids TEXT,
                     metadata TEXT,
@@ -123,17 +122,16 @@ class DataPlaneService:
                 
                 conn.execute("""
                     INSERT OR REPLACE INTO task_executions (
-                        id, tenant_id, graph_id, lifetime_id, task_type, parameters,
+                        id, tenant_id, graph_id, lifetime_id, task_type,
                         result_data, result_mime_type, result_size_bytes, result_error_message,
                         status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     task_execution.header.id,
                     task_execution.header.tenant_id,
                     task_execution.header.graph_id,
                     task_execution.header.lifetime_id,
                     task_execution.task_type,
-                    task_execution.parameters,
                     result_data,
                     result_mime_type,
                     result_size_bytes,
@@ -160,25 +158,23 @@ class DataPlaneService:
         """
         try:
             with sqlite3.connect(self.db_path) as conn:
-                # Serialize next_task_ids as JSON
-                next_task_ids_json = json.dumps(list(plan_execution.result.next_task_ids))
-                
-                # Serialize metadata as JSON
-                metadata_json = json.dumps(dict(plan_execution.result.metadata))
+                # Extract plan result data using consistent utilities
+                plan_result_data = ProtobufUtils.extract_plan_result_data(plan_execution.result)
+                next_task_ids_json = json.dumps(plan_result_data["next_task_ids"])
+                metadata_json = json.dumps(plan_result_data["metadata"])
                 
                 conn.execute("""
                     INSERT OR REPLACE INTO plan_executions (
-                        id, tenant_id, graph_id, lifetime_id, plan_type, parameters,
+                        id, tenant_id, graph_id, lifetime_id, plan_type,
                         input_task_id, next_task_ids, metadata, error_message, confidence,
                         status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     plan_execution.header.id,
                     plan_execution.header.tenant_id,
                     plan_execution.header.graph_id,
                     plan_execution.header.lifetime_id,
                     plan_execution.plan_type,
-                    plan_execution.parameters,
                     plan_execution.input_task_id,
                     next_task_ids_json,
                     metadata_json,
@@ -215,19 +211,9 @@ class DataPlaneService:
             # Store to database
             await self._store_task_execution(task_execution)
             
-            # Create lightweight reference message for control plane
-            reference_message = {
-                "execution_id": task_execution.header.id,
-                "tenant_id": task_execution.header.tenant_id,
-                "execution_type": "task",
-                "status": common_pb2.ExecutionStatus.Name(task_execution.header.status),
-                "task_type": task_execution.task_type
-            }
-            
-            # Serialize and publish to control queue
+            # Publish full protobuf message to control queue
             control_topic = f"persisted-task-executions_{tenant_id}"
-            reference_bytes = json.dumps(reference_message).encode('utf-8')
-            await self.broker.publish(control_topic, reference_bytes)
+            await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
             self.logger.debug(f"Forwarded task execution to control plane: {task_execution.header.id}")
@@ -255,20 +241,9 @@ class DataPlaneService:
             # Store to database
             await self._store_plan_execution(plan_execution)
             
-            # Create lightweight reference message for control plane
-            reference_message = {
-                "execution_id": plan_execution.header.id,
-                "tenant_id": plan_execution.header.tenant_id,
-                "execution_type": "plan",
-                "status": common_pb2.ExecutionStatus.Name(plan_execution.header.status),
-                "plan_type": plan_execution.plan_type,
-                "input_task_id": plan_execution.input_task_id
-            }
-            
-            # Serialize and publish to control queue
+            # Publish full protobuf message to control queue
             control_topic = f"persisted-plan-executions_{tenant_id}"
-            reference_bytes = json.dumps(reference_message).encode('utf-8')
-            await self.broker.publish(control_topic, reference_bytes)
+            await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
             self.logger.debug(f"Forwarded plan execution to control plane: {plan_execution.header.id}")

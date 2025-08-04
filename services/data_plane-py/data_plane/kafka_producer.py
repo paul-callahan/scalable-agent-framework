@@ -6,8 +6,10 @@ to control plane topics using aiokafka==0.11.0 with proper error handling
 and retry logic.
 """
 
-import json
 from typing import Optional
+
+from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common import ProtobufUtils
 
 from aiokafka import AIOKafkaProducer
 from structlog import get_logger
@@ -51,22 +53,18 @@ class DataPlaneProducer:
             await self.producer.close()
             logger.info("Data plane producer stopped")
     
-    async def publish_task_control_reference(
+    async def publish_task_execution(
         self,
         tenant_id: str,
-        execution_id: str,
-        task_type: str,
-        status: str,
+        task_execution: TaskExecution,
         **kwargs
     ) -> None:
         """
-        Publish task control reference to control plane.
+        Publish TaskExecution protobuf to control plane.
         
         Args:
             tenant_id: Tenant identifier
-            execution_id: Task execution ID
-            task_type: Type of task
-            status: Execution status
+            task_execution: TaskExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
@@ -75,20 +73,11 @@ class DataPlaneProducer:
         try:
             topic = f"persisted-task-executions_{tenant_id}"
             
-            # Create lightweight reference message
-            message = {
-                "execution_id": execution_id,
-                "task_type": task_type,
-                "status": status,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
             
             # Send message with execution_id as key for ordering
+            execution_id = task_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -106,34 +95,29 @@ class DataPlaneProducer:
                 execution_id=execution_id,
             )
             
-            logger.info("Task control reference published", 
+            logger.info("TaskExecution published to persisted-task-executions", 
                        execution_id=execution_id,
-                       tenant_id=tenant_id,
-                       task_type=task_type)
+                       tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish task control reference", 
-                        execution_id=execution_id,
+            logger.error("Failed to publish TaskExecution", 
+                        task_execution=task_execution,
                         tenant_id=tenant_id,
                         error=str(e))
             raise
     
-    async def publish_persisted_plan_executions_reference(
+    async def publish_plan_execution(
         self,
         tenant_id: str,
-        execution_id: str,
-        plan_type: str,
-        status: str,
+        plan_execution: PlanExecution,
         **kwargs
     ) -> None:
         """
-        Publish persisted plan executions reference to control plane.
+        Publish PlanExecution protobuf to control plane.
         
         Args:
             tenant_id: Tenant identifier
-            execution_id: Plan execution ID
-            plan_type: Type of plan
-            status: Execution status
+            plan_execution: PlanExecution protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
@@ -142,20 +126,11 @@ class DataPlaneProducer:
         try:
             topic = f"persisted-plan-executions_{tenant_id}"
             
-            # Create lightweight reference message
-            message = {
-                "execution_id": execution_id,
-                "plan_type": plan_type,
-                "status": status,
-                "tenant_id": tenant_id,
-                "timestamp": self._get_current_timestamp(),
-                **kwargs
-            }
-            
-            # Serialize message
-            message_bytes = json.dumps(message).encode('utf-8')
+            # Serialize protobuf message using consistent utilities
+            message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
             
             # Send message with execution_id as key for ordering
+            execution_id = plan_execution.header.id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -173,14 +148,13 @@ class DataPlaneProducer:
                 execution_id=execution_id,
             )
             
-            logger.info("Persisted plan executions reference published", 
+            logger.info("PlanExecution published to persisted-plan-executions", 
                        execution_id=execution_id,
-                       tenant_id=tenant_id,
-                       plan_type=plan_type)
+                       tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish persisted plan executions reference", 
-                        execution_id=execution_id,
+            logger.error("Failed to publish PlanExecution", 
+                        plan_execution=plan_execution,
                         tenant_id=tenant_id,
                         error=str(e))
             raise

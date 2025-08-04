@@ -28,6 +28,7 @@ dependencies = [
     "structlog==24.1.0",
     "click==8.1.7",
     "aiohttp==3.9.5",
+    "../common-py",
 ]
 
 [project.optional-dependencies]
