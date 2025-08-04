@@ -40,6 +40,7 @@
         <module>services/control_plane-java</module>
         <module>services/task_executor-java</module>
         <module>services/plan_executor-java</module>
+        <module>services/graph_builder-java</module>
     </modules>
     
     <dependencyManagement>
