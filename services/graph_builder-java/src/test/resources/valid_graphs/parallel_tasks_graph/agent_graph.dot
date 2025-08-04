@@ -1,0 +1,24 @@
+digraph ParallelTasksGraph {
+    // Graph attributes
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    // Plan nodes
+    plan_data_collection [label="Data Collection Plan", type="plan"];
+    plan_parallel_processing [label="Parallel Processing Plan", type="plan"];
+    plan_aggregation [label="Aggregation Plan", type="plan"];
+    
+    // Task nodes
+    task_fetch_user_data [label="Fetch User Data", type="task"];
+    task_fetch_product_data [label="Fetch Product Data", type="task"];
+    task_process_user_data [label="Process User Data", type="task"];
+    task_process_product_data [label="Process Product Data", type="task"];
+    task_aggregate_results [label="Aggregate Results", type="task"];
+    
+    // Edges
+    plan_data_collection -> task_fetch_user_data;
+    plan_data_collection -> task_fetch_product_data;
+    plan_parallel_processing -> task_process_user_data;
+    plan_parallel_processing -> task_process_product_data;
+    plan_aggregation -> task_aggregate_results;
+} 

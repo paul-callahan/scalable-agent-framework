@@ -1,0 +1,27 @@
+digraph MultiPlanGraph {
+    // Graph attributes
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    // Plan nodes
+    plan_data_ingestion [label="Data Ingestion Plan", type="plan"];
+    plan_data_processing [label="Data Processing Plan", type="plan"];
+    plan_analysis [label="Analysis Plan", type="plan"];
+    plan_reporting [label="Reporting Plan", type="plan"];
+    
+    // Task nodes
+    task_fetch_data [label="Fetch Data", type="task"];
+    task_validate_data [label="Validate Data", type="task"];
+    task_transform_data [label="Transform Data", type="task"];
+    task_analyze_data [label="Analyze Data", type="task"];
+    task_generate_report [label="Generate Report", type="task"];
+    task_send_notification [label="Send Notification", type="task"];
+    
+    // Edges
+    plan_data_ingestion -> task_fetch_data;
+    plan_data_ingestion -> task_validate_data;
+    plan_data_processing -> task_transform_data;
+    plan_analysis -> task_analyze_data;
+    plan_reporting -> task_generate_report;
+    plan_reporting -> task_send_notification;
+} 
