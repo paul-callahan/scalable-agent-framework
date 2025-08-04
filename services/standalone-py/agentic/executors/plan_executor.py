@@ -1,7 +1,7 @@
 """
 Plan executor service implementation.
 
-This module implements the PlanExecutorService that consumes from plan result queues,
+This module implements the PlanExecutorService that consumes from controlled plan execution queues,
 processes plan execution requests, and publishes completed results back to execution queues.
 """
 
@@ -14,13 +14,15 @@ from typing import Dict, Optional, Callable, Any, List
 from ..message_bus import InMemoryBroker
 from ..pb import plan_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
+from agentic_common.kafka_utils import get_controlled_plan_executions_topic
+from agentic_common import ProtobufUtils
 
 
 class PlanExecutorService:
     """
     Plan executor service implementation.
     
-    Handles plan execution by consuming from result queues and publishing
+    Handles plan execution by consuming from controlled execution queues and publishing
     completed plan executions back to execution queues.
     """
     
@@ -83,14 +85,13 @@ class PlanExecutorService:
         
         return default_handler
     
-    async def _execute_plan(self, plan_type: str, parameters: str, input_task_id: str, 
+    async def _execute_plan(self, plan_type: str, input_task_id: str, 
                            execution_id: str) -> plan_pb2.PlanExecution:
         """
         Execute a plan and return the result.
         
         Args:
             plan_type: Plan type identifier
-            parameters: Plan parameters (JSON string)
             input_task_id: Input task identifier
             execution_id: Execution identifier
             
@@ -101,15 +102,9 @@ class PlanExecutorService:
             # Get plan handler
             plan_handler = self.plan_registry.get(plan_type, self._get_default_plan_handler(plan_type))
             
-            # Parse parameters
-            try:
-                params_dict = json.loads(parameters) if parameters else {}
-            except json.JSONDecodeError:
-                params_dict = {"raw_parameters": parameters}
-            
-            # Execute plan
+            # Execute plan with empty parameters
             self.logger.debug(f"Executing plan {plan_type} with execution ID {execution_id}")
-            result = plan_handler(params_dict, input_task_id)
+            result = plan_handler({}, input_task_id)
             
             # Create PlanResult
             plan_result = plan_pb2.PlanResult()
@@ -145,7 +140,6 @@ class PlanExecutorService:
             plan_execution.header.status = common_pb2.EXECUTION_STATUS_SUCCEEDED
             plan_execution.header.created_at = datetime.utcnow().isoformat()
             plan_execution.plan_type = plan_type
-            plan_execution.parameters = parameters
             plan_execution.input_task_id = input_task_id
             plan_execution.result.CopyFrom(plan_result)
             
@@ -165,7 +159,6 @@ class PlanExecutorService:
             plan_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
             plan_execution.header.created_at = datetime.utcnow().isoformat()
             plan_execution.plan_type = plan_type
-            plan_execution.parameters = parameters
             plan_execution.input_task_id = input_task_id
             
             # Create error result
@@ -175,88 +168,86 @@ class PlanExecutorService:
             
             return plan_execution
     
-    async def _process_plan_result(self, message_bytes: bytes, tenant_id: str) -> None:
+    async def _process_plan_execution(self, message_bytes: bytes, tenant_id: str) -> None:
         """
-        Process a plan result message from the queue.
+        Process a plan execution message from the queue.
         
         Args:
-            message_bytes: Serialized result message bytes
+            message_bytes: Serialized PlanExecution protobuf message bytes
             tenant_id: Tenant identifier
         """
         try:
-            # Deserialize the message
-            result_data = json.loads(message_bytes.decode('utf-8'))
+            # Deserialize the PlanExecution protobuf message using consistent utilities
+            plan_execution = ProtobufUtils.deserialize_plan_execution(message_bytes)
             
-            execution_id = result_data.get('execution_id', '')
-            status = result_data.get('status', '')
+            execution_id = plan_execution.header.id
+            status = plan_execution.header.status
             
-            self.logger.debug(f"Processing plan result: {execution_id}, status: {status}")
+            self.logger.debug(f"Processing plan execution: {execution_id}, status: {status}")
             
-            if status == 'approved':
+            if status == common_pb2.EXECUTION_STATUS_SUCCEEDED:
                 # Extract plan information and execute
-                plan_type = result_data.get('plan_type', 'unknown')
-                parameters = result_data.get('parameters', '{}')
-                input_task_id = result_data.get('input_task_id', '')
+                plan_type = plan_execution.plan_type
+                input_task_id = plan_execution.input_task_id
                 
                 # Execute the plan
-                plan_execution = await self._execute_plan(plan_type, parameters, input_task_id, execution_id)
+                plan_execution = await self._execute_plan(plan_type, input_task_id, execution_id)
                 
-                # Serialize and publish to execution queue
+                # Serialize and publish to execution queue using consistent utilities
                 execution_topic = f"plan-executions_{tenant_id}"
-                execution_bytes = plan_execution.SerializeToString()
+                execution_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
                 await self.broker.publish(execution_topic, execution_bytes)
                 
                 self.logger.debug(f"Published plan execution result: {execution_id}")
             
-            elif status == 'rejected':
-                # Handle rejected plan
-                reason = result_data.get('reason', 'Unknown reason')
-                self.logger.warning(f"Plan execution rejected: {execution_id}, reason: {reason}")
+            elif status == common_pb2.EXECUTION_STATUS_FAILED:
+                # Handle failed plan
+                error_message = plan_execution.result.error_message
+                self.logger.warning(f"Plan execution failed: {execution_id}, error: {error_message}")
                 
-                # Create failed PlanExecution for rejected plans
-                plan_execution = plan_pb2.PlanExecution()
-                plan_execution.header.id = execution_id
-                plan_execution.header.tenant_id = tenant_id
-                plan_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
-                plan_execution.header.created_at = datetime.utcnow().isoformat()
-                plan_execution.plan_type = result_data.get('plan_type', 'unknown')
-                plan_execution.parameters = result_data.get('parameters', '{}')
-                plan_execution.input_task_id = result_data.get('input_task_id', '')
+                # Create failed PlanExecution for failed plans
+                failed_execution = plan_pb2.PlanExecution()
+                failed_execution.header.id = execution_id
+                failed_execution.header.tenant_id = tenant_id
+                failed_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
+                failed_execution.header.created_at = datetime.utcnow().isoformat()
+                failed_execution.plan_type = plan_execution.plan_type
+                failed_execution.input_task_id = plan_execution.input_task_id
                 
                 # Create error result
                 error_result = plan_pb2.PlanResult()
-                error_result.error_message = f"Plan rejected: {reason}"
-                plan_execution.result.CopyFrom(error_result)
+                error_result.error_message = error_message
+                failed_execution.result.CopyFrom(error_result)
                 
-                # Serialize and publish to execution queue
+                # Serialize and publish to execution queue using consistent utilities
                 execution_topic = f"plan-executions_{tenant_id}"
-                execution_bytes = plan_execution.SerializeToString()
+                execution_bytes = ProtobufUtils.serialize_plan_execution(failed_execution)
                 await self.broker.publish(execution_topic, execution_bytes)
             
             self._messages_processed += 1
             
         except Exception as e:
             self._errors += 1
-            self.logger.error(f"Error processing plan result: {e}")
+            self.logger.error(f"Error processing plan execution: {e}")
             raise
     
     async def _consumer_loop(self, tenant_id: str) -> None:
         """
-        Consumer loop for plan result messages.
+        Consumer loop for controlled plan execution messages.
         
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"plan-results_{tenant_id}"
-        self.logger.info(f"Starting plan result consumer for topic: {topic}")
+        topic = get_controlled_plan_executions_topic(tenant_id)
+        self.logger.info(f"Starting controlled plan execution consumer for topic: {topic}")
         
         try:
             async for message_bytes in self.broker.subscribe(topic):
-                await self._process_plan_result(message_bytes, tenant_id)
+                await self._process_plan_execution(message_bytes, tenant_id)
         except asyncio.CancelledError:
-            self.logger.info(f"Plan result consumer cancelled for tenant: {tenant_id}")
+            self.logger.info(f"Controlled plan execution consumer cancelled for tenant: {tenant_id}")
         except Exception as e:
-            self.logger.error(f"Plan result consumer error for tenant {tenant_id}: {e}")
+            self.logger.error(f"Controlled plan execution consumer error for tenant {tenant_id}: {e}")
             raise
     
     async def start(self, tenant_id: str = "default") -> None:

@@ -8,12 +8,12 @@
     <parent>
         <groupId>com.pcallahan.agentic</groupId>
         <artifactId>scalable-agent-framework</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     
     <artifactId>common-java</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     
     <name>Agentic Common Java</name>
@@ -86,6 +86,8 @@
                     <sourceDirectories>
                         <sourceDirectory>${project.basedir}/../../protos</sourceDirectory>
                     </sourceDirectories>
+                    <registerAsCompilationRoot>true</registerAsCompilationRoot>
+
                 </configuration>
                 <executions>
                     <execution>

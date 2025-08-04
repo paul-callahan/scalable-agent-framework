@@ -3,9 +3,7 @@ package com.pcallahan.agentic.controlplane.service;
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.controlplane.kafka.ExecutorProducer;
 import agentic.task.Task.TaskExecution;
-import agentic.task.Task.TaskResult;
 import agentic.plan.Plan.PlanExecution;
-import agentic.plan.Plan.PlanResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +13,8 @@ import org.springframework.stereotype.Service;
  * Service for routing execution messages to appropriate executors.
  * 
  * This service implements the corrected routing logic:
- * - TaskResult (output from tasks) goes to PlanExecutor to decide next steps
- * - PlanResult (decisions about next tasks) goes to TaskExecutor to execute those tasks
+ * - TaskExecution (full execution messages) goes to PlanExecutor to decide next steps
+ * - PlanExecution (full execution messages) goes to TaskExecutor to execute those tasks
  */
 @Service
 public class ExecutionRouter {
@@ -46,11 +44,10 @@ public class ExecutionRouter {
             boolean approved = guardrailEngine.evaluateTaskExecution(taskExecution, tenantId);
             
             if (approved) {
-                // Extract TaskResult from task execution and route to PlanExecutor
-                TaskResult taskResult = extractTaskResult(taskExecution);
-                executorProducer.publishTaskResult(tenantId, taskResult);
+                // Route full TaskExecution to PlanExecutor
+                executorProducer.publishTaskExecution(tenantId, taskExecution);
                 
-                logger.info("Task execution approved and TaskResult routed to PlanExecutor for tenant: {}", tenantId);
+                logger.info("Task execution approved and routed to PlanExecutor for tenant: {}", tenantId);
             } else {
                 logger.warn("Task execution rejected by guardrails for tenant: {}", tenantId);
                 // Could implement rejection handling here
@@ -75,11 +72,10 @@ public class ExecutionRouter {
             boolean approved = guardrailEngine.evaluatePlanExecution(planExecution, tenantId);
             
             if (approved) {
-                // Extract PlanResult from plan execution and route to TaskExecutor
-                PlanResult planResult = extractPlanResult(planExecution);
-                executorProducer.publishPlanResult(tenantId, planResult);
+                // Route full PlanExecution to TaskExecutor
+                executorProducer.publishPlanExecution(tenantId, planExecution);
                 
-                logger.info("Plan execution approved and PlanResult routed to TaskExecutor for tenant: {}", tenantId);
+                logger.info("Plan execution approved and routed to TaskExecutor for tenant: {}", tenantId);
             } else {
                 logger.warn("Plan execution rejected by guardrails for tenant: {}", tenantId);
                 // Could implement rejection handling here
@@ -88,27 +84,5 @@ public class ExecutionRouter {
         } catch (Exception e) {
             logger.error("Error routing plan execution for tenant {}: {}", tenantId, e.getMessage(), e);
         }
-    }
-    
-    /**
-     * Extract TaskResult from TaskExecution protobuf message.
-     * 
-     * @param taskExecution the TaskExecution protobuf message
-     * @return TaskResult protobuf message
-     */
-    private TaskResult extractTaskResult(TaskExecution taskExecution) {
-        // Extract TaskResult from TaskExecution.result field
-        return taskExecution.getResult();
-    }
-    
-    /**
-     * Extract PlanResult from PlanExecution protobuf message.
-     * 
-     * @param planExecution the PlanExecution protobuf message
-     * @return PlanResult protobuf message
-     */
-    private PlanResult extractPlanResult(PlanExecution planExecution) {
-        // Extract PlanResult from PlanExecution.result field
-        return planExecution.getResult();
     }
 } 

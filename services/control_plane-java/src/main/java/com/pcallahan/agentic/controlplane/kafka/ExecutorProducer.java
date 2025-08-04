@@ -2,8 +2,8 @@ package com.pcallahan.agentic.controlplane.kafka;
 
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.common.ProtobufUtils;
-import agentic.task.Task.TaskResult;
-import agentic.plan.Plan.PlanResult;
+import agentic.task.Task.TaskExecution;
+import agentic.plan.Plan.PlanExecution;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +18,8 @@ import java.util.concurrent.CompletableFuture;
  * Kafka producer for the Control Plane service.
  * 
  * This producer correctly routes protobuf messages:
- * - TaskResult messages to task-results-{tenantId} topics (for PlanExecutor to consume)
- * - PlanResult messages to plan-results-{tenantId} topics (for TaskExecutor to consume)
+ * - TaskExecution messages to controlled-task-executions-{tenantId} topics (for PlanExecutor to consume)
+ * - PlanExecution messages to controlled-plan-executions-{tenantId} topics (for TaskExecutor to consume)
  */
 @Component
 public class ExecutorProducer {
@@ -34,30 +34,30 @@ public class ExecutorProducer {
     }
     
     /**
-     * Publish TaskResult protobuf to task-results topic for PlanExecutor to consume.
+     * Publish TaskExecution protobuf to controlled-task-executions topic for PlanExecutor to consume.
      * 
      * @param tenantId the tenant identifier
-     * @param taskResult the TaskResult protobuf message
+     * @param taskExecution the TaskExecution protobuf message
      * @return CompletableFuture for the send result
      */
-    public CompletableFuture<SendResult<String, byte[]>> publishTaskResult(String tenantId, TaskResult taskResult) {
+    public CompletableFuture<SendResult<String, byte[]>> publishTaskExecution(String tenantId, TaskExecution taskExecution) {
         try {
-            String topic = TopicNames.taskResults(tenantId);
+            String topic = TopicNames.controlledTaskExecutions(tenantId);
             
-            byte[] message = ProtobufUtils.serializeTaskResult(taskResult);
+            byte[] message = ProtobufUtils.serializeTaskExecution(taskExecution);
             if (message == null) {
-                throw new RuntimeException("Failed to serialize TaskResult");
+                throw new RuntimeException("Failed to serialize TaskExecution");
             }
             
-            String messageId = "task-result-" + System.currentTimeMillis();
+            String messageId = "task-execution-" + System.currentTimeMillis();
             
-            logger.debug("Publishing TaskResult protobuf to topic {}: {}", topic, messageId);
+            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, messageId);
             
             ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageId, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
-            logger.error("Failed to publish TaskResult protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
+            logger.error("Failed to publish TaskExecution protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
             CompletableFuture<SendResult<String, byte[]>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
@@ -65,30 +65,30 @@ public class ExecutorProducer {
     }
     
     /**
-     * Publish PlanResult protobuf to plan-results topic for TaskExecutor to consume.
+     * Publish PlanExecution protobuf to controlled-plan-executions topic for TaskExecutor to consume.
      * 
      * @param tenantId the tenant identifier
-     * @param planResult the PlanResult protobuf message
+     * @param planExecution the PlanExecution protobuf message
      * @return CompletableFuture for the send result
      */
-    public CompletableFuture<SendResult<String, byte[]>> publishPlanResult(String tenantId, PlanResult planResult) {
+    public CompletableFuture<SendResult<String, byte[]>> publishPlanExecution(String tenantId, PlanExecution planExecution) {
         try {
-            String topic = TopicNames.planResults(tenantId);
+            String topic = TopicNames.controlledPlanExecutions(tenantId);
             
-            byte[] message = ProtobufUtils.serializePlanResult(planResult);
+            byte[] message = ProtobufUtils.serializePlanExecution(planExecution);
             if (message == null) {
-                throw new RuntimeException("Failed to serialize PlanResult");
+                throw new RuntimeException("Failed to serialize PlanExecution");
             }
             
-            String messageId = "plan-result-" + System.currentTimeMillis();
+            String messageId = "plan-execution-" + System.currentTimeMillis();
             
-            logger.debug("Publishing PlanResult protobuf to topic {}: {}", topic, messageId);
+            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, messageId);
             
             ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageId, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
-            logger.error("Failed to publish PlanResult protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
+            logger.error("Failed to publish PlanExecution protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
             CompletableFuture<SendResult<String, byte[]>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
@@ -101,7 +101,7 @@ public class ExecutorProducer {
      * @param future the CompletableFuture from the send operation
      * @param tenantId the tenant identifier
      * @param messageId the message identifier
-     * @param messageType the type of message (TaskResult/PlanResult)
+     * @param messageType the type of message (TaskExecution/PlanExecution)
      */
     public void handleSendResult(CompletableFuture<SendResult<String, byte[]>> future, 
                                 String tenantId, String messageId, String messageType) {

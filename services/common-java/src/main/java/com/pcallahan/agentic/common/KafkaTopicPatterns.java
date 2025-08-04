@@ -25,8 +25,8 @@ public class KafkaTopicPatterns {
     private String planExecutions = "plan-executions-.*";
     private String persistedTaskExecutions = "persisted-task-executions-.*";
     private String persistedPlanExecutions = "persisted-plan-executions-.*";
-    private String taskResults = "task-results-.*";
-    private String planResults = "plan-results-.*";
+    private String controlledTaskExecutions = "controlled-task-executions-.*";
+    private String controlledPlanExecutions = "controlled-plan-executions-.*";
     
     // Getters and setters
     public String getTaskExecutionsPattern() {
@@ -65,22 +65,22 @@ public class KafkaTopicPatterns {
         logger.debug("Set persisted plan executions pattern: {}", persistedPlanExecutions);
     }
     
-    public String getTaskResultsPattern() {
-        return taskResults;
+    public String getControlledTaskExecutionsPattern() {
+        return controlledTaskExecutions;
     }
     
-    public void setTaskResults(String taskResults) {
-        this.taskResults = taskResults;
-        logger.debug("Set task results pattern: {}", taskResults);
+    public void setControlledTaskExecutions(String controlledTaskExecutions) {
+        this.controlledTaskExecutions = controlledTaskExecutions;
+        logger.debug("Set controlled task executions pattern: {}", controlledTaskExecutions);
     }
     
-    public String getPlanResultsPattern() {
-        return planResults;
+    public String getControlledPlanExecutionsPattern() {
+        return controlledPlanExecutions;
     }
     
-    public void setPlanResults(String planResults) {
-        this.planResults = planResults;
-        logger.debug("Set plan results pattern: {}", planResults);
+    public void setControlledPlanExecutions(String controlledPlanExecutions) {
+        this.controlledPlanExecutions = controlledPlanExecutions;
+        logger.debug("Set controlled plan executions pattern: {}", controlledPlanExecutions);
     }
     
     /**
@@ -94,8 +94,8 @@ public class KafkaTopicPatterns {
             "planExecutions", planExecutions,
             "persistedTaskExecutions", persistedTaskExecutions,
             "persistedPlanExecutions", persistedPlanExecutions,
-            "taskResults", taskResults,
-            "planResults", planResults
+            "controlledTaskExecutions", controlledTaskExecutions,
+            "controlledPlanExecutions", controlledPlanExecutions
         );
     }
     
@@ -127,13 +127,13 @@ public class KafkaTopicPatterns {
             isValid = false;
         }
         
-        if (taskResults == null || taskResults.isEmpty()) {
-            logger.error("Task results pattern is not configured");
+        if (controlledTaskExecutions == null || controlledTaskExecutions.isEmpty()) {
+            logger.error("Controlled task executions pattern is not configured");
             isValid = false;
         }
         
-        if (planResults == null || planResults.isEmpty()) {
-            logger.error("Plan results pattern is not configured");
+        if (controlledPlanExecutions == null || controlledPlanExecutions.isEmpty()) {
+            logger.error("Controlled plan executions pattern is not configured");
             isValid = false;
         }
         

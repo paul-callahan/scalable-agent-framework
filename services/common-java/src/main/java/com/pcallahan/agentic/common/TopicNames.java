@@ -10,7 +10,7 @@ import java.util.Map;
  * 
  * The system uses only tenant-specific topics with the pattern {prefix}-{tenantId}
  * where prefix is one of: task-executions, plan-executions, persisted-task-executions, 
- * persisted-plan-executions, task-results, plan-results.
+ * persisted-plan-executions, controlled-task-executions, controlled-plan-executions.
  */
 public class TopicNames {
     
@@ -61,28 +61,30 @@ public class TopicNames {
     }
     
     /**
-     * Generate task results topic name for a tenant.
+     * Generate controlled task executions topic name for a tenant.
      * 
      * @param tenantId the tenant identifier
-     * @return topic name in format: task-results-{tenantId}
+     * @return topic name in format: controlled-task-executions-{tenantId}
      */
-    public static String taskResults(String tenantId) {
-        return "task-results-" + tenantId;
+    public static String controlledTaskExecutions(String tenantId) {
+        return "controlled-task-executions-" + tenantId;
     }
     
     /**
-     * Generate plan results topic name for a tenant.
+     * Generate controlled plan executions topic name for a tenant.
      * 
      * @param tenantId the tenant identifier
-     * @return topic name in format: plan-results-{tenantId}
+     * @return topic name in format: controlled-plan-executions-{tenantId}
      */
-    public static String planResults(String tenantId) {
-        return "plan-results-" + tenantId;
+    public static String controlledPlanExecutions(String tenantId) {
+        return "controlled-plan-executions-" + tenantId;
     }
+    
+
     
     /**
      * Extract tenant ID from a topic name by splitting on the last hyphen.
-     * Handles patterns like task-executions-{tenantId}, plan-results-{tenantId}, etc.
+     * Handles patterns like task-executions-{tenantId}, controlled-plan-executions-{tenantId}, etc.
      * 
      * @param topicName the full topic name
      * @return the tenant ID, or null if not found
@@ -205,8 +207,8 @@ public class TopicNames {
                        prefix.equals("plan-executions") || 
                        prefix.equals("persisted-task-executions") || 
                        prefix.equals("persisted-plan-executions") ||
-                       prefix.equals("task-results") ||
-                       prefix.equals("plan-results");
+                       prefix.equals("controlled-task-executions") ||
+                       prefix.equals("controlled-plan-executions");
             }
         }
         

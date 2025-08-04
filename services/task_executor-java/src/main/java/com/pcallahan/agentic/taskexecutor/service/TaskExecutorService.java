@@ -1,6 +1,7 @@
 package com.pcallahan.agentic.taskexecutor.service;
 
 import com.pcallahan.agentic.taskexecutor.kafka.TaskExecutionProducer;
+import agentic.plan.Plan.PlanExecution;
 import agentic.plan.Plan.PlanResult;
 import agentic.task.Task.TaskExecution;
 import agentic.task.Task.TaskResult;
@@ -15,11 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
- * Service responsible for executing tasks based on PlanResult messages.
+ * Service responsible for executing tasks based on PlanExecution messages.
  * 
  * This service:
- * - Consumes PlanResult protobuf messages from Kafka via PlanResultListener
- * - Executes tasks based on PlanResult.nextTaskIds
+ * - Consumes PlanExecution protobuf messages from Kafka via PlanResultListener
+ * - Executes tasks based on PlanExecution.result.nextTaskIds
  * - Produces TaskExecution protobuf messages to Kafka via TaskExecutionProducer
  * - Manages task execution lifecycle and error handling
  */
@@ -37,37 +38,40 @@ public class TaskExecutorService {
     }
     
     /**
-     * Execute tasks from a PlanResult protobuf message
+     * Execute tasks from a PlanExecution protobuf message
      * 
-     * @param planResult the PlanResult protobuf message containing tasks to execute
+     * @param planExecution the PlanExecution protobuf message containing tasks to execute
      * @param tenantId the tenant identifier
      * @return true if execution was successful, false otherwise
      */
-    public boolean executeTasksFromPlan(PlanResult planResult, String tenantId) {
-        logger.info("Executing tasks from PlanResult protobuf for tenant: {}", tenantId);
+    public boolean executeTasksFromPlanExecution(PlanExecution planExecution, String tenantId) {
+        logger.info("Executing tasks from PlanExecution protobuf for tenant: {}", tenantId);
         
         try {
+            // Extract PlanResult from PlanExecution
+            PlanResult planResult = planExecution.getResult();
+            
             // Check if there's an error in the plan result
             if (!planResult.getErrorMessage().isEmpty()) {
-                logger.error("PlanResult contains error for tenant {}: {}", tenantId, planResult.getErrorMessage());
+                logger.error("PlanExecution contains error for tenant {}: {}", tenantId, planResult.getErrorMessage());
                 return false;
             }
             
             // Get the list of task IDs to execute
             var nextTaskIds = planResult.getNextTaskIdsList();
             if (nextTaskIds.isEmpty()) {
-                logger.info("No tasks to execute from PlanResult for tenant: {}", tenantId);
+                logger.info("No tasks to execute from PlanExecution for tenant: {}", tenantId);
                 return true;
             }
             
-            logger.debug("PlanResult protobuf for tenant {}: next_task_ids={}, confidence={}", 
+            logger.debug("PlanExecution protobuf for tenant {}: next_task_ids={}, confidence={}", 
                 tenantId, nextTaskIds, planResult.getConfidence());
             
             // Execute each task in the plan
             boolean allTasksSuccessful = true;
             for (String taskId : nextTaskIds) {
                 try {
-                    TaskExecution taskExecution = executeTask(taskId, planResult, tenantId);
+                    TaskExecution taskExecution = executeTask(taskId, planExecution, tenantId);
                     if (taskExecution != null) {
                         // Publish the task execution to Kafka
                         taskExecutionProducer.publishTaskExecution(tenantId, taskExecution)
@@ -95,20 +99,20 @@ public class TaskExecutorService {
             return allTasksSuccessful;
             
         } catch (Exception e) {
-            logger.error("Error executing tasks from PlanResult protobuf for tenant: {}", tenantId, e);
+            logger.error("Error executing tasks from PlanExecution protobuf for tenant: {}", tenantId, e);
             return false;
         }
     }
     
     /**
-     * Execute a single task based on task ID and plan result
+     * Execute a single task based on task ID and plan execution
      * 
      * @param taskId the task identifier
-     * @param planResult the PlanResult that triggered this task
+     * @param planExecution the PlanExecution that triggered this task
      * @param tenantId the tenant identifier
      * @return TaskExecution protobuf message, or null if execution failed
      */
-    private TaskExecution executeTask(String taskId, PlanResult planResult, String tenantId) {
+    private TaskExecution executeTask(String taskId, PlanExecution planExecution, String tenantId) {
         try {
             // Determine task type from task ID or use default
             String taskType = extractTaskType(taskId);
@@ -120,7 +124,7 @@ public class TaskExecutorService {
             }
             
             // Execute the task using the handler
-            TaskExecution taskExecution = handler.execute(planResult, tenantId);
+            TaskExecution taskExecution = handler.execute(planExecution, tenantId);
             if (taskExecution == null) {
                 logger.error("Task handler returned null for task {} tenant: {}", taskId, tenantId);
                 return null;
@@ -158,17 +162,17 @@ public class TaskExecutorService {
     
     /**
      * Interface for task handlers
-     * Updated to take PlanResult and return TaskExecution
+     * Updated to take PlanExecution and return TaskExecution
      */
     public interface TaskHandler {
         /**
-         * Execute a task based on PlanResult
+         * Execute a task based on PlanExecution
          * 
-         * @param planResult the PlanResult that triggered this task
+         * @param planExecution the PlanExecution that triggered this task
          * @param tenantId the tenant identifier
          * @return TaskExecution protobuf message
          */
-        TaskExecution execute(PlanResult planResult, String tenantId);
+        TaskExecution execute(PlanExecution planExecution, String tenantId);
     }
     
     /**
@@ -176,9 +180,12 @@ public class TaskExecutorService {
      */
     private static class DefaultTaskHandler implements TaskHandler {
         @Override
-        public TaskExecution execute(PlanResult planResult, String tenantId) {
+        public TaskExecution execute(PlanExecution planExecution, String tenantId) {
             // TODO: Implement actual task execution logic
             // For now, create a simple success response
+            
+            // Extract PlanResult from PlanExecution
+            PlanResult planResult = planExecution.getResult();
             
             // Create TaskResult without ID - ID will be generated by PersistenceService
             TaskResult taskResult = TaskResult.newBuilder()
@@ -194,7 +201,6 @@ public class TaskExecutorService {
                     .build())
                 .setResult(taskResult)
                 .setTaskType("default")
-                .setParameters("{}")
                 .build();
         }
     }

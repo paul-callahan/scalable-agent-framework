@@ -1,7 +1,7 @@
 """
 Task executor service implementation.
 
-This module implements the TaskExecutorService that consumes from task result queues,
+This module implements the TaskExecutorService that consumes from controlled task execution queues,
 processes task execution requests, and publishes completed results back to execution queues.
 """
 
@@ -14,13 +14,14 @@ from typing import Dict, Optional, Callable, Any
 from ..message_bus import InMemoryBroker
 from ..pb import task_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
+from agentic_common.kafka_utils import get_controlled_task_executions_topic
 
 
 class TaskExecutorService:
     """
     Task executor service implementation.
     
-    Handles task execution by consuming from result queues and publishing
+    Handles task execution by consuming from controlled execution queues and publishing
     completed task executions back to execution queues.
     """
     
@@ -82,13 +83,12 @@ class TaskExecutorService:
         
         return default_handler
     
-    async def _execute_task(self, task_type: str, parameters: str, execution_id: str) -> task_pb2.TaskExecution:
+    async def _execute_task(self, task_type: str, execution_id: str) -> task_pb2.TaskExecution:
         """
         Execute a task and return the result.
         
         Args:
             task_type: Task type identifier
-            parameters: Task parameters (JSON string)
             execution_id: Execution identifier
             
         Returns:
@@ -98,15 +98,9 @@ class TaskExecutorService:
             # Get task handler
             task_handler = self.task_registry.get(task_type, self._get_default_task_handler(task_type))
             
-            # Parse parameters
-            try:
-                params_dict = json.loads(parameters) if parameters else {}
-            except json.JSONDecodeError:
-                params_dict = {"raw_parameters": parameters}
-            
-            # Execute task
+            # Execute task with empty parameters
             self.logger.debug(f"Executing task {task_type} with execution ID {execution_id}")
-            result = task_handler(params_dict)
+            result = task_handler({})
             
             # Create TaskResult
             task_result = task_pb2.TaskResult()
@@ -117,25 +111,30 @@ class TaskExecutorService:
                     task_result.error_message = str(result["error"])
                     task_result.mime_type = "text/plain"
                 else:
-                    # Serialize result as JSON
-                    result_json = json.dumps(result)
-                    # Create a proper Any message with JSON data
-                    from google.protobuf import struct_pb2
-                    json_struct = struct_pb2.Value()
-                    json_struct.string_value = result_json
-                    task_result.inline_data.Pack(json_struct)
-                    task_result.mime_type = "application/json"
-                    task_result.size_bytes = len(result_json.encode('utf-8'))
+                    # Serialize result as protobuf Any message
+                    from google.protobuf import struct_pb2, any_pb2
+                    # Convert dict to protobuf Struct
+                    struct_value = struct_pb2.Struct()
+                    for key, value in result.items():
+                        struct_value.fields[key].string_value = str(value)
+                    
+                    # Pack into Any message
+                    any_message = any_pb2.Any()
+                    any_message.Pack(struct_value)
+                    task_result.inline_data.CopyFrom(any_message)
+                    task_result.mime_type = "application/x-protobuf"
+                    task_result.size_bytes = len(any_message.SerializeToString())
             else:
-                # Handle simple result
-                result_str = str(result)
-                # Create a proper Any message with string data
-                from google.protobuf import struct_pb2
+                # Handle simple result as protobuf Any message
+                from google.protobuf import struct_pb2, any_pb2
                 string_value = struct_pb2.Value()
-                string_value.string_value = result_str
-                task_result.inline_data.Pack(string_value)
-                task_result.mime_type = "text/plain"
-                task_result.size_bytes = len(result_str.encode('utf-8'))
+                string_value.string_value = str(result)
+                
+                any_message = any_pb2.Any()
+                any_message.Pack(string_value)
+                task_result.inline_data.CopyFrom(any_message)
+                task_result.mime_type = "application/x-protobuf"
+                task_result.size_bytes = len(any_message.SerializeToString())
             
             # Create TaskExecution
             task_execution = task_pb2.TaskExecution()
@@ -144,7 +143,6 @@ class TaskExecutorService:
             task_execution.header.status = common_pb2.EXECUTION_STATUS_SUCCEEDED
             task_execution.header.created_at = datetime.utcnow().isoformat()
             task_execution.task_type = task_type
-            task_execution.parameters = parameters
             task_execution.result.CopyFrom(task_result)
             
             self._tasks_executed += 1
@@ -163,7 +161,6 @@ class TaskExecutorService:
             task_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
             task_execution.header.created_at = datetime.utcnow().isoformat()
             task_execution.task_type = task_type
-            task_execution.parameters = parameters
             
             # Create error result
             error_result = task_pb2.TaskResult()
@@ -173,30 +170,30 @@ class TaskExecutorService:
             
             return task_execution
     
-    async def _process_task_result(self, message_bytes: bytes, tenant_id: str) -> None:
+    async def _process_task_execution(self, message_bytes: bytes, tenant_id: str) -> None:
         """
-        Process a task result message from the queue.
+        Process a task execution message from the queue.
         
         Args:
-            message_bytes: Serialized result message bytes
+            message_bytes: Serialized TaskExecution protobuf message bytes
             tenant_id: Tenant identifier
         """
         try:
-            # Deserialize the message
-            result_data = json.loads(message_bytes.decode('utf-8'))
+            # Deserialize the TaskExecution protobuf message
+            task_execution = task_pb2.TaskExecution()
+            task_execution.ParseFromString(message_bytes)
             
-            execution_id = result_data.get('execution_id', '')
-            status = result_data.get('status', '')
+            execution_id = task_execution.header.id
+            status = task_execution.header.status
             
-            self.logger.debug(f"Processing task result: {execution_id}, status: {status}")
+            self.logger.debug(f"Processing task execution: {execution_id}, status: {status}")
             
-            if status == 'approved':
+            if status == common_pb2.EXECUTION_STATUS_SUCCEEDED:
                 # Extract task information and execute
-                task_type = result_data.get('task_type', 'unknown')
-                parameters = result_data.get('parameters', '{}')
+                task_type = task_execution.task_type
                 
                 # Execute the task
-                task_execution = await self._execute_task(task_type, parameters, execution_id)
+                task_execution = await self._execute_task(task_type, execution_id)
                 
                 # Serialize and publish to execution queue
                 execution_topic = f"task-executions_{tenant_id}"
@@ -205,55 +202,54 @@ class TaskExecutorService:
                 
                 self.logger.debug(f"Published task execution result: {execution_id}")
             
-            elif status == 'rejected':
-                # Handle rejected task
-                reason = result_data.get('reason', 'Unknown reason')
-                self.logger.warning(f"Task execution rejected: {execution_id}, reason: {reason}")
+            elif status == common_pb2.EXECUTION_STATUS_FAILED:
+                # Handle failed task
+                error_message = task_execution.result.error_message
+                self.logger.warning(f"Task execution failed: {execution_id}, error: {error_message}")
                 
-                # Create failed TaskExecution for rejected tasks
-                task_execution = task_pb2.TaskExecution()
-                task_execution.header.id = execution_id
-                task_execution.header.tenant_id = tenant_id
-                task_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
-                task_execution.header.created_at = datetime.utcnow().isoformat()
-                task_execution.task_type = result_data.get('task_type', 'unknown')
-                task_execution.parameters = result_data.get('parameters', '{}')
+                # Create failed TaskExecution for failed tasks
+                failed_execution = task_pb2.TaskExecution()
+                failed_execution.header.id = execution_id
+                failed_execution.header.tenant_id = tenant_id
+                failed_execution.header.status = common_pb2.EXECUTION_STATUS_FAILED
+                failed_execution.header.created_at = datetime.utcnow().isoformat()
+                failed_execution.task_type = task_execution.task_type
                 
                 # Create error result
                 error_result = task_pb2.TaskResult()
-                error_result.error_message = f"Task rejected: {reason}"
+                error_result.error_message = error_message
                 error_result.mime_type = "text/plain"
-                task_execution.result.CopyFrom(error_result)
+                failed_execution.result.CopyFrom(error_result)
                 
                 # Serialize and publish to execution queue
                 execution_topic = f"task-executions_{tenant_id}"
-                execution_bytes = task_execution.SerializeToString()
+                execution_bytes = failed_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
             
             self._messages_processed += 1
             
         except Exception as e:
             self._errors += 1
-            self.logger.error(f"Error processing task result: {e}")
+            self.logger.error(f"Error processing task execution: {e}")
             raise
     
     async def _consumer_loop(self, tenant_id: str) -> None:
         """
-        Consumer loop for task result messages.
+        Consumer loop for controlled task execution messages.
         
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"task-results_{tenant_id}"
-        self.logger.info(f"Starting task result consumer for topic: {topic}")
+        topic = get_controlled_task_executions_topic(tenant_id)
+        self.logger.info(f"Starting controlled task execution consumer for topic: {topic}")
         
         try:
             async for message_bytes in self.broker.subscribe(topic):
-                await self._process_task_result(message_bytes, tenant_id)
+                await self._process_task_execution(message_bytes, tenant_id)
         except asyncio.CancelledError:
-            self.logger.info(f"Task result consumer cancelled for tenant: {tenant_id}")
+            self.logger.info(f"Controlled task execution consumer cancelled for tenant: {tenant_id}")
         except Exception as e:
-            self.logger.error(f"Task result consumer error for tenant {tenant_id}: {e}")
+            self.logger.error(f"Controlled task execution consumer error for tenant {tenant_id}: {e}")
             raise
     
     async def start(self, tenant_id: str = "default") -> None:
