@@ -75,6 +75,10 @@ public class GraphVizDotParser implements GraphParser {
         MutableGraph dotGraph = parseDotFile(dotFile);
         logger.debug("Parsed graph with {} nodes", dotGraph.nodes().size());
         
+        // Extract the graph name
+        String graphName = extractGraphName(dotGraph, dotFile.getFileName().toString());
+        logger.debug("Extracted graph name: {}", graphName);
+        
         // Identify plans and tasks
         Map<String, Plan> plans = new HashMap<>();
         Map<String, TaskMetadata> taskMetadata = new HashMap<>();
@@ -166,14 +170,14 @@ public class GraphVizDotParser implements GraphParser {
             logger.debug("Created task: {} with upstream plan: {}", task.name(), upstreamPlan);
         }
         
-        // Create the agent graph
-        AgentGraph agentGraph = AgentGraph.of(updatedPlans, tasks, planToTasks, taskToPlan);
+        // Create the agent graph with the extracted name
+        AgentGraph agentGraph = AgentGraph.of(graphName, updatedPlans, tasks, planToTasks, taskToPlan);
         
         // Validate the graph structure
         GraphValidator.validate(agentGraph);
         
-        logger.info("Successfully parsed agent graph with {} plans and {} tasks", 
-            agentGraph.planCount(), agentGraph.taskCount());
+        logger.info("Successfully parsed agent graph '{}' with {} plans and {} tasks", 
+            graphName, agentGraph.planCount(), agentGraph.taskCount());
         
         return agentGraph;
     }
@@ -277,5 +281,22 @@ public class GraphVizDotParser implements GraphParser {
         return name != null && name.matches("^[a-zA-Z_][a-zA-Z0-9_]*$");
     }
     
-
+    /**
+     * Extracts the graph name from the MutableGraph.
+     * 
+     * @param dotGraph The parsed DOT graph
+     * @return The graph name
+     * @throws GraphParsingException if the graph name cannot be extracted
+     */
+    private String extractGraphName(MutableGraph dotGraph, String filename) throws GraphParsingException {
+        // Try to get the graph name from the graph object
+        if (dotGraph.name() != null && !dotGraph.name().value().isEmpty()) {
+            return dotGraph.name().value();
+        }
+        
+        // If no name is found, the DOT file is malformed
+        throw GraphParsingException.parsingError(
+            filename,
+            "Graph name is missing or empty. DOT files must specify a graph name in the format 'digraph GraphName {'");
+    }
 } 

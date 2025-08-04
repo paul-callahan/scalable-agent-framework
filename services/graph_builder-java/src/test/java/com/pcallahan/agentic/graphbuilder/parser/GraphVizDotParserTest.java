@@ -322,6 +322,64 @@ class GraphVizDotParserTest {
         assertThat(graph.taskCount()).isEqualTo(1);
     }
     
+    @Test
+    void testGraphNameExtraction() throws Exception {
+        // Given
+        Path specDir = tempDir.resolve("graph_name_test");
+        Files.createDirectories(specDir);
+        
+        // Create a DOT file with a specific graph name
+        Path dotFile = specDir.resolve("agent_graph.dot");
+        String dotContent = """
+            digraph CustomGraphName {
+                rankdir=TB;
+                node [shape=box, style=filled];
+                
+                plan1 [label="Plan 1", type="plan"];
+                task1 [label="Task 1", type="task"];
+                
+                plan1 -> task1;
+            }
+            """;
+        Files.write(dotFile, dotContent.getBytes());
+        
+        // When
+        AgentGraph graph = parser.parse(specDir);
+        
+        // Then
+        assertThat(graph.name()).isEqualTo("CustomGraphName");
+        assertThat(graph.planCount()).isEqualTo(1);
+        assertThat(graph.taskCount()).isEqualTo(1);
+    }
+    
+    @Test
+    void testMissingGraphNameThrowsException() throws Exception {
+        // Given
+        Path specDir = tempDir.resolve("missing_graph_name");
+        Files.createDirectories(specDir);
+        
+        // Create a DOT file without a graph name
+        Path dotFile = specDir.resolve("agent_graph.dot");
+        String dotContent = """
+            digraph {
+                rankdir=TB;
+                node [shape=box, style=filled];
+                
+                plan1 [label="Plan 1", type="plan"];
+                task1 [label="Task 1", type="task"];
+                
+                plan1 -> task1;
+            }
+            """;
+        Files.write(dotFile, dotContent.getBytes());
+        
+        // When & Then
+        assertThatThrownBy(() -> parser.parse(specDir))
+            .isInstanceOf(GraphParsingException.class)
+            .hasMessageContaining("Graph name is missing or empty")
+            .hasMessageContaining("agent_graph.dot");
+    }
+    
     private Path createValidGraphSpecification() throws Exception {
         // Create the specification directory structure
         Path specDir = tempDir.resolve("valid_graph");

@@ -126,7 +126,7 @@ class PythonCodeBundleValidatorTest {
             specificationDirectory.resolve("tasks").resolve("task_fetch_data"), "plan_data_collection");
         tasks.put("task_fetch_data", task);
         
-        return AgentGraph.of(plans, tasks, new HashMap<>(), new HashMap<>());
+        return AgentGraph.of("PythonCodeBundleTestGraph", plans, tasks, new HashMap<>(), new HashMap<>());
     }
     
     private void createValidFileStructure() throws Exception {

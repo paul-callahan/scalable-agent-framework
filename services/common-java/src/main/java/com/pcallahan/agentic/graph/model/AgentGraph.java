@@ -10,6 +10,7 @@ import java.util.Set;
  * <p>An agent graph defines the structure and relationships between plans and tasks
  * in the scalable agent framework. The graph consists of:</p>
  * <ul>
+ *   <li>Name: The name of the graph (extracted from DOT file)</li>
  *   <li>Plans: Nodes that process task results and produce plan results</li>
  *   <li>Tasks: Nodes that process plan results and produce task results</li>
  *   <li>Relationships: Directed edges defining data flow between nodes</li>
@@ -18,12 +19,14 @@ import java.util.Set;
  * <p>The graph enforces the constraint that tasks can only have one upstream plan,
  * while plans can have multiple upstream tasks and multiple downstream tasks.</p>
  * 
+ * @param name The name of the graph (extracted from DOT file)
  * @param plans Map of plan names to Plan objects
  * @param tasks Map of task names to Task objects
  * @param planToTasks Map of plan names to sets of downstream task names
  * @param taskToPlan Map of task names to their upstream plan name
  */
 public record AgentGraph(
+    String name,
     Map<String, Plan> plans,
     Map<String, Task> tasks,
     Map<String, Set<String>> planToTasks,
@@ -33,6 +36,7 @@ public record AgentGraph(
     /**
      * Compact constructor with validation and defensive copying.
      * 
+     * @param name The graph name
      * @param plans The plans map
      * @param tasks The tasks map
      * @param planToTasks The plan-to-tasks mapping
@@ -40,6 +44,9 @@ public record AgentGraph(
      * @throws IllegalArgumentException if validation fails
      */
     public AgentGraph {
+        if (name == null) {
+            throw new IllegalArgumentException("Graph name cannot be null");
+        }
         if (plans == null) {
             throw new IllegalArgumentException("Plans map cannot be null");
         }
@@ -63,6 +70,7 @@ public record AgentGraph(
     /**
      * Creates a new AgentGraph with the specified components.
      * 
+     * @param name The graph name
      * @param plans The plans map
      * @param tasks The tasks map
      * @param planToTasks The plan-to-tasks mapping
@@ -70,21 +78,32 @@ public record AgentGraph(
      * @return A new AgentGraph
      */
     public static AgentGraph of(
+        String name,
         Map<String, Plan> plans,
         Map<String, Task> tasks,
         Map<String, Set<String>> planToTasks,
         Map<String, String> taskToPlan
     ) {
-        return new AgentGraph(plans, tasks, planToTasks, taskToPlan);
+        return new AgentGraph(name, plans, tasks, planToTasks, taskToPlan);
     }
     
     /**
-     * Creates an empty AgentGraph.
+     * Creates an empty AgentGraph with the specified name.
      * 
+     * @param name The graph name
      * @return An empty AgentGraph
      */
+    public static AgentGraph empty(String name) {
+        return new AgentGraph(name, Map.of(), Map.of(), Map.of(), Map.of());
+    }
+    
+    /**
+     * Creates an empty AgentGraph with a default name.
+     * 
+     * @return An empty AgentGraph with name "EmptyGraph"
+     */
     public static AgentGraph empty() {
-        return new AgentGraph(Map.of(), Map.of(), Map.of(), Map.of());
+        return empty("EmptyGraph");
     }
     
     /**

@@ -230,7 +230,7 @@ class GraphValidatorTest {
         // task1 has plan1 as upstream
         taskToPlan.put("task1", "plan1");
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("ValidGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithDuplicateNames() {
@@ -250,7 +250,7 @@ class GraphValidatorTest {
         planToTasks.put("plan1", Set.of("task1"));
         taskToPlan.put("task1", "plan1");
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("DuplicateNamesGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithDanglingEdges() {
@@ -271,7 +271,7 @@ class GraphValidatorTest {
         taskToPlan.put("task1", "plan1");
         taskToPlan.put("task2", "nonexistent_plan");
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("DanglingEdgesGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithTaskMultiplePlans() {
@@ -292,7 +292,7 @@ class GraphValidatorTest {
         planToTasks.put("plan2", Set.of("task1")); // But graph says plan2
         taskToPlan.put("task1", "plan2"); // And taskToPlan says plan2
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("TaskMultiplePlansGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithOrphanedNodes() {
@@ -315,7 +315,7 @@ class GraphValidatorTest {
         taskToPlan.put("task1", "plan1");
         // Note: orphaned_plan and orphaned_task have no connections
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("OrphanedNodesGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithInvalidNodeNames() {
@@ -333,7 +333,7 @@ class GraphValidatorTest {
         planToTasks.put("plan1", Set.of("task1"));
         taskToPlan.put("task1", "plan1");
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("InvalidNodeNamesGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithCycles() {
@@ -358,7 +358,7 @@ class GraphValidatorTest {
         taskToPlan.put("task1", "plan2"); // task1's upstream is plan2
         taskToPlan.put("task2", "plan1"); // task2's upstream is plan1
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("CyclesGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithPlanNotFeedingIntoTasks() {
@@ -379,7 +379,7 @@ class GraphValidatorTest {
         planToTasks.put("plan2", Set.of()); // plan2 feeds into no tasks
         taskToPlan.put("task1", "plan1");
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("PlanNotFeedingIntoTasksGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private AgentGraph createGraphWithTaskNoUpstreamPlan() {
@@ -400,7 +400,7 @@ class GraphValidatorTest {
         taskToPlan.put("task1", "plan1");
         // task2 is not in taskToPlan, so it has no upstream plan
         
-        return AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        return AgentGraph.of("TaskNoUpstreamPlanGraph", plans, tasks, planToTasks, taskToPlan);
     }
     
     private Path createValidDirectoryStructure() throws Exception {

@@ -2,12 +2,11 @@
 
 ## Overview
 
-The Agent Graph Specification System allows defining dynamic agent graphs using GraphViz DOT files. This system replaces the current hardcoded executor services with dynamically defined agent graphs that can be specified declaratively.
+The Agent Graph Specification System allows defining dynamic agent graphs using a graph specification file and a bundle of Python code for each node. This system provides a declarative approach to defining agent graphs, enabling easy configuration and dynamic execution.
 
-### Key Benefits
+### Features
 
-- **Declarative Configuration**: Define agent graphs using standard GraphViz DOT syntax
-- **Dynamic Execution**: Replace hardcoded services with flexible graph-based execution
+- **Declarative Configuration**: Define agent graphs using standard syntax
 - **Validation**: Comprehensive validation ensures graph integrity and correctness
 - **Extensible**: Pluggable parser architecture supports multiple specification formats
 - **Type Safety**: Strong typing with Java records ensures data integrity
@@ -38,10 +37,10 @@ specification_directory/
 ### Required Files
 
 #### Graph Specification File
-- **Format**: GraphViz DOT (`.dot` extension)
+- **Format**: Currently supports GraphViz DOT (`.dot` extension)
 - **Location**: Root of specification directory
 - **Purpose**: Defines nodes (plans/tasks) and edges (data flow)
-- **Naming**: Must be named `agent_graph.dot`
+- **Naming**: Must be a single file named with `.dot` extension in root directory.  (Convention: `agent_graph.dot`)
 
 #### Plan Implementation
 - **File**: `plan.py` in each plan subdirectory
@@ -92,11 +91,7 @@ digraph AgentGraph {
 
 ### Node Identification
 
-Nodes are identified as plans or tasks using one of these methods:
-
-1. **Node Attributes**: Use `type="plan"` or `type="task"` attributes
-2. **Naming Convention**: Nodes starting with `plan_` or `task_` prefix
-3. **Content Analysis**: Parser analyzes node content for plan/task keywords
+Nodes are identified as plans or tasks using **Node Attributes**: Use `type="plan"` or `type="task"` attributes
 
 ### Edge Semantics
 
@@ -214,12 +209,6 @@ Thrown when the specification file cannot be parsed:
 - **Invalid file format**
 - **I/O errors**
 
-```java
-GraphParsingException e = GraphParsingException.parsingError(
-    "agent_graph.dot", 
-    "Invalid DOT syntax at line 5"
-);
-```
 
 ### GraphValidationException
 
@@ -233,14 +222,6 @@ Thrown when the graph violates integrity constraints:
 - **Missing directories/files**
 - **Plans not feeding into tasks**
 - **Tasks without upstream plans**
-
-```java
-GraphValidationException e = GraphValidationException.invalidGraph(
-    GraphValidationException.ViolationType.DUPLICATE_NAME,
-    "plan_data_collection",
-    "Duplicate plan name: plan_data_collection"
-);
-```
 
 ### Common Error Scenarios
 
@@ -313,10 +294,7 @@ Each test graph includes complete DOT specifications and corresponding Python pl
    task_validate_data -> plan_analysis;
    ```
 
-
-
-
-## Examples
+## Example
 
 ### Complete Working Example
 

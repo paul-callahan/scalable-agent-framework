@@ -44,9 +44,10 @@ class AgentGraphTest {
         taskToPlan.put("test_task", "test_plan");
         
         // When
-        AgentGraph graph = AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        AgentGraph graph = AgentGraph.of("TestGraph", plans, tasks, planToTasks, taskToPlan);
         
         // Then
+        assertThat(graph.name()).isEqualTo("TestGraph");
         assertThat(graph.planCount()).isEqualTo(1);
         assertThat(graph.taskCount()).isEqualTo(1);
         assertThat(graph.totalNodeCount()).isEqualTo(2);
@@ -69,7 +70,7 @@ class AgentGraphTest {
         planToTasks.put("test_plan", Set.of("test_task"));
         taskToPlan.put("test_task", "test_plan");
         
-        AgentGraph graph = AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        AgentGraph graph = AgentGraph.of("TestGraph", plans, tasks, planToTasks, taskToPlan);
         
         // When & Then
         assertThatThrownBy(() -> graph.plans().put("new_plan", plan))
@@ -101,7 +102,7 @@ class AgentGraphTest {
         planToTasks.put("test_plan", Set.of("test_task"));
         taskToPlan.put("test_task", "test_plan");
         
-        AgentGraph graph = AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        AgentGraph graph = AgentGraph.of("TestGraph", plans, tasks, planToTasks, taskToPlan);
         
         // When & Then
         assertThat(graph.getPlan("test_plan")).isEqualTo(plan);
@@ -121,19 +122,23 @@ class AgentGraphTest {
     @Test
     void testValidationInConstructor() {
         // Given & When & Then
-        assertThatThrownBy(() -> AgentGraph.of(null, Map.of(), Map.of(), Map.of()))
+        assertThatThrownBy(() -> AgentGraph.of(null, Map.of(), Map.of(), Map.of(), Map.of()))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Graph name cannot be null");
+        
+        assertThatThrownBy(() -> AgentGraph.of("TestGraph", null, Map.of(), Map.of(), Map.of()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Plans map cannot be null");
         
-        assertThatThrownBy(() -> AgentGraph.of(Map.of(), null, Map.of(), Map.of()))
+        assertThatThrownBy(() -> AgentGraph.of("TestGraph", Map.of(), null, Map.of(), Map.of()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Tasks map cannot be null");
         
-        assertThatThrownBy(() -> AgentGraph.of(Map.of(), Map.of(), null, Map.of()))
+        assertThatThrownBy(() -> AgentGraph.of("TestGraph", Map.of(), Map.of(), null, Map.of()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Plan-to-tasks mapping cannot be null");
         
-        assertThatThrownBy(() -> AgentGraph.of(Map.of(), Map.of(), Map.of(), null))
+        assertThatThrownBy(() -> AgentGraph.of("TestGraph", Map.of(), Map.of(), Map.of(), null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Task-to-plan mapping cannot be null");
     }
@@ -155,7 +160,7 @@ class AgentGraphTest {
         taskToPlan.put("test_task", "test_plan");
         
         // When
-        AgentGraph graph = AgentGraph.of(plans, tasks, planToTasks, taskToPlan);
+        AgentGraph graph = AgentGraph.of("TestGraph", plans, tasks, planToTasks, taskToPlan);
         
         // Then - modifying original maps should not affect the graph
         plans.put("new_plan", plan);
@@ -175,11 +180,24 @@ class AgentGraphTest {
         AgentGraph emptyGraph = AgentGraph.empty();
         
         // Then
+        assertThat(emptyGraph.name()).isEqualTo("EmptyGraph");
         assertThat(emptyGraph.isEmpty()).isTrue();
         assertThat(emptyGraph.planCount()).isEqualTo(0);
         assertThat(emptyGraph.taskCount()).isEqualTo(0);
         assertThat(emptyGraph.totalNodeCount()).isEqualTo(0);
         assertThat(emptyGraph.getAllPlanNames()).isEmpty();
         assertThat(emptyGraph.getAllTaskNames()).isEmpty();
+    }
+    
+    @Test
+    void testEmptyGraphWithCustomName() {
+        // Given & When
+        AgentGraph emptyGraph = AgentGraph.empty("CustomEmptyGraph");
+        
+        // Then
+        assertThat(emptyGraph.name()).isEqualTo("CustomEmptyGraph");
+        assertThat(emptyGraph.isEmpty()).isTrue();
+        assertThat(emptyGraph.planCount()).isEqualTo(0);
+        assertThat(emptyGraph.taskCount()).isEqualTo(0);
     }
 } 
