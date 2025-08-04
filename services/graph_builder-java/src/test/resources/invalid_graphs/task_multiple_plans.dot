@@ -1,0 +1,12 @@
+digraph InvalidGraph {
+    // Plan nodes
+    plan_data_collection [label="Data Collection Plan", type="plan"];
+    plan_analysis [label="Analysis Plan", type="plan"];
+    
+    // Task node with multiple upstream plans (violates constraint)
+    task_fetch_data [label="Fetch Data", type="task"];
+    
+    // Multiple plans pointing to the same task (invalid)
+    plan_data_collection -> task_fetch_data;
+    plan_analysis -> task_fetch_data;
+} 

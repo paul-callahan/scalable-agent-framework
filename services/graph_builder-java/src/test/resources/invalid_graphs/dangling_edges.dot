@@ -1,0 +1,10 @@
+digraph InvalidGraph {
+    // Only define one node but reference others in edges
+    plan_data_collection [label="Data Collection Plan", type="plan"];
+    
+    // Edge to non-existent node
+    plan_data_collection -> task_nonexistent;
+    
+    // Edge from non-existent node
+    task_missing -> plan_data_collection;
+} 

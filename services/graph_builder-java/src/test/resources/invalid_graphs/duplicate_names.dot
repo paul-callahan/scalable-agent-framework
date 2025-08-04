@@ -1,0 +1,11 @@
+digraph InvalidGraph {
+    // Duplicate node names
+    plan_data_collection [label="Data Collection Plan", type="plan"];
+    plan_data_collection [label="Another Data Collection Plan", type="plan"];
+    
+    task_fetch_data [label="Fetch Data", type="task"];
+    task_fetch_data [label="Fetch More Data", type="task"];
+    
+    // Edges
+    plan_data_collection -> task_fetch_data;
+} 

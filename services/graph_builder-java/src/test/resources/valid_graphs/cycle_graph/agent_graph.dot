@@ -1,0 +1,17 @@
+digraph CycleGraph {
+    // Graph attributes
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    // Plan nodes
+    plan1 [label="Plan 1", type="plan"];
+    plan2 [label="Plan 2", type="plan"];
+    
+    // Task nodes
+    task1 [label="Task 1", type="task"];
+    task2 [label="Task 2", type="task"];
+    
+    // Edges creating a cycle: plan1 -> task1 -> plan2 -> task2 -> plan1
+    plan1 -> task1;
+    plan2 -> task2;
+} 

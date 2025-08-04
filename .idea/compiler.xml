@@ -10,6 +10,7 @@
         <module name="plan_executor-java" />
         <module name="task_executor-java" />
         <module name="common-java" />
+        <module name="graph_builder-java" />
         <module name="control_plane-java" />
       </profile>
     </annotationProcessing>
@@ -20,6 +21,7 @@
       <module name="common-java" options="-parameters" />
       <module name="control_plane-java" options="-parameters" />
       <module name="data_plane-java" options="-parameters" />
+      <module name="graph_builder-java" options="-parameters" />
       <module name="plan_executor-java" options="-parameters" />
       <module name="task_executor-java" options="-parameters" />
     </option>
