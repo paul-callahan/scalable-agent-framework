@@ -1,56 +1,214 @@
 version: '3.8'
 
 services:
-  # Control Plane Service
-  control-plane:
-    build:
-      context: ./services/control-plane-py
-      dockerfile: Dockerfile
-    container_name: control-plane
+  # Kafka with KRaft mode
+  kafka:
+    image: confluentinc/cp-kafka:8.0.0
+    container_name: kafka
     ports:
-      - "8001:8000"
+      - "9092:9092"
+      - "9093:9093"
     environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      #KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+      # KRaft specific settings
+      KAFKA_METADATA_LOG_SEGMENT_MS: 15000
+      KAFKA_METADATA_MAX_RETENTION_MS: 86400000
+      KAFKA_LOG_CLEANUP_POLICY: delete
+      KAFKA_LOG_RETENTION_HOURS: 168
     volumes:
-      - ./services/control-plane-py/policies:/app/policies:ro
-    networks:
-      - agentic-network
+      - kafka-data:/tmp/kraft-combined-logs
+    # Remove the user: "0" line - let it run as default user
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Data Plane Service
-  data-plane:
-    build:
-      context: ./services/data-plane-py
-      dockerfile: Dockerfile
-    container_name: data-plane
-    ports:
-      - "8002:8000"
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
-    networks:
-      - agentic-network
-
-  # Executor Service
-  executor:
-    build:
-      context: ./services/executor_old-py
-      dockerfile: Dockerfile
-    container_name: executor
+      POSTGRES_DB: agentic
+      POSTGRES_USER: agentic
+      POSTGRES_PASSWORD: agentic
     ports:
-      - "8003:8000"
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
-    networks:
-      - agentic-network
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-networks:
-  agentic-network:
-    driver: bridge 
+  # Data Plane Java Service
+  data_plane-java:
+    build:
+      context: .
+      dockerfile: services/data_plane-java/Dockerfile
+    container_name: data_plane-java
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agentic
+      SPRING_DATASOURCE_USERNAME: agentic
+      SPRING_DATASOURCE_PASSWORD: agentic
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Control Plane Java Service
+  control_plane-java:
+    build:
+      context: .
+      dockerfile: services/control_plane-java/Dockerfile
+    container_name: control_plane-java
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Task Executor Java Service
+  task_executor-java:
+    build:
+      context: .
+      dockerfile: services/task_executor-java/Dockerfile
+    container_name: task_executor-java
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+    ports:
+      - "8083:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Plan Executor Java Service
+  plan_executor-java:
+    build:
+      context: .
+      dockerfile: services/plan_executor-java/Dockerfile
+    container_name: plan_executor-java
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+    ports:
+      - "8084:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Admin Java Service
+  admin:
+    build:
+      context: ./services/admin-java
+      dockerfile: Dockerfile
+    container_name: admin
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agentic
+      SPRING_DATASOURCE_USERNAME: agentic
+      SPRING_DATASOURCE_PASSWORD: agentic
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+    ports:
+      - "8086:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Kafka UI for development
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  # pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@agentic.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8085:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  kafka-data:

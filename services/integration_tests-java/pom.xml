@@ -29,7 +29,7 @@
         <dependency>
             <groupId>com.pcallahan.agentic</groupId>
             <artifactId>common-java</artifactId>
-            <version>1.1.0</version>
+            <version>${common-java.version}</version>
         </dependency>
         
         <!-- Data Plane module -->
@@ -46,10 +46,13 @@
             <version>1.0.0</version>
         </dependency>
         
+
+        
         <!-- Spring Boot Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>${springboot.version}</version>
         </dependency>
         
         <!-- Spring Kafka Test -->
@@ -74,19 +77,21 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-        </dependency>
-        
-        <!-- H2 Database for testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
         
         <!-- Metrics for embedded Kafka -->
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>4.2.25</version>
+            <version>${dropwizard-metrics.version}</version>
+        </dependency>
+        
+        <!-- H2 Database for testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     
@@ -106,7 +111,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
