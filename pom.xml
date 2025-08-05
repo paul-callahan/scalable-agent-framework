@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.0-M1</version>
+        <version>3.5.4</version>
         <relativePath/>
     </parent>
     
@@ -26,12 +26,18 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Updated to latest milestone version - Spring Boot 4.0.0-M1 -->
-        <spring-kafka.version>4.0.0-M3</spring-kafka.version>
+        <spring-kafka.version>3.3.8</spring-kafka.version>
+        <springboot.version>3.5.4</springboot.version>
         <postgresql.version>42.7.7</postgresql.version>
-        <flyway.version>11.1.0</flyway.version>
+        <flyway.version>11.10.5</flyway.version>
         <!-- Always use the latest versions - keep these updated -->
         <protobuf.version>4.31.1</protobuf.version>
-        <grpc.version>1.68.0</grpc.version>
+        <grpc.version>1.74.0</grpc.version>
+        <!-- Common module version -->
+        <common-java.version>1.1.0</common-java.version>
+        <dropwizard-metrics.version>4.2.25</dropwizard-metrics.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
+        <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
     </properties>
     
     <modules>
@@ -42,6 +48,7 @@
         <module>services/plan_executor-java</module>
         <module>services/graph_builder-java</module>
         <module>services/integration_tests-java</module>
+        <module>services/admin-java</module>
     </modules>
     
     <dependencyManagement>
@@ -50,7 +57,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>4.0.0-M1</version>
+                <version>${springboot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -73,6 +80,11 @@
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
             </dependency>
             
@@ -117,6 +129,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>${springboot.version}</version>
         </dependency>
         
         <dependency>
@@ -133,6 +146,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>${springboot.version}</version>
             <scope>test</scope>
         </dependency>
         

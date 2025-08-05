@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Tenant Administration</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Agentic Tenant Administration</h1>
+        </header>
+        
+        <!-- Error/Success Messages -->
+        <div id="messages">
+            <div id="success-message" class="message success" style="display: none;"></div>
+            <div id="error-message" class="message error" style="display: none;"></div>
+        </div>
+        
+        <!-- Provision Tenant Form -->
+        <section class="form-section">
+            <h2>Provision New Tenant</h2>
+            <form id="provision-form" class="admin-form">
+                <div class="form-group">
+                    <label for="tenant-id">Tenant ID:</label>
+                    <input type="text" id="tenant-id" name="tenantId" required maxlength="50" 
+                           placeholder="Enter unique tenant identifier">
+                </div>
+                <div class="form-group">
+                    <label for="tenant-name">Tenant Name:</label>
+                    <input type="text" id="tenant-name" name="tenantName" required maxlength="50" 
+                           placeholder="Enter tenant name">
+                </div>
+                <div class="form-group">
+                    <label for="provision-notes">Provision Notes:</label>
+                    <textarea id="provision-notes" name="provisionNotes" maxlength="512" 
+                              placeholder="Optional notes about provisioning"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Provision Tenant</button>
+            </form>
+        </section>
+        
+        <!-- Disable Tenant Form -->
+        <section class="form-section">
+            <h2>Disable Tenant</h2>
+            <form id="disable-form" class="admin-form">
+                <div class="form-group">
+                    <label for="disable-tenant-id">Tenant ID:</label>
+                    <input type="text" id="disable-tenant-id" name="tenantId" required maxlength="50" 
+                           placeholder="Enter tenant ID to disable">
+                </div>
+                <div class="form-group">
+                    <label for="disable-notes">Disable Notes:</label>
+                    <textarea id="disable-notes" name="disableNotes" maxlength="512" 
+                              placeholder="Optional notes about why tenant is being disabled"></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning">Disable Tenant</button>
+            </form>
+        </section>
+        
+        <!-- Delete Tenant Form -->
+        <section class="form-section">
+            <h2>Delete Tenant</h2>
+            <form id="delete-form" class="admin-form">
+                <div class="form-group">
+                    <label for="delete-tenant-id">Tenant ID:</label>
+                    <input type="text" id="delete-tenant-id" name="tenantId" required maxlength="50" 
+                           placeholder="Enter tenant ID to delete">
+                </div>
+                <div class="form-group">
+                    <label for="deletion-notes">Deletion Notes:</label>
+                    <textarea id="deletion-notes" name="deletionNotes" maxlength="512" 
+                              placeholder="Optional notes about deletion"></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Tenant</button>
+            </form>
+        </section>
+        
+        <!-- Tenants Table -->
+        <section class="table-section">
+            <h2>Current Tenants</h2>
+            <div class="table-container">
+                <table id="tenants-table" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tenant ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Disabled</th>
+                            <th>Provision Notes</th>
+                            <th>Disable Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="tenant : ${tenants}">
+                            <td th:text="${tenant.tenantId}"></td>
+                            <td th:text="${tenant.tenantName}"></td>
+                            <td>
+                                <span th:if="${tenant.enabled}" class="status enabled">Enabled</span>
+                                <span th:unless="${tenant.enabled}" class="status disabled">Disabled</span>
+                            </td>
+                            <td th:text="${#temporals.format(tenant.creationTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                            <td th:text="${tenant.disableTime != null ? #temporals.format(tenant.disableTime, 'yyyy-MM-dd HH:mm:ss') : '-'}"></td>
+                            <td th:text="${tenant.provisionNotes != null ? tenant.provisionNotes : '-'}"></td>
+                            <td th:text="${tenant.disableNotes != null ? tenant.disableNotes : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    
+    <script src="/js/admin.js"></script>
+</body>
+</html> 

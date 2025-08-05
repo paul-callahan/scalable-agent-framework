@@ -1,0 +1,2 @@
+# Docker-specific overrides can be added here if needed
+# The main application.yml already contains the core configuration 

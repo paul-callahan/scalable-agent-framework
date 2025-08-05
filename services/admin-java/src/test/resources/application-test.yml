@@ -1,11 +1,11 @@
 spring:
   application:
-    name: integration-tests-java-test
+    name: admin-java-test
   
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
-      group-id: integration-test-group
+      group-id: admin-test-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -40,6 +40,14 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: true
     clean-disabled: false
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  thymeleaf:
+    cache: false
 
 logging:
   level:
@@ -47,7 +55,7 @@ logging:
     org.apache.kafka: WARN
     org.springframework.kafka: WARN
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.flywaydb: DEBUG
 
 management:
@@ -60,4 +68,4 @@ management:
       show-details: always
 
 server:
-  port: 0
+  port: 0 

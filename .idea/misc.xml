@@ -15,6 +15,7 @@
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/services/graph_builder-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/integration_tests-java/pom.xml" />
+        <option value="$PROJECT_DIR$/services/admin-java/pom.xml" />
       </list>
     </option>
   </component>
