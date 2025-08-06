@@ -12,8 +12,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union
 
 from .graph import AgentGraph
-from .task import Task, TaskResult
-from .plan import Plan, PlanResult
+from .task import DeprecatedTaskExecutor, TaskResult
+from .plan import DeprecatedPlanExecutor, PlanResult
 
 
 class LifetimeStatus(Enum):
@@ -155,7 +155,7 @@ class AgentLifetime:
         
         # If this is a Plan node, add the next tasks to current_node_ids
         if isinstance(result, PlanResult) and not result.error_message:
-            for task_id in result.next_task_ids:
+            for task_id in result.next_task_names:
                 if task_id in self.graph.nodes:
                     self.current_node_ids.add(task_id)
         
@@ -189,7 +189,7 @@ class AgentLifetime:
     
     async def execute_node(self, node_id: str) -> Union[TaskResult, PlanResult]:
         """
-        Execute a specific node (Task or Plan).
+        Execute a specific node (DeprecatedTaskExecutor or DeprecatedPlanExecutor).
         
         Args:
             node_id: ID of the node to execute
@@ -206,7 +206,7 @@ class AgentLifetime:
             raise ValueError(f"Node {node_id} not found in graph")
         
         try:
-            if isinstance(node, Task):
+            if isinstance(node, DeprecatedTaskExecutor):
                 # Task needs PlanResult from previous step
                 last_plan_result = self._get_last_plan_result()
                 result = await node.execute(last_plan_result)
@@ -214,7 +214,7 @@ class AgentLifetime:
                     raise RuntimeError(f"Task {node_id} returned {type(result)}, expected TaskResult")
                 return result
                 
-            elif isinstance(node, Plan):
+            elif isinstance(node, DeprecatedPlanExecutor):
                 # Plan needs TaskResult from previous step
                 last_task_result = self._get_last_task_result()
                 result = await node.plan(last_task_result)
@@ -223,14 +223,14 @@ class AgentLifetime:
                 return result
                 
             else:
-                raise ValueError(f"Node {node_id} is neither Task nor Plan: {type(node)}")
+                raise ValueError(f"Node {node_id} is neither DeprecatedTaskExecutor nor DeprecatedPlanExecutor: {type(node)}")
                 
         except Exception as e:
             # Create error result based on node type
-            if isinstance(node, Task):
+            if isinstance(node, DeprecatedTaskExecutor):
                 return TaskResult(error_message=str(e))
             else:
-                return PlanResult(next_task_ids=[], error_message=str(e))
+                return PlanResult(next_task_names=[], error_message=str(e))
 
     def get_next_nodes(self, completed_node_id: str) -> List[str]:
         """
@@ -278,7 +278,7 @@ class AgentLifetime:
                         return result
         
         # Return empty PlanResult if no previous plan found
-        return PlanResult(next_task_ids=[])
+        return PlanResult(next_task_names=[])
 
     def _get_last_task_result(self) -> TaskResult:
         """
@@ -375,16 +375,13 @@ class AgentLifetime:
             if isinstance(result, TaskResult):
                 serialized_results[node_id] = {
                     'type': 'TaskResult',
-                    'mime_type': result.mime_type,
-                    'size_bytes': result.size_bytes,
                     'has_error': result.error_message is not None,
                     'error_message': result.error_message
                 }
             elif isinstance(result, PlanResult):
                 serialized_results[node_id] = {
                     'type': 'PlanResult',
-                    'next_task_ids': result.next_task_ids,
-                    'confidence': result.confidence,
+                    'next_task_names': result.next_task_names,
                     'has_error': result.error_message is not None,
                     'error_message': result.error_message
                 }

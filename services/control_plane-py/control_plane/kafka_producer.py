@@ -81,7 +81,7 @@ class ControlPlaneProducer:
             message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = task_execution.header.id
+            execution_id = task_execution.header.exec_id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -134,7 +134,7 @@ class ControlPlaneProducer:
             message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = plan_execution.header.id
+            execution_id = plan_execution.header.exec_id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),

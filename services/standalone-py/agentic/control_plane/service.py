@@ -189,14 +189,13 @@ class ControlPlaneService:
         if not guardrail_result['allowed']:
             # Create rejection protobuf message
             rejection_header = common_pb2.ExecutionHeader(
-                id=request_data.get('execution_id', ''),
+                exec_id=request_data.get('execution_id', ''),
                 tenant_id=tenant_id,
-                timestamp=datetime.utcnow().isoformat()
+                created_at=datetime.utcnow().isoformat()
             )
             
             if execution_type == 'task':
                 rejection_result = task_pb2.TaskResult(
-                    id=request_data.get('execution_id', ''),
                     error_message='; '.join(guardrail_result['violations'])
                 )
                 rejection_message = task_pb2.TaskExecution(
@@ -221,15 +220,13 @@ class ControlPlaneService:
         
         # Create approval protobuf message
         approval_header = common_pb2.ExecutionHeader(
-            id=request_data.get('execution_id', ''),
+            exec_id=request_data.get('execution_id', ''),
             tenant_id=tenant_id,
-            timestamp=datetime.utcnow().isoformat()
+            created_at=datetime.utcnow().isoformat()
         )
         
         if execution_type == 'task':
-            approval_result = task_pb2.TaskResult(
-                id=request_data.get('execution_id', '')
-            )
+            approval_result = task_pb2.TaskResult()
             approval_message = task_pb2.TaskExecution(
                 header=approval_header,
                 result=approval_result
@@ -261,10 +258,10 @@ class ControlPlaneService:
             
             # Convert to request_data format for guardrail evaluation
             request_data = {
-                'execution_id': task_execution.header.id,
+                'execution_id': task_execution.header.exec_id,
                 'tenant_id': task_execution.header.tenant_id,
                 'execution_type': 'task',
-                'task_type': task_execution.task_type
+                'task_type': 'default_task'  # Default task type since field was removed
             }
             
             self.logger.debug(f"Processing task control message: {request_data.get('execution_id', '')}")
@@ -297,10 +294,10 @@ class ControlPlaneService:
             
             # Convert to request_data format for guardrail evaluation
             request_data = {
-                'execution_id': plan_execution.header.id,
+                'execution_id': plan_execution.header.exec_id,
                 'tenant_id': plan_execution.header.tenant_id,
                 'execution_type': 'plan',
-                'plan_type': plan_execution.plan_type
+                'plan_type': 'default_plan'  # Default plan type since field was removed
             }
             
             self.logger.debug(f"Processing persisted plan executions message: {request_data.get('execution_id', '')}")

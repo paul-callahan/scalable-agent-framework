@@ -57,16 +57,19 @@ class DataPlaneService:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS task_executions (
                     id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
                     tenant_id TEXT NOT NULL,
-                    graph_id TEXT,
-                    lifetime_id TEXT,
-                    task_type TEXT NOT NULL,
-                    result_data BLOB,
-                    result_mime_type TEXT,
-                    result_size_bytes INTEGER,
-                    result_error_message TEXT,
-                    status TEXT NOT NULL,
+                    graph_id TEXT NOT NULL,
+                    lifetime_id TEXT NOT NULL,
+                    attempt INTEGER NOT NULL,
+                    iteration_idx INTEGER NOT NULL,
                     created_at TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    edge_taken TEXT,
+                    parent_plan_exec_id TEXT,
+                    parent_plan_name TEXT,
+                    result_data BLOB,
+                    result_error_message TEXT,
                     updated_at TEXT NOT NULL
                 )
             """)
@@ -74,17 +77,19 @@ class DataPlaneService:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS plan_executions (
                     id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
                     tenant_id TEXT NOT NULL,
-                    graph_id TEXT,
-                    lifetime_id TEXT,
-                    plan_type TEXT NOT NULL,
-                    input_task_id TEXT,
-                    next_task_ids TEXT,
-                    metadata TEXT,
-                    error_message TEXT,
-                    confidence REAL,
-                    status TEXT NOT NULL,
+                    graph_id TEXT NOT NULL,
+                    lifetime_id TEXT NOT NULL,
+                    attempt INTEGER NOT NULL,
+                    iteration_idx INTEGER NOT NULL,
                     created_at TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    edge_taken TEXT,
+                    parent_task_exec_ids TEXT,
+                    parent_task_names TEXT,
+                    next_task_names TEXT,
+                    error_message TEXT,
                     updated_at TEXT NOT NULL
                 )
             """)
@@ -92,8 +97,10 @@ class DataPlaneService:
             # Create indexes for better query performance
             conn.execute("CREATE INDEX IF NOT EXISTS idx_task_tenant ON task_executions(tenant_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_task_lifetime ON task_executions(lifetime_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_task_parent_plan ON task_executions(parent_plan_exec_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_plan_tenant ON plan_executions(tenant_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_plan_lifetime ON plan_executions(lifetime_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_plan_parent_tasks ON plan_executions(parent_task_exec_ids)")
     
     async def _store_task_execution(self, task_execution: task_pb2.TaskExecution) -> None:
         """
@@ -104,49 +111,55 @@ class DataPlaneService:
         """
         try:
             with sqlite3.connect(self.db_path) as conn:
-                # Extract result data
+                # Extract result data using the new StoredData structure
                 result_data = None
-                result_mime_type = ""
-                result_size_bytes = 0
                 result_error_message = ""
                 
                 if task_execution.result.HasField('inline_data'):
                     result_data = task_execution.result.inline_data.SerializeToString()
-                    result_size_bytes = len(result_data)
-                elif task_execution.result.HasField('uri'):
-                    result_data = task_execution.result.uri.encode('utf-8')
-                    result_size_bytes = len(result_data)
+                elif task_execution.result.HasField('external_data'):
+                    # Handle StoredData structure
+                    stored_data = task_execution.result.external_data
+                    # Store URI and metadata as JSON
+                    stored_info = {
+                        'uri': stored_data.uri,
+                        'metadata': dict(stored_data.metadata)
+                    }
+                    result_data = json.dumps(stored_info).encode('utf-8')
                 
-                result_mime_type = task_execution.result.mime_type
                 result_error_message = task_execution.result.error_message
                 
                 conn.execute("""
                     INSERT OR REPLACE INTO task_executions (
-                        id, tenant_id, graph_id, lifetime_id, task_type,
-                        result_data, result_mime_type, result_size_bytes, result_error_message,
-                        status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        id, name, tenant_id, graph_id, lifetime_id,
+                        attempt, iteration_idx, created_at, status,
+                        edge_taken, parent_plan_exec_id, parent_plan_name,
+                        result_data, result_error_message, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    task_execution.header.id,
+                    task_execution.header.exec_id,
+                    task_execution.header.name,
                     task_execution.header.tenant_id,
                     task_execution.header.graph_id,
                     task_execution.header.lifetime_id,
-                    task_execution.task_type,
-                    result_data,
-                    result_mime_type,
-                    result_size_bytes,
-                    result_error_message,
-                    common_pb2.ExecutionStatus.Name(task_execution.header.status),
+                    task_execution.header.attempt,
+                    task_execution.header.iteration_idx,
                     task_execution.header.created_at,
+                    common_pb2.ExecutionStatus.Name(task_execution.header.status),
+                    task_execution.header.edge_taken,
+                    task_execution.parent_plan_exec_id,
+                    task_execution.parent_plan_name,
+                    result_data,
+                    result_error_message,
                     datetime.utcnow().isoformat()
                 ))
                 
                 self._task_executions_stored += 1
-                self.logger.debug(f"Stored task execution: {task_execution.header.id}")
+                self.logger.debug(f"Stored task execution: {task_execution.header.exec_id}")
                 
         except Exception as e:
             self._errors += 1
-            self.logger.error(f"Error storing task execution {task_execution.header.id}: {e}")
+            self.logger.error(f"Error storing task execution {task_execution.header.exec_id}: {e}")
             raise
     
     async def _store_plan_execution(self, plan_execution: plan_pb2.PlanExecution) -> None:
@@ -160,37 +173,45 @@ class DataPlaneService:
             with sqlite3.connect(self.db_path) as conn:
                 # Extract plan result data using consistent utilities
                 plan_result_data = ProtobufUtils.extract_plan_result_data(plan_execution.result)
-                next_task_ids_json = json.dumps(plan_result_data["next_task_ids"])
-                metadata_json = json.dumps(plan_result_data["metadata"])
+                next_task_names_json = json.dumps(plan_result_data["next_task_names"])
+                
+                # Handle parent task execution IDs
+                parent_task_exec_ids_json = json.dumps(list(plan_execution.parent_task_exec_ids))
+                
+                # Handle parent task names
+                parent_task_names = plan_execution.parent_task_names
                 
                 conn.execute("""
                     INSERT OR REPLACE INTO plan_executions (
-                        id, tenant_id, graph_id, lifetime_id, plan_type,
-                        input_task_id, next_task_ids, metadata, error_message, confidence,
-                        status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        id, name, tenant_id, graph_id, lifetime_id,
+                        attempt, iteration_idx, created_at, status,
+                        edge_taken, parent_task_exec_ids, parent_task_names,
+                                            next_task_names, error_message, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    plan_execution.header.id,
+                    plan_execution.header.exec_id,
+                    plan_execution.header.name,
                     plan_execution.header.tenant_id,
                     plan_execution.header.graph_id,
                     plan_execution.header.lifetime_id,
-                    plan_execution.plan_type,
-                    plan_execution.input_task_id,
-                    next_task_ids_json,
-                    metadata_json,
-                    plan_execution.result.error_message,
-                    plan_execution.result.confidence,
-                    common_pb2.ExecutionStatus.Name(plan_execution.header.status),
+                    plan_execution.header.attempt,
+                    plan_execution.header.iteration_idx,
                     plan_execution.header.created_at,
+                    common_pb2.ExecutionStatus.Name(plan_execution.header.status),
+                    plan_execution.header.edge_taken,
+                    parent_task_exec_ids_json,
+                    parent_task_names,
+                    next_task_names_json,
+                    plan_execution.result.error_message,
                     datetime.utcnow().isoformat()
                 ))
                 
                 self._plan_executions_stored += 1
-                self.logger.debug(f"Stored plan execution: {plan_execution.header.id}")
+                self.logger.debug(f"Stored plan execution: {plan_execution.header.exec_id}")
                 
         except Exception as e:
             self._errors += 1
-            self.logger.error(f"Error storing plan execution {plan_execution.header.id}: {e}")
+            self.logger.error(f"Error storing plan execution {plan_execution.header.exec_id}: {e}")
             raise
     
     async def _process_task_execution(self, message_bytes: bytes, tenant_id: str) -> None:
@@ -206,7 +227,7 @@ class DataPlaneService:
             task_execution = task_pb2.TaskExecution()
             task_execution.ParseFromString(message_bytes)
             
-            self.logger.debug(f"Processing task execution: {task_execution.header.id}")
+            self.logger.debug(f"Processing task execution: {task_execution.header.exec_id}")
             
             # Store to database
             await self._store_task_execution(task_execution)
@@ -216,7 +237,7 @@ class DataPlaneService:
             await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
-            self.logger.debug(f"Forwarded task execution to control plane: {task_execution.header.id}")
+            self.logger.debug(f"Forwarded task execution to control plane: {task_execution.header.exec_id}")
             
         except Exception as e:
             self._errors += 1
@@ -236,7 +257,7 @@ class DataPlaneService:
             plan_execution = plan_pb2.PlanExecution()
             plan_execution.ParseFromString(message_bytes)
             
-            self.logger.debug(f"Processing plan execution: {plan_execution.header.id}")
+            self.logger.debug(f"Processing plan execution: {plan_execution.header.exec_id}")
             
             # Store to database
             await self._store_plan_execution(plan_execution)
@@ -246,7 +267,7 @@ class DataPlaneService:
             await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
-            self.logger.debug(f"Forwarded plan execution to control plane: {plan_execution.header.id}")
+            self.logger.debug(f"Forwarded plan execution to control plane: {plan_execution.header.exec_id}")
             
         except Exception as e:
             self._errors += 1

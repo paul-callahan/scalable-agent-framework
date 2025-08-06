@@ -2,7 +2,7 @@ package com.pcallahan.agentic.planexecutor.kafka;
 
 import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.common.TopicNames;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

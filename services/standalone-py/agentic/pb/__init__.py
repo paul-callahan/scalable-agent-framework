@@ -1,42 +1,12 @@
-"""
-Protobuf message imports for agentic microservices.
+# Import from the new package structure
+from .io_arl.proto.model import *
+from .io_arl.proto.model import common_pb2, common_pb2_grpc
+from .io_arl.proto.model import task_pb2, task_pb2_grpc
+from .io_arl.proto.model import plan_pb2, plan_pb2_grpc
 
-This module re-exports all protobuf generated classes from locally generated
-protobuf files. Generate the protobuf files using scripts/gen_proto.sh.
-
-This centralizes protobuf imports so microservices don't need to manage
-proto generation individually.
-"""
-
-# Import all protobuf generated classes from local files
-try:
-    from .common_pb2 import ExecutionHeader
-    from .task_pb2 import TaskExecution, TaskResult
-    from .plan_pb2 import PlanExecution, PlanResult
-    from .services_pb2_grpc import (
-        DataPlaneServiceServicer,
-        DataPlaneServiceStub,
-        ControlPlaneServiceServicer,
-        ControlPlaneServiceStub,
-    )
-except ImportError:
-    raise ImportError(
-        "No protobuf files found. Please generate them using:\n"
-        "./scripts/gen_proto.sh"
-    )
-
+# Re-export for backward compatibility
 __all__ = [
-    # Common protobuf messages
-    "ExecutionHeader",
-    # Task-related protobuf messages
-    "TaskExecution",
-    "TaskResult",
-    # Plan-related protobuf messages
-    "PlanExecution",
-    "PlanResult",
-    # Service definitions
-    "DataPlaneServiceServicer",
-    "DataPlaneServiceStub",
-    "ControlPlaneServiceServicer",
-    "ControlPlaneServiceStub",
-] 
+    'common_pb2', 'common_pb2_grpc',
+    'task_pb2', 'task_pb2_grpc',
+    'plan_pb2', 'plan_pb2_grpc'
+]

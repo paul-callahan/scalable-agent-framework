@@ -25,12 +25,6 @@ public class TaskResultEntity {
     @Column(name = "tenant_id", length = 50, nullable = false)
     private String tenantId;
     
-    @Column(name = "mime_type", length = 100)
-    private String mimeType;
-    
-    @Column(name = "size_bytes")
-    private Long sizeBytes;
-    
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
     
@@ -66,22 +60,6 @@ public class TaskResultEntity {
     
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
-    }
-    
-    public String getMimeType() {
-        return mimeType;
-    }
-    
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
-    
-    public Long getSizeBytes() {
-        return sizeBytes;
-    }
-    
-    public void setSizeBytes(Long sizeBytes) {
-        this.sizeBytes = sizeBytes;
     }
     
     public String getErrorMessage() {

@@ -37,15 +37,12 @@ def test_task_execution_serialization():
     
     # Create task result
     task_result = ProtobufUtils.create_task_result(
-        mime_type="application/json",
-        size_bytes=1024,
         inline_data={"test": "data", "number": 42}
     )
     
     # Create TaskExecution
     task_execution = TaskExecution()
     task_execution.header.CopyFrom(header)
-    task_execution.task_type = "test_task"
     task_execution.result.CopyFrom(task_result)
     
     # Test serialization
@@ -62,10 +59,8 @@ def test_task_execution_serialization():
         print(f"✓ TaskExecution deserialized successfully")
         
         # Verify fields
-        assert deserialized.header.id == execution_id
+        assert deserialized.header.exec_id == execution_id
         assert deserialized.header.tenant_id == tenant_id
-        assert deserialized.task_type == "test_task"
-        assert deserialized.result.mime_type == "application/json"
         print(f"✓ TaskExecution field validation passed")
         
     except Exception as e:
@@ -94,16 +89,12 @@ def test_plan_execution_serialization():
     
     # Create plan result
     plan_result = ProtobufUtils.create_plan_result(
-        next_task_ids=["task1", "task2", "task3"],
-        metadata={"confidence": "high", "reasoning": "test"},
-        confidence=0.85
+        next_task_names=["task1", "task2", "task3"]
     )
     
     # Create PlanExecution
     plan_execution = PlanExecution()
     plan_execution.header.CopyFrom(header)
-    plan_execution.plan_type = "test_plan"
-    plan_execution.input_task_id = "input_task_123"
     plan_execution.result.CopyFrom(plan_result)
     
     # Test serialization
@@ -120,12 +111,9 @@ def test_plan_execution_serialization():
         print(f"✓ PlanExecution deserialized successfully")
         
         # Verify fields
-        assert deserialized.header.id == execution_id
+        assert deserialized.header.exec_id == execution_id
         assert deserialized.header.tenant_id == tenant_id
-        assert deserialized.plan_type == "test_plan"
-        assert deserialized.input_task_id == "input_task_123"
-        assert len(deserialized.result.next_task_ids) == 3
-        assert abs(deserialized.result.confidence - 0.85) < 0.0001
+        assert len(deserialized.result.next_task_names) == 3
         print(f"✓ PlanExecution field validation passed")
         
     except Exception as e:
@@ -149,7 +137,6 @@ def test_protobuf_utils_validation():
     
     task_execution = TaskExecution()
     task_execution.header.CopyFrom(header)
-    task_execution.task_type = "test_task"
     
     assert ProtobufUtils.validate_task_execution(task_execution)
     print("✓ Valid TaskExecution validation passed")
@@ -162,7 +149,6 @@ def test_protobuf_utils_validation():
     # Test valid PlanExecution
     plan_execution = PlanExecution()
     plan_execution.header.CopyFrom(header)
-    plan_execution.plan_type = "test_plan"
     
     assert ProtobufUtils.validate_plan_execution(plan_execution)
     print("✓ Valid PlanExecution validation passed")
@@ -181,7 +167,6 @@ def test_data_extraction():
     
     # Test task result data extraction
     task_result = ProtobufUtils.create_task_result(
-        mime_type="application/json",
         inline_data={"test": "data"}
     )
     
@@ -192,15 +177,11 @@ def test_data_extraction():
     
     # Test plan result data extraction
     plan_result = ProtobufUtils.create_plan_result(
-        next_task_ids=["task1", "task2"],
-        metadata={"key": "value"},
-        confidence=0.75
+        next_task_names=["task1", "task2"]
     )
     
     extracted_plan_data = ProtobufUtils.extract_plan_result_data(plan_result)
-    assert len(extracted_plan_data["next_task_ids"]) == 2
-    assert extracted_plan_data["confidence"] == 0.75
-    assert extracted_plan_data["metadata"]["key"] == "value"
+    assert len(extracted_plan_data["next_task_names"]) == 2
     print("✓ PlanResult data extraction passed")
     
     return True
@@ -220,13 +201,11 @@ def test_json_conversion():
     
     task_execution = TaskExecution()
     task_execution.header.CopyFrom(header)
-    task_execution.task_type = "test_task"
     
     # Test protobuf to JSON-safe dict
     try:
         json_dict = ProtobufUtils.to_json_safe_dict(task_execution)
         assert "header" in json_dict
-        assert "taskType" in json_dict
         print("✓ Protobuf to JSON-safe dict conversion passed")
     except Exception as e:
         print(f"✗ Protobuf to JSON-safe dict conversion failed: {e}")
@@ -235,8 +214,7 @@ def test_json_conversion():
     # Test JSON-safe dict to protobuf
     try:
         reconstructed = ProtobufUtils.from_json_safe_dict(json_dict, TaskExecution)
-        assert reconstructed.header.id == execution_id
-        assert reconstructed.task_type == "test_task"
+        assert reconstructed.header.exec_id == execution_id
         print("✓ JSON-safe dict to protobuf conversion passed")
     except Exception as e:
         print(f"✗ JSON-safe dict to protobuf conversion failed: {e}")

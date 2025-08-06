@@ -3,7 +3,7 @@ package com.pcallahan.agentic.dataplane.kafka;
 import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.dataplane.service.PersistenceService;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

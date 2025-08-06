@@ -113,121 +113,63 @@ generate_proto() {
     done
 }
 
-# Post-process generated Python files to fix import statements
-post_process_imports() {
-    print_status "Post-processing generated Python files to fix import statements..."
+# Create proper package structure for io_arl.proto.model
+create_package_structure() {
+    print_status "Creating package structure for io_arl.proto.model..."
     
     cd "$(dirname "$0")/.."
     
-    # List of generated files to process
-    generated_files=(
-        "common_pb2.py"
-        "common_pb2_grpc.py"
-        "task_pb2.py"
-        "task_pb2_grpc.py"
-        "plan_pb2.py"
-        "plan_pb2_grpc.py"
-        "services_pb2.py"
-        "services_pb2_grpc.py"
-    )
+    # Create the package directory structure
+    mkdir -p "$OUTPUT_DIR/io_arl/proto/model"
     
-    for file in "${generated_files[@]}"; do
+    # Move generated files to the correct package location
+    for file in common_pb2.py common_pb2_grpc.py task_pb2.py task_pb2_grpc.py plan_pb2.py plan_pb2_grpc.py; do
         if [ -f "$OUTPUT_DIR/$file" ]; then
-            print_status "Processing imports in: $file"
-            
-            # Process the file to fix import statements
-            # This handles cases where protoc generates imports that need to be relative to the pb package
-            if [ -z "$UV_CMD" ]; then
-                python3 -c "
-import re
-import sys
-
-def fix_imports(content):
-    # Fix import statements to use relative imports within the pb package
-    lines = content.split('\n')
-    fixed_lines = []
-    
-    for line in lines:
-        # Fix import statements for our generated protobuf modules
-        # Convert 'import common_pb2 as common__pb2' to 'from . import common_pb2 as common__pb2'
-        if 'import ' in line and '_pb2' in line and not line.strip().startswith('from .'):
-            # Handle imports like 'import common_pb2 as common__pb2'
-            if re.match(r'^import (\w+_pb2)', line.strip()):
-                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
-            # Handle imports like 'from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2'
-            elif 'from google.protobuf import' in line and '_pb2' in line:
-                # Keep google protobuf imports as they are
-                pass
-            # Handle other protobuf imports
-            elif '_pb2' in line and not line.strip().startswith('from google'):
-                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
-        
-        fixed_lines.append(line)
-    
-    return '\n'.join(fixed_lines)
-
-# Read the file
-with open('$OUTPUT_DIR/$file', 'r') as f:
-    content = f.read()
-
-# Fix the imports
-fixed_content = fix_imports(content)
-
-# Write back to the file
-with open('$OUTPUT_DIR/$file', 'w') as f:
-    f.write(fixed_content)
-"
-            else
-                $UV_CMD python -c "
-import re
-import sys
-
-def fix_imports(content):
-    # Fix import statements to use relative imports within the pb package
-    lines = content.split('\n')
-    fixed_lines = []
-    
-    for line in lines:
-        # Fix import statements for our generated protobuf modules
-        # Convert 'import common_pb2 as common__pb2' to 'from . import common_pb2 as common__pb2'
-        if 'import ' in line and '_pb2' in line and not line.strip().startswith('from .'):
-            # Handle imports like 'import common_pb2 as common__pb2'
-            if re.match(r'^import (\w+_pb2)', line.strip()):
-                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
-            # Handle imports like 'from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2'
-            elif 'from google.protobuf import' in line and '_pb2' in line:
-                # Keep google protobuf imports as they are
-                pass
-            # Handle other protobuf imports
-            elif '_pb2' in line and not line.strip().startswith('from google'):
-                line = re.sub(r'^import (\w+_pb2)', r'from . import \1', line)
-        
-        fixed_lines.append(line)
-    
-    return '\n'.join(fixed_lines)
-
-# Read the file
-with open('$OUTPUT_DIR/$file', 'r') as f:
-    content = f.read()
-
-# Fix the imports
-fixed_content = fix_imports(content)
-
-# Write back to the file
-with open('$OUTPUT_DIR/$file', 'w') as f:
-    f.write(fixed_content)
-"
-            fi
-            
-            if [ $? -eq 0 ]; then
-                print_status "✓ Fixed imports in: $file"
-            else
-                print_warning "⚠ Could not process imports in: $file"
-            fi
-        else
-            print_warning "⚠ File not found for post-processing: $file"
+            print_status "Moving $file to package structure..."
+            mv "$OUTPUT_DIR/$file" "$OUTPUT_DIR/io_arl/proto/model/"
         fi
     done
+    
+    # Create __init__.py files for the package structure
+    cat > "$OUTPUT_DIR/io_arl/__init__.py" << 'EOF'
+# Package initialization for io_arl
+EOF
+    
+    cat > "$OUTPUT_DIR/io_arl/proto/__init__.py" << 'EOF'
+# Package initialization for proto
+EOF
+    
+    cat > "$OUTPUT_DIR/io_arl/proto/model/__init__.py" << 'EOF'
+# Package initialization for model
+# Import all generated protobuf modules
+from . import common_pb2
+from . import common_pb2_grpc
+from . import task_pb2
+from . import task_pb2_grpc
+from . import plan_pb2
+from . import plan_pb2_grpc
+
+# Re-export commonly used classes for easier imports
+from .common_pb2 import *
+from .task_pb2 import *
+from .plan_pb2 import *
+EOF
+    
+    # Update the main pb __init__.py to import from the new package structure
+    cat > "$OUTPUT_DIR/__init__.py" << 'EOF'
+# Import from the new package structure
+from .io_arl.proto.model import *
+from .io_arl.proto.model import common_pb2, common_pb2_grpc
+from .io_arl.proto.model import task_pb2, task_pb2_grpc
+from .io_arl.proto.model import plan_pb2, plan_pb2_grpc
+
+# Re-export for backward compatibility
+__all__ = [
+    'common_pb2', 'common_pb2_grpc',
+    'task_pb2', 'task_pb2_grpc',
+    'plan_pb2', 'plan_pb2_grpc'
+]
+EOF
 }
 
 # Verify generated files
@@ -235,14 +177,12 @@ verify_generated_files() {
     print_status "Verifying generated files..."
     
     expected_files=(
-        "common_pb2.py"
-        "common_pb2_grpc.py"
-        "task_pb2.py"
-        "task_pb2_grpc.py"
-        "plan_pb2.py"
-        "plan_pb2_grpc.py"
-        "services_pb2.py"
-        "services_pb2_grpc.py"
+        "io_arl/proto/model/common_pb2.py"
+        "io_arl/proto/model/common_pb2_grpc.py"
+        "io_arl/proto/model/task_pb2.py"
+        "io_arl/proto/model/task_pb2_grpc.py"
+        "io_arl/proto/model/plan_pb2.py"
+        "io_arl/proto/model/plan_pb2_grpc.py"
     )
     
     for file in "${expected_files[@]}"; do
@@ -253,14 +193,22 @@ verify_generated_files() {
             exit 1
         fi
     done
-}
-
-# Create __init__.py if it doesn't exist
-create_init_file() {
-    if [ ! -f "$OUTPUT_DIR/__init__.py" ]; then
-        print_status "Creating __init__.py file"
-        touch "$OUTPUT_DIR/__init__.py"
-    fi
+    
+    # Verify package structure
+    package_files=(
+        "io_arl/__init__.py"
+        "io_arl/proto/__init__.py"
+        "io_arl/proto/model/__init__.py"
+    )
+    
+    for file in "${package_files[@]}"; do
+        if [ -f "$OUTPUT_DIR/$file" ]; then
+            print_status "✓ Package file: $file"
+        else
+            print_error "✗ Missing package file: $file"
+            exit 1
+        fi
+    done
 }
 
 # Main execution
@@ -270,12 +218,12 @@ main() {
     check_dependencies
     create_output_dir
     generate_proto
-    post_process_imports
+    create_package_structure
     verify_generated_files
-    create_init_file
     
     print_status "Protobuf generation completed successfully!"
     print_status "Generated files are in: $OUTPUT_DIR"
+    print_status "Package structure: $OUTPUT_DIR/io_arl/proto/model/"
 }
 
 # Run main function

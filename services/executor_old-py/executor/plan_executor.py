@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from structlog import get_logger
 
-from agentic.core.plan import Plan, PlanResult
+from agentic.core.plan import DeprecatedPlanExecutor, PlanResult
 from agentic.core.task import TaskResult
 from .registry import PlanRegistry
 
@@ -23,7 +23,7 @@ class PlanExecutor:
     """
     Plan executor for the executor service.
     
-    Handles plan execution by looking up Plan classes from the registry,
+    Handles plan execution by looking up DeprecatedPlanExecutor classes from the registry,
     executing them with TaskResult input, and producing PlanExecution messages.
     """
     
@@ -98,7 +98,7 @@ class PlanExecutor:
                 "plan_type": plan_type,
                 "tenant_id": tenant_id,
                 "result": {
-                    "next_task_ids": plan_result.next_task_ids,
+                    "next_task_names": plan_result.next_task_names,
                     "metadata": plan_result.metadata,
                     "error_message": plan_result.error_message,
                     "confidence": plan_result.confidence,
@@ -110,7 +110,7 @@ class PlanExecutor:
                        plan_type=plan_type,
                        execution_id=execution_id,
                        status=execution_data["status"],
-                       next_task_count=len(plan_result.next_task_ids))
+                       next_task_count=len(plan_result.next_task_names))
             
             return execution_data
             
@@ -126,7 +126,7 @@ class PlanExecutor:
                 "plan_type": plan_type,
                 "tenant_id": tenant_id,
                 "result": {
-                    "next_task_ids": [],
+                    "next_task_names": [],
                     "metadata": {},
                     "error_message": str(e),
                     "confidence": 0.0,
@@ -176,12 +176,12 @@ class PlanExecutor:
             "doc": plan_class.__doc__,
         }
     
-    def validate_next_task_ids(self, next_task_ids: list[str], available_tasks: list[str]) -> Dict[str, Any]:
+    def validate_next_task_names(self, next_task_names: list[str], available_tasks: list[str]) -> Dict[str, Any]:
         """
-        Validate that next_task_ids are available.
+        Validate that next_task_names are available.
         
         Args:
-            next_task_ids: List of task IDs to validate
+            next_task_names: List of task names to validate
             available_tasks: List of available task types
             
         Returns:
@@ -190,17 +190,17 @@ class PlanExecutor:
         valid_tasks = []
         invalid_tasks = []
         
-        for task_id in next_task_ids:
-            if task_id in available_tasks:
-                valid_tasks.append(task_id)
+        for task_name in next_task_names:
+            if task_name in available_tasks:
+                valid_tasks.append(task_name)
             else:
-                invalid_tasks.append(task_id)
+                invalid_tasks.append(task_name)
         
         return {
             "valid_tasks": valid_tasks,
             "invalid_tasks": invalid_tasks,
             "all_valid": len(invalid_tasks) == 0,
-            "total_requested": len(next_task_ids),
+            "total_requested": len(next_task_names),
             "total_valid": len(valid_tasks),
             "total_invalid": len(invalid_tasks),
         } 

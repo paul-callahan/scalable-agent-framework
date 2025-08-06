@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from structlog import get_logger
 
-from agentic.core.task import Task, TaskResult
+from agentic.core.task import DeprecatedTaskExecutor, TaskResult
 from agentic.core.plan import PlanResult
 from .registry import TaskRegistry
 
@@ -23,7 +23,7 @@ class TaskExecutor:
     """
     Task executor for the executor service.
     
-    Handles task execution by looking up Task classes from the registry,
+    Handles task execution by looking up DeprecatedTaskExecutor classes from the registry,
     executing them with PlanResult input, and producing TaskExecution messages.
     """
     

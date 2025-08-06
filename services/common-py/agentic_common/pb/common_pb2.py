@@ -25,15 +25,15 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\x0e\x61gentic.common\x1a\x1fgoogle/protobuf/timestamp.proto\"\xeb\x01\n\x0f\x45xecutionHeader\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tparent_id\x18\x02 \x01(\t\x12\x10\n\x08graph_id\x18\x03 \x01(\t\x12\x13\n\x0blifetime_id\x18\x04 \x01(\t\x12\x11\n\ttenant_id\x18\x05 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x06 \x01(\x05\x12\x15\n\riteration_idx\x18\x07 \x01(\x05\x12\x12\n\ncreated_at\x18\x08 \x01(\t\x12/\n\x06status\x18\t \x01(\x0e\x32\x1f.agentic.common.ExecutionStatus\x12\x12\n\nedge_taken\x18\n \x01(\t*\xac\x01\n\x0f\x45xecutionStatus\x12 \n\x1c\x45XECUTION_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n\x18\x45XECUTION_STATUS_PENDING\x10\x01\x12\x1c\n\x18\x45XECUTION_STATUS_RUNNING\x10\x02\x12\x1e\n\x1a\x45XECUTION_STATUS_SUCCEEDED\x10\x03\x12\x1b\n\x17\x45XECUTION_STATUS_FAILED\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\x12io.arl.proto.model\x1a\x1fgoogle/protobuf/timestamp.proto\"\xef\x01\n\x0f\x45xecutionHeader\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x65xec_id\x18\x02 \x01(\t\x12\x10\n\x08graph_id\x18\x03 \x01(\t\x12\x13\n\x0blifetime_id\x18\x04 \x01(\t\x12\x11\n\ttenant_id\x18\x05 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x06 \x01(\x05\x12\x15\n\riteration_idx\x18\x07 \x01(\x05\x12\x12\n\ncreated_at\x18\x08 \x01(\t\x12\x33\n\x06status\x18\t \x01(\x0e\x32#.io.arl.proto.model.ExecutionStatus\x12\x12\n\nedge_taken\x18\n \x01(\t*\xac\x01\n\x0f\x45xecutionStatus\x12 \n\x1c\x45XECUTION_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n\x18\x45XECUTION_STATUS_PENDING\x10\x01\x12\x1c\n\x18\x45XECUTION_STATUS_RUNNING\x10\x02\x12\x1e\n\x1a\x45XECUTION_STATUS_SUCCEEDED\x10\x03\x12\x1b\n\x17\x45XECUTION_STATUS_FAILED\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'common_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EXECUTIONSTATUS']._serialized_start=304
-  _globals['_EXECUTIONSTATUS']._serialized_end=476
-  _globals['_EXECUTIONHEADER']._serialized_start=66
-  _globals['_EXECUTIONHEADER']._serialized_end=301
+  _globals['_EXECUTIONSTATUS']._serialized_start=312
+  _globals['_EXECUTIONSTATUS']._serialized_end=484
+  _globals['_EXECUTIONHEADER']._serialized_start=70
+  _globals['_EXECUTIONHEADER']._serialized_end=309
 # @@protoc_insertion_point(module_scope)

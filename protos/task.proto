@@ -1,38 +1,40 @@
 syntax = "proto3";
 
-package agentic.task;
+package io.arl.proto.model;
 
 import "common.proto";
 import "google/protobuf/any.proto";
+
+// Message represents a large result stored externally.
+message StoredData {
+    // URI reference for large results stored externally
+    string uri  = 1;
+    // Optional metadata for the object.  size, type, etc
+    map<string, string> metadata = 2;
+}
 
 // TaskResult represents the output of a Task execution
 message TaskResult {
   // Unique identifier for the TaskResult
   string id = 1;
   
-  // Result data - either inline or as a URI reference
+  // Result data - either inline or as external data
   oneof data {
     // Inline data for small results
     google.protobuf.Any inline_data = 2;
     
-    // URI reference for large results stored externally
-    string uri = 3;
+    // External data for large results stored externally
+    StoredData external_data = 3;
   }
   
-  // MIME type of the result data
-  string mime_type = 4;
-  
-  // Size of the result data in bytes
-  uint64 size_bytes = 5;
-  
   // Optional error message if execution failed
-  string error_message = 6;
+  string error_message = 4;
 }
 
 // TaskExecution represents a single Task execution with metadata
 message TaskExecution {
   // Common execution metadata
-  agentic.common.ExecutionHeader header = 1;
+  io.arl.proto.model.ExecutionHeader header = 1;
   
   // Execution ID of the parent/upstream PlanExecution.exec_id
   string parent_plan_exec_id = 2;
@@ -40,9 +42,6 @@ message TaskExecution {
   // Task-specific result data
   TaskResult result = 3;
   
-  // Task type identifier for routing and processing
-  string task_type = 4;
-  
   // Name from the parent/upstream PlanExecution.header.name
-  string parent_plan_name = 5;
+  string parent_plan_name = 4;
 }

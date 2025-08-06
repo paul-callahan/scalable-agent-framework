@@ -25,9 +25,9 @@ dependencies = [
     "asyncio-mqtt==0.16.2",
     "aiofiles==24.1.0",
     "pydantic>=2.10.0",
-    "structlog==24.1.0",
-    "click==8.1.7",
-    "aiohttp==3.9.5",
+    "structlog==25.4.0",
+    "click==8.2.1",
+    "aiohttp==3.12.15",
     "../common-py",
 ]
 
@@ -50,8 +50,8 @@ test = [
 ]
 docs = [
     "sphinx==8.0.2",
-    "sphinx-rtd-theme==2.0.0",
-    "myst-parser==3.0.1",
+    "sphinx-rtd-theme>=2.0.0",
+    "myst-parser>=3.0.1",
 ]
 
 [project.scripts]
@@ -154,5 +154,8 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.uv.sources]
+agentic-common = { path = "../common-py" }
 
  

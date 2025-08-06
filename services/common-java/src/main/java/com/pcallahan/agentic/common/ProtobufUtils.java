@@ -1,10 +1,10 @@
 package com.pcallahan.agentic.common;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
-import agentic.task.Task.TaskResult;
-import agentic.plan.Plan.PlanResult;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskResult;
+import io.arl.proto.model.Plan.PlanResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

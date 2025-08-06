@@ -21,12 +21,12 @@ from executor.service import ExecutorService
 
 # Import some example tasks and plans for registration
 # These would typically be imported from user-defined modules
-from agentic.core.task import Task
-from agentic.core.plan import Plan
+from agentic.core.task import DeprecatedTaskExecutor
+from agentic.core.plan import DeprecatedPlanExecutor
 
 
 # Example task implementation
-class ExampleTask(Task):
+class ExampleTask(DeprecatedTaskExecutor):
     """Example task implementation."""
     
     async def execute(self, lastResult):
@@ -39,13 +39,13 @@ class ExampleTask(Task):
 
 
 # Example plan implementation
-class ExamplePlan(Plan):
+class ExamplePlan(DeprecatedPlanExecutor):
     """Example plan implementation."""
     
     async def plan(self, lastResult):
         from agentic.core.plan import PlanResult
         return PlanResult(
-            next_task_ids=["example_task"],
+            next_task_names=["example_task"],
             metadata={"plan_type": "example"},
             confidence=0.9,
         )

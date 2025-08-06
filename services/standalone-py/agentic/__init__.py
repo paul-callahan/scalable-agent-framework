@@ -8,8 +8,8 @@ This package provides the core abstractions for building agentic applications:
 - AgentLifetime: Runtime execution instances
 """
 
-from .core.task import Task
-from .core.plan import Plan
+from .core.task import Task, DeprecatedTaskExecutor
+from .core.plan import Plan, DeprecatedPlanExecutor
 from .core.graph import AgentGraph
 from .core.lifetime import AgentLifetime
 from .core.edge import Edge
@@ -30,6 +30,8 @@ __version__ = "0.1.0"
 __all__ = [
     "Task",
     "Plan", 
+    "DeprecatedTaskExecutor",
+    "DeprecatedPlanExecutor",
     "AgentGraph",
     "AgentLifetime",
     "Edge",

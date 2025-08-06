@@ -1,5 +1,5 @@
 """
-Protobuf message imports for agentic microservices.
+Protobuf message imports for agentic common package.
 
 This module re-exports all protobuf generated classes from locally generated
 protobuf files. Generate the protobuf files using scripts/gen_proto.sh.
@@ -13,12 +13,6 @@ try:
     from .common_pb2 import ExecutionHeader
     from .task_pb2 import TaskExecution, TaskResult
     from .plan_pb2 import PlanExecution, PlanResult
-    from .services_pb2_grpc import (
-        DataPlaneServiceServicer,
-        DataPlaneServiceStub,
-        ControlPlaneServiceServicer,
-        ControlPlaneServiceStub,
-    )
 except ImportError:
     raise ImportError(
         "No protobuf files found. Please generate them using:\n"
@@ -34,9 +28,4 @@ __all__ = [
     # Plan-related protobuf messages
     "PlanExecution",
     "PlanResult",
-    # Service definitions
-    "DataPlaneServiceServicer",
-    "DataPlaneServiceStub",
-    "ControlPlaneServiceServicer",
-    "ControlPlaneServiceStub",
 ] 

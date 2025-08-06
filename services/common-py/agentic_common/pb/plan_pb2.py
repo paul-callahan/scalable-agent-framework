@@ -23,21 +23,18 @@ _sym_db = _symbol_database.Default()
 
 
 from . import common_pb2 as common__pb2
+from . import task_pb2 as task__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nplan.proto\x12\x0c\x61gentic.plan\x1a\x0c\x63ommon.proto\"\xb9\x01\n\nPlanResult\x12\x15\n\rnext_task_ids\x18\x01 \x03(\t\x12\x38\n\x08metadata\x18\x02 \x03(\x0b\x32&.agentic.plan.PlanResult.MetadataEntry\x12\x15\n\rerror_message\x18\x03 \x01(\t\x12\x12\n\nconfidence\x18\x04 \x01(\x02\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xa8\x01\n\rPlanExecution\x12/\n\x06header\x18\x01 \x01(\x0b\x32\x1f.agentic.common.ExecutionHeader\x12(\n\x06result\x18\x02 \x01(\x0b\x32\x18.agentic.plan.PlanResult\x12\x11\n\tplan_type\x18\x03 \x01(\t\x12\x15\n\rinput_task_id\x18\x04 \x01(\t\x12\x12\n\nparameters\x18\x05 \x01(\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nplan.proto\x12\x12io.arl.proto.model\x1a\x0c\x63ommon.proto\x1a\ntask.proto\"z\n\nPlanResult\x12>\n\x16upstream_tasks_results\x18\x01 \x03(\x0b\x32\x1e.io.arl.proto.model.TaskResult\x12\x15\n\rnext_task_ids\x18\x02 \x03(\t\x12\x15\n\rerror_message\x18\x03 \x01(\t\"\xad\x01\n\rPlanExecution\x12\x33\n\x06header\x18\x01 \x01(\x0b\x32#.io.arl.proto.model.ExecutionHeader\x12\x1c\n\x14parent_task_exec_ids\x18\x02 \x03(\t\x12.\n\x06result\x18\x03 \x01(\x0b\x32\x1e.io.arl.proto.model.PlanResult\x12\x19\n\x11parent_plan_names\x18\x04 \x01(\tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'plan_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PLANRESULT_METADATAENTRY']._loaded_options = None
-  _globals['_PLANRESULT_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_PLANRESULT']._serialized_start=43
-  _globals['_PLANRESULT']._serialized_end=228
-  _globals['_PLANRESULT_METADATAENTRY']._serialized_start=181
-  _globals['_PLANRESULT_METADATAENTRY']._serialized_end=228
-  _globals['_PLANEXECUTION']._serialized_start=231
-  _globals['_PLANEXECUTION']._serialized_end=399
+  _globals['_PLANRESULT']._serialized_start=60
+  _globals['_PLANRESULT']._serialized_end=182
+  _globals['_PLANEXECUTION']._serialized_start=185
+  _globals['_PLANEXECUTION']._serialized_end=358
 # @@protoc_insertion_point(module_scope)

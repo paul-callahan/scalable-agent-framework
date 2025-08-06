@@ -6,7 +6,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * JPA entity representing a TaskExecution in the database.
@@ -30,9 +29,6 @@ public class TaskExecutionEntity {
     
     @Column(name = "name", length = 100, nullable = false)
     private String name;
-    
-    @Column(name = "parent_id", length = 36)
-    private String parentId;
     
     @Column(name = "graph_id", length = 36, nullable = false)
     private String graphId;
@@ -58,10 +54,6 @@ public class TaskExecutionEntity {
     
     @Column(name = "edge_taken", length = 100)
     private String edgeTaken;
-    
-    // Task-specific fields
-    @Column(name = "task_type", length = 100, nullable = false)
-    private String taskType;
     
     // Foreign key to TaskResult
     @Column(name = "task_result_id", length = 36)
@@ -110,14 +102,6 @@ public class TaskExecutionEntity {
     
     public void setName(String name) {
         this.name = name;
-    }
-    
-    public String getParentId() {
-        return parentId;
-    }
-    
-    public void setParentId(String parentId) {
-        this.parentId = parentId;
     }
     
     public String getGraphId() {
@@ -182,14 +166,6 @@ public class TaskExecutionEntity {
     
     public void setEdgeTaken(String edgeTaken) {
         this.edgeTaken = edgeTaken;
-    }
-    
-    public String getTaskType() {
-        return taskType;
-    }
-    
-    public void setTaskType(String taskType) {
-        this.taskType = taskType;
     }
     
     public String getTaskResultId() {

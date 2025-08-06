@@ -11,11 +11,11 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
-@ComponentScan(basePackages = {
-        "com.pcallahan.agentic"
-})
+// @ComponentScan(basePackages = {
+//         "com.pcallahan.agentic"
+// })
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:tc:" + IntegrationTestConfig.POSTGRES_IMAGE +  ":///databasename" + IntegrationTestConfig.DATABASE_NAME,
+        "spring.datasource.url=jdbc:tc:" + IntegrationTestConfig.POSTGRES_IMAGE + ":///" + IntegrationTestConfig.DATABASE_NAME,
         "spring.datasource.driver-class-name=org.postgresql.Driver",
         "spring.datasource.username=" + IntegrationTestConfig.USERNAME,
         "spring.datasource.password=" + IntegrationTestConfig.PASSWORD

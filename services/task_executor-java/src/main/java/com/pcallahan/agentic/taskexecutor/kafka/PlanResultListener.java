@@ -4,7 +4,7 @@ import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.taskexecutor.kafka.TaskExecutionProducer;
 import com.pcallahan.agentic.taskexecutor.service.TaskExecutorService;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

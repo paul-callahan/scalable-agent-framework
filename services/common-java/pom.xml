@@ -90,7 +90,6 @@
                         <sourceDirectory>${project.basedir}/../../protos</sourceDirectory>
                     </sourceDirectories>
                     <registerAsCompilationRoot>true</registerAsCompilationRoot>
-
                 </configuration>
                 <executions>
                     <execution>

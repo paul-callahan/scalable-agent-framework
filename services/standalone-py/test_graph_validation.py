@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'agentic'))
 
 from agentic.core.graph import AgentGraph
 from agentic.core.edge import Edge, EdgeType
-from agentic.core.task import Task, TaskResult
-from agentic.core.plan import Plan, PlanResult
+from agentic.core.task import DeprecatedTaskExecutor, TaskResult
+from agentic.core.plan import DeprecatedPlanExecutor, PlanResult
 
 
-class MockTask(Task):
+class MockTask(DeprecatedTaskExecutor):
     """Mock task for testing."""
     
     def __init__(self, tenant_id: str, task_type: str):
@@ -44,11 +44,11 @@ class MockTask(Task):
         """Create a MockTask from a protobuf message."""
         return cls(
             tenant_id=proto.header.tenant_id,
-            task_type=proto.task_type
+            task_type="default_task"  # Default task type since field was removed
         )
 
 
-class MockPlan(Plan):
+class MockPlan(DeprecatedPlanExecutor):
     """Mock plan for testing."""
     
     def __init__(self, tenant_id: str, plan_type: str):
@@ -56,7 +56,7 @@ class MockPlan(Plan):
         self.plan_type = plan_type
     
     async def plan(self, lastResult: "TaskResult") -> "PlanResult":
-        return PlanResult(next_task_ids=["task2"])
+        return PlanResult(next_task_names=["task2"])
     
     @classmethod
     def deserialize(cls, data):
@@ -70,7 +70,7 @@ class MockPlan(Plan):
         """Create a MockPlan from a protobuf message."""
         return cls(
             tenant_id=proto.header.tenant_id,
-            plan_type=proto.plan_type
+            plan_type="default_plan"  # Default plan type since field was removed
         )
 
 

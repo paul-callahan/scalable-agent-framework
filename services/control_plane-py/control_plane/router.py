@@ -2,7 +2,7 @@
 Execution routing logic for control plane microservice.
 
 This module implements execution routing logic. Based on the execution type
-(Task or Plan) and the next_task_ids from PlanResult, determines which
+(Task or Plan) and the next_task_names from PlanResult, determines which
 executor topics to publish to.
 """
 
@@ -25,7 +25,7 @@ class ExecutionRouter:
     
     Routes TaskExecutions to controlled-task-executions_{tenant_id} topics and
     PlanExecutions to controlled-plan-executions_{tenant_id} topics based on
-    execution type and next_task_ids.
+    execution type and next_task_names.
     """
     
     def __init__(self):
@@ -48,7 +48,7 @@ class ExecutionRouter:
             target_topic = get_controlled_task_executions_topic(tenant_id)
             
             logger.info("Routing TaskExecution to controlled-task-executions", 
-                       execution_id=task_execution.header.id,
+                       execution_id=task_execution.header.exec_id,
                        tenant_id=tenant_id,
                        target_topic=target_topic)
             
@@ -77,9 +77,12 @@ class ExecutionRouter:
             target_topic = get_controlled_plan_executions_topic(tenant_id)
             
             logger.info("Routing PlanExecution to controlled-plan-executions", 
-                       execution_id=plan_execution.header.id,
+                       execution_id=plan_execution.header.exec_id,
                        tenant_id=tenant_id,
                        target_topic=target_topic)
+            
+            # TODO: Future routing logic may use the new parent_task_exec_ids field
+            # for more sophisticated routing decisions based on parent execution relationships
             
             return [target_topic]
             
@@ -135,12 +138,12 @@ class ExecutionRouter:
             # Handle protobuf objects
             if isinstance(execution_data, TaskExecution):
                 execution_type = "task"
-                execution_id = execution_data.header.id
+                execution_id = execution_data.header.exec_id
                 target_topic = get_controlled_task_executions_topic(tenant_id)
                 routing_type = "task_to_plan"
             elif isinstance(execution_data, PlanExecution):
                 execution_type = "plan"
-                execution_id = execution_data.header.id
+                execution_id = execution_data.header.exec_id
                 target_topic = get_controlled_plan_executions_topic(tenant_id)
                 routing_type = "plan_to_task"
             else:

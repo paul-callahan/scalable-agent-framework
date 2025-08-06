@@ -10,8 +10,8 @@ import uuid
 from typing import Any, Dict, List, Optional, Set, Union
 
 from .edge import Edge, EdgeType
-from .task import Task
-from .plan import Plan
+from .task import DeprecatedTaskExecutor
+from .plan import DeprecatedPlanExecutor
 
 
 class AgentGraph:
@@ -24,7 +24,7 @@ class AgentGraph:
     
     def __init__(self, 
                  tenant_id: str,
-                 nodes: Dict[str, Union[Task, Plan]],
+                 nodes: Dict[str, Union[DeprecatedTaskExecutor, DeprecatedPlanExecutor]],
                  edges: List[Edge],
                  version: str = "1.0.0",
                  metadata: Optional[Dict[str, Any]] = None):
@@ -33,7 +33,7 @@ class AgentGraph:
         
         Args:
             tenant_id: Tenant identifier for multi-tenancy
-            nodes: Dictionary mapping node IDs to Task/Plan instances
+            nodes: Dictionary mapping node IDs to DeprecatedTaskExecutor/DeprecatedPlanExecutor instances
             edges: List of Edge instances defining connections
             version: Semantic version of the graph
             metadata: Optional metadata for the graph
@@ -363,9 +363,9 @@ class AgentGraph:
         plan_count = 0
         
         for node in self.nodes.values():
-            if isinstance(node, Task):
+            if isinstance(node, DeprecatedTaskExecutor):
                 task_count += 1
-            elif isinstance(node, Plan):
+            elif isinstance(node, DeprecatedPlanExecutor):
                 plan_count += 1
         
         return {
@@ -500,7 +500,7 @@ class AgentGraph:
         """
         return [edge for edge in self.edges if edge.target_id == node_id]
     
-    def get_node(self, node_id: str) -> Optional[Union[Task, Plan]]:
+    def get_node(self, node_id: str) -> Optional[Union[DeprecatedTaskExecutor, DeprecatedPlanExecutor]]:
         """
         Get a node by ID.
         
@@ -508,7 +508,7 @@ class AgentGraph:
             node_id: ID of the node to retrieve
             
         Returns:
-            Task or Plan instance, or None if not found
+            DeprecatedTaskExecutor or DeprecatedPlanExecutor instance, or None if not found
         """
         return self.nodes.get(node_id)
     
@@ -516,7 +516,7 @@ class AgentGraph:
         """
         Serialize the graph to a dictionary.
         
-        Note: Since Task and Plan classes are simplified abstract base classes,
+        Note: Since DeprecatedTaskExecutor and DeprecatedPlanExecutor classes are simplified abstract base classes,
         only the graph structure and metadata can be serialized, not the actual
         task/plan implementations.
         
@@ -530,7 +530,7 @@ class AgentGraph:
             'metadata': self.metadata,
             'nodes': {
                 node_id: {
-                    'type': 'task' if isinstance(node, Task) else 'plan',
+                    'type': 'task' if isinstance(node, DeprecatedTaskExecutor) else 'plan',
                     'class_name': node.__class__.__name__
                 }
                 for node_id, node in self.nodes.items()
@@ -539,16 +539,16 @@ class AgentGraph:
         }
     
     @classmethod
-    def deserialize(cls, data: Dict[str, Any], node_registry: Dict[str, Union[Task, Plan]]) -> 'AgentGraph':
+    def deserialize(cls, data: Dict[str, Any], node_registry: Dict[str, Union[DeprecatedTaskExecutor, DeprecatedPlanExecutor]]) -> 'AgentGraph':
         """
         Deserialize a graph from a dictionary.
         
-        Note: Since Task and Plan classes are simplified abstract base classes,
-        you must provide a node_registry mapping node IDs to actual Task/Plan instances.
+        Note: Since DeprecatedTaskExecutor and DeprecatedPlanExecutor classes are simplified abstract base classes,
+        you must provide a node_registry mapping node IDs to actual DeprecatedTaskExecutor/DeprecatedPlanExecutor instances.
         
         Args:
             data: Dictionary representation of the graph structure
-            node_registry: Dictionary mapping node IDs to Task/Plan instances
+            node_registry: Dictionary mapping node IDs to DeprecatedTaskExecutor/DeprecatedPlanExecutor instances
             
         Returns:
             AgentGraph instance
@@ -574,7 +574,7 @@ class AgentGraph:
         for node_id, node_data in data['nodes'].items():
             node = node_registry[node_id]
             expected_type = node_data['type']
-            actual_type = 'task' if isinstance(node, Task) else 'plan'
+            actual_type = 'task' if isinstance(node, DeprecatedTaskExecutor) else 'plan'
             if expected_type != actual_type:
                 raise ValueError(f"Node {node_id} type mismatch: expected {expected_type}, got {actual_type}")
         

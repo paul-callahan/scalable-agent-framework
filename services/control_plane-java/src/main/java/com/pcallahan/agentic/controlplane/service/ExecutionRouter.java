@@ -2,8 +2,8 @@ package com.pcallahan.agentic.controlplane.service;
 
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.controlplane.kafka.ExecutorProducer;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +80,9 @@ public class ExecutionRouter {
                 logger.warn("Plan execution rejected by guardrails for tenant: {}", tenantId);
                 // Could implement rejection handling here
             }
+            
+            // TODO: Future routing logic may use the new parent_task_exec_ids field
+            // for more sophisticated routing decisions based on parent execution relationships
             
         } catch (Exception e) {
             logger.error("Error routing plan execution for tenant {}: {}", tenantId, e.getMessage(), e);

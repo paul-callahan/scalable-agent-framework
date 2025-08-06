@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package agentic.plan;
+package io.arl.proto.model;
 
 import "common.proto";
 import "task.proto";
@@ -8,35 +8,26 @@ import "task.proto";
 // PlanResult represents the output of a Plan execution
 message PlanResult {
   // Upstream TaskResult objects that led to this plan decision
-  repeated agentic.task.TaskResult upstream_tasks_results = 1;
+  repeated io.arl.proto.model.TaskResult upstream_tasks_results = 1;
   
-  // IDs of the next tasks to execute
-  repeated string next_task_ids = 2;
-  
-  // Optional metadata for the plan execution
-  map<string, string> metadata = 3;
+  // Names of the next tasks to execute
+  repeated string next_task_names = 2;
   
   // Optional error message if planning failed
-  string error_message = 4;
-  
-  // Planning confidence score (0.0 to 1.0)
-  float confidence = 5;
+  string error_message = 3;
 }
 
 // PlanExecution represents a single Plan execution with metadata
 message PlanExecution {
   // Common execution metadata
-  agentic.common.ExecutionHeader header = 1;
+  io.arl.proto.model.ExecutionHeader header = 1;
   
-  // Names of one or more parent/upstream TaskExecution.header.name values
-  repeated string parent_task_names = 2;
+  // IDs of parent task executions
+  repeated string parent_task_exec_ids = 2;
   
   // Plan-specific result data
   PlanResult result = 3;
   
-  // Plan type identifier for routing and processing
-  string plan_type = 4;
-  
-  // Input task result that triggered this plan
-  string input_task_id = 5;
+  // Names of parent tasks
+  string parent_task_names = 4;
 }

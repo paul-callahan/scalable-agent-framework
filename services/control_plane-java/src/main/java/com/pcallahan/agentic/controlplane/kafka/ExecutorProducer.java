@@ -2,8 +2,8 @@ package com.pcallahan.agentic.controlplane.kafka;
 
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.common.ProtobufUtils;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,11 +128,11 @@ public class ExecutorProducer {
      */
     private void logParentRelationshipInfo(String messageType, PlanExecution planExecution, String tenantId) {
         if (planExecution != null) {
-            var parentTaskNames = planExecution.getParentTaskNamesList();
-            String inputTaskId = planExecution.getInputTaskId();
+            var parentTaskExecIds = planExecution.getParentTaskExecIdsList();
+            String parentTaskNames = planExecution.getParentTaskNames();
             
-            logger.debug("{} parent relationships for tenant {}: parent_task_names={}, input_task_id={}", 
-                messageType, tenantId, parentTaskNames, inputTaskId);
+            logger.debug("{} parent relationships for tenant {}: parent_task_exec_ids={}, parent_task_names={}", 
+                messageType, tenantId, parentTaskExecIds, parentTaskNames);
             
             // Log upstream task results information
             if (planExecution.hasResult()) {
