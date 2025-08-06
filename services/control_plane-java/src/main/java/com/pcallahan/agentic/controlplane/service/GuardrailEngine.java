@@ -1,8 +1,8 @@
 package com.pcallahan.agentic.controlplane.service;
 
 import com.pcallahan.agentic.common.TopicNames;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -48,7 +48,7 @@ public class GuardrailEngine {
                 taskExecution.getHeader().getName(), taskExecution.getHeader().getExecId(), tenantId);
             
             // TODO: Implement actual guardrail evaluation
-            // - Check token limits from taskExecution.getResult().getSizeBytes()
+            // - Check token limits from taskExecution.getResult()
             // - Validate cost thresholds
             // - Verify execution permissions from taskExecution.getHeader()
             
@@ -77,7 +77,7 @@ public class GuardrailEngine {
                 planExecution.getHeader().getName(), planExecution.getHeader().getExecId(), tenantId);
             
             // TODO: Implement actual guardrail evaluation
-            // - Check plan complexity limits from planExecution.getResult().getNextTaskIdsList()
+            // - Check plan complexity limits from planExecution.getResult().getNextTaskNamesList()
             // - Validate resource allocation
             // - Verify execution permissions from planExecution.getHeader()
             

@@ -9,7 +9,7 @@ import json
 from typing import Any, Dict, Optional, Union
 from datetime import datetime
 
-from .pb import TaskExecution, PlanExecution, TaskResult, PlanResult, ExecutionHeader
+from .pb import TaskExecution, PlanExecution, PlanInput, TaskResult, PlanResult, ExecutionHeader
 
 
 class ProtobufUtils:
@@ -61,6 +61,46 @@ class ProtobufUtils:
             raise ValueError(f"Failed to deserialize TaskExecution: {e}")
     
     @staticmethod
+    def serialize_plan_input(plan_input: PlanInput) -> bytes:
+        """
+        Serialize PlanInput protobuf message to bytes.
+        
+        Args:
+            plan_input: PlanInput protobuf message
+            
+        Returns:
+            Serialized bytes
+            
+        Raises:
+            ValueError: If serialization fails
+        """
+        try:
+            return plan_input.SerializeToString()
+        except Exception as e:
+            raise ValueError(f"Failed to serialize PlanInput: {e}")
+    
+    @staticmethod
+    def deserialize_plan_input(message_bytes: bytes) -> PlanInput:
+        """
+        Deserialize bytes to PlanInput protobuf message.
+        
+        Args:
+            message_bytes: Serialized protobuf message bytes
+            
+        Returns:
+            PlanInput protobuf message
+            
+        Raises:
+            ValueError: If deserialization fails
+        """
+        try:
+            plan_input = PlanInput()
+            plan_input.ParseFromString(message_bytes)
+            return plan_input
+        except Exception as e:
+            raise ValueError(f"Failed to deserialize PlanInput: {e}")
+    
+    @staticmethod
     def serialize_plan_execution(plan_execution: PlanExecution) -> bytes:
         """
         Serialize PlanExecution protobuf message to bytes.
@@ -107,7 +147,6 @@ class ProtobufUtils:
         status: int,
         graph_id: str = "",
         lifetime_id: str = "",
-        parent_id: str = "",
         attempt: int = 1,
         iteration_idx: int = 0,
         edge_taken: str = ""
@@ -121,7 +160,6 @@ class ProtobufUtils:
             status: Execution status enum value
             graph_id: Graph identifier
             lifetime_id: Lifetime identifier
-            parent_id: Parent execution identifier
             attempt: Execution attempt number
             iteration_idx: Current iteration index
             edge_taken: ID of the edge that led to this execution
@@ -130,12 +168,11 @@ class ProtobufUtils:
             ExecutionHeader protobuf message
         """
         header = ExecutionHeader()
-        header.id = execution_id
+        header.exec_id = execution_id
         header.tenant_id = tenant_id
         header.status = status
         header.graph_id = graph_id
         header.lifetime_id = lifetime_id
-        header.parent_id = parent_id
         header.attempt = attempt
         header.iteration_idx = iteration_idx
         header.edge_taken = edge_taken
@@ -144,30 +181,25 @@ class ProtobufUtils:
     
     @staticmethod
     def create_task_result(
-        mime_type: str = "",
-        size_bytes: int = 0,
         error_message: str = "",
         inline_data: Optional[Dict[str, Any]] = None,
-        uri: str = ""
+        external_data_uri: str = "",
+        external_data_metadata: Optional[Dict[str, str]] = None
     ) -> TaskResult:
         """
         Create a consistent TaskResult protobuf message.
         
         Args:
-            mime_type: MIME type of the result
-            size_bytes: Size of the result in bytes
             error_message: Error message if execution failed
             inline_data: Inline data dictionary
-            uri: URI reference to external data
+            external_data_uri: URI reference to external data
+            external_data_metadata: Metadata for external data
             
         Returns:
             TaskResult protobuf message
         """
         result = TaskResult()
-        result.mime_type = mime_type
-        result.size_bytes = size_bytes
         result.error_message = error_message
-        result.uri = uri
         
         if inline_data:
             # Convert dictionary to protobuf Any field
@@ -179,25 +211,27 @@ class ProtobufUtils:
             value_msg.string_value = json.dumps(inline_data)
             any_msg.Pack(value_msg)
             result.inline_data.CopyFrom(any_msg)
+        elif external_data_uri:
+            # Create external data structure
+            external_data = result.external_data
+            external_data.uri = external_data_uri
+            if external_data_metadata:
+                external_data.metadata.update(external_data_metadata)
         
         return result
     
     @staticmethod
     def create_plan_result(
-        next_task_ids: Optional[list] = None,
-        metadata: Optional[Dict[str, str]] = None,
+        next_task_names: Optional[list] = None,
         error_message: str = "",
-        confidence: float = 0.5,
         upstream_tasks_results: Optional[list] = None
     ) -> PlanResult:
         """
         Create a consistent PlanResult protobuf message.
         
         Args:
-            next_task_ids: List of next task IDs
-            metadata: Metadata dictionary
+            next_task_names: List of next task names
             error_message: Error message if planning failed
-            confidence: Planning confidence score (0.0 to 1.0)
             upstream_tasks_results: List of upstream TaskResult objects
             
         Returns:
@@ -205,13 +239,9 @@ class ProtobufUtils:
         """
         result = PlanResult()
         result.error_message = error_message
-        result.confidence = confidence
         
-        if next_task_ids:
-            result.next_task_ids.extend(next_task_ids)
-        
-        if metadata:
-            result.metadata.update(metadata)
+        if next_task_names:
+            result.next_task_names.extend(next_task_names)
         
         if upstream_tasks_results:
             result.upstream_tasks_results.extend(upstream_tasks_results)
@@ -231,11 +261,9 @@ class ProtobufUtils:
         """
         try:
             # Check required fields
-            if not task_execution.header.id:
+            if not task_execution.header.exec_id:
                 return False
             if not task_execution.header.tenant_id:
-                return False
-            if not task_execution.task_type:
                 return False
             
             return True
@@ -255,11 +283,9 @@ class ProtobufUtils:
         """
         try:
             # Check required fields
-            if not plan_execution.header.id:
+            if not plan_execution.header.exec_id:
                 return False
             if not plan_execution.header.tenant_id:
-                return False
-            if not plan_execution.plan_type:
                 return False
             
             return True
@@ -290,10 +316,12 @@ class ProtobufUtils:
                 }
             except Exception:
                 return None
-        elif task_result.uri:
+        elif task_result.HasField("external_data"):
+            external_data = task_result.external_data
             return {
-                "type": "uri",
-                "uri": task_result.uri,
+                "type": "external",
+                "uri": external_data.uri,
+                "metadata": dict(external_data.metadata),
             }
         else:
             return None
@@ -310,10 +338,8 @@ class ProtobufUtils:
             Dictionary with result data
         """
         return {
-            "next_task_ids": list(plan_result.next_task_ids),
-            "metadata": dict(plan_result.metadata),
+            "next_task_names": list(plan_result.next_task_names),
             "error_message": plan_result.error_message,
-            "confidence": plan_result.confidence,
         }
     
     @staticmethod

@@ -8,14 +8,14 @@ This package provides the core abstractions for building agentic applications:
 - AgentLifetime: Runtime execution instances
 """
 
-from .core.task import Task
-from .core.plan import Plan
+from .core.task import Task, DeprecatedTaskExecutor
+from .core.plan import Plan, DeprecatedPlanExecutor
 from .core.graph import AgentGraph
 from .core.lifetime import AgentLifetime
 from .core.edge import Edge
 
 # Re-export key protobuf types for convenience
-from .pb import task_pb2, plan_pb2, common_pb2
+from agentic_common.pb import task_pb2, plan_pb2, common_pb2
 
 # Re-export message bus components
 from .message_bus import InMemoryBroker
@@ -30,6 +30,8 @@ __version__ = "0.1.0"
 __all__ = [
     "Task",
     "Plan", 
+    "DeprecatedTaskExecutor",
+    "DeprecatedPlanExecutor",
     "AgentGraph",
     "AgentLifetime",
     "Edge",

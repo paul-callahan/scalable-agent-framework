@@ -45,10 +45,10 @@ graph TB
     %% Service Connections
     Kafka -- "topic persisted-task-executions-{}" --> ControlPlane
     Kafka -- "topic persisted-plan-executions-{}" --> ControlPlane
-    ControlPlane -- "topic controlled-task-executions-{}" --> Kafka
+    ControlPlane -- "topic plan-inputs-{}" --> Kafka
     ControlPlane -- "topic controlled-plan-executions-{}" --> Kafka
 
-    Kafka -- "topic controlled-task-executions-{}" --> PlanExecutor
+    Kafka -- "topic plan-inputs-{}" --> PlanExecutor
     PlanExecutor -- "topic plan-executions-{}" --> Kafka
 
     Kafka -- "topic controlled-plan-executions-{}" --> TaskExecutor
@@ -86,7 +86,8 @@ sequenceDiagram
     DP->>K: Republish TaskExecution (protobuf) → persisted-task-executions-{tenantId}
     CP->>K: Consume TaskExecution (protobuf)
     CP->>CP: Evaluate guardrails
-    CP->>K: Publish TaskExecution (protobuf) → controlled-task-executions-{tenantId}
+    CP->>CP: Examine TaskExecution and look up next Plan in graph
+    CP->>K: Publish PlanInput (protobuf) → plan-inputs-{tenantId}
 ```
 
 ### 2. Plan Execution Flow with Parent Tracking
@@ -101,8 +102,9 @@ sequenceDiagram
 
     Note over PE,TE: Plan Execution Flow with Enhanced Parent Tracking
 
-    TE->>K: TaskExecution (with header.name, header.exec_id) → controlled-task-executions-{tenantId}
-    PE->>K: Consume TaskExecution (protobuf)
+    TE->>K: TaskExecution (with header.name, header.exec_id) → plan-inputs-{tenantId}
+    PE->>K: Consume PlanInput (protobuf)
+    PE->>PE: Extract TaskExecution from PlanInput.task_executions
     PE->>PE: Create PlanExecution with:<br/>- header.name = plan_name<br/>- header.exec_id = new UUID<br/>- parent_task_names = [task.header.name, ...]
     PE->>K: PlanExecution (with parent task info) → plan-executions-{tenantId}
     DP->>K: Consume PlanExecution (protobuf)
@@ -154,6 +156,15 @@ message PlanExecution {
 }
 ```
 
+### PlanInput (plan.proto)
+```protobuf
+message PlanInput {
+  string input_id = 1;                    // Unique identifier for this input for auditing
+  string plan_name = 2;                   // Name of the next plan in the graph path
+  repeated TaskExecution task_executions = 3; // Task executions that provide input to this plan
+}
+```
+
 ## Key Changes
 
 1. **ExecutionHeader.id → exec_id**: The execution identifier field has been renamed for clarity
@@ -161,6 +172,7 @@ message PlanExecution {
 3. **TaskExecution.parent_plan_exec_id**: Tracks the execution ID of the parent PlanExecution
 4. **TaskExecution.parent_plan_name**: Tracks the name of the parent PlanExecution
 5. **PlanExecution.parent_task_names**: Tracks the names of parent TaskExecutions (repeated field)
+6. **ControlPlane graph lookup**: ControlPlane now examines TaskExecution and looks up the next Plan in the graph before publishing to PlanExecutor
 
 These changes enable comprehensive parent-child relationship tracking throughout the execution flow, allowing for better debugging, monitoring, and data lineage analysis.
 
@@ -175,7 +187,7 @@ These changes enable comprehensive parent-child relationship tracking throughout
 - `persisted-plan-executions-{tenantId}` - DataPlane forwards PlanExecution protobuf messages to ControlPlane
 
 ### Control Topics
-- `controlled-task-executions-{tenantId}` - ControlPlane publishes TaskExecution protobuf messages for PlanExecutor
+- `plan-inputs-{tenantId}` - ControlPlane publishes PlanInput protobuf messages (converted from TaskExecution) for PlanExecutor
 - `controlled-plan-executions-{tenantId}` - ControlPlane publishes PlanExecution protobuf messages for TaskExecutor
 
 ## Protobuf Message Structures
@@ -184,6 +196,7 @@ These changes enable comprehensive parent-child relationship tracking throughout
 ### [TaskResult](../protos/task.proto#L9-L30)
 ### [PlanExecution](../protos/plan.proto#L27-L42)
 ### [PlanResult](../protos/plan.proto#L9-L27)
+### [PlanInput](../protos/plan.proto#L44-L52)
 
 
 ## Service Responsibilities
@@ -201,12 +214,14 @@ These changes enable comprehensive parent-child relationship tracking throughout
 ### ControlPlane
 - Consumes TaskExecution and PlanExecution protobuf messages from data plane
 - Evaluates guardrails using protobuf message data
-- Publishes full TaskExecution and PlanExecution protobuf messages to controlled topics
+- Examines TaskExecution and looks up the next Plan in the graph
+- Publishes full PlanInput and PlanExecution protobuf messages to controlled topics
 - Uses ProtobufUtils for serialization/deserialization
 - **Guardrails**: Enforces policies and constraints on agent behavior
 - **Routing**: Determines which tasks/plans should be executed
 - **Policy Management**: Loads and applies execution policies
 - **Request Validation**: Validates incoming requests against policies
+- **Graph Lookup**: Examines TaskExecution to determine next plan in graph path
 
 ### TaskExecutor
 - Consumes PlanExecution protobuf messages from control plane
@@ -220,9 +235,9 @@ These changes enable comprehensive parent-child relationship tracking throughout
 - **Task Handlers**: Executes different types of tasks (text generation, code execution, data processing)
 
 ### PlanExecutor
-- Consumes TaskExecution protobuf messages from control plane
-- Extracts TaskResult from TaskExecution.result for plan execution
-- Executes planning logic based on TaskResult data
+- Consumes PlanInput protobuf messages from control plane
+- Extracts TaskExecution objects from PlanInput.task_executions for plan execution
+- Executes planning logic based on TaskExecution data
 - Publishes PlanExecution protobuf messages to data plane
 - Uses ProtobufUtils for serialization/deserialization
 - **Plan Execution**: Orchestrates plan execution and task sequencing
@@ -246,8 +261,8 @@ These changes enable comprehensive parent-child relationship tracking throughout
 - **plan-executions-{tenantId}**: `PlanExecution` messages (including `PlanResult`) from Plan Executor for the Data Plane
 - **persisted-task-executions-{tenantId}**: Persisted `TaskExecution` messages from Data Plane to Control Plane
 - **persisted-plan-executions-{tenantId}**: Persisted `PlanExecution` messages from Data Plane to Control Plane
-- **controlled-task-executions-{tenantId}**: `TaskExecution` messages from Control Plane to the Plan Executor (**note the crossover**)
-- **controlled-plan-executions-{tenantId}**: `PlanExecution` messages from Control Plane to the Task Executor (**note the crossover**)
+- **plan-inputs-{tenantId}**: `PlanInput` messages (with next plan from graph lookup) from Control Plane to the Plan Executor
+- **controlled-plan-executions-{tenantId}**: `PlanExecution` messages from Control Plane to the Task Executor
 
 ## Key Implementation Details
 
@@ -255,6 +270,7 @@ These changes enable comprehensive parent-child relationship tracking throughout
 All services use `ProtobufUtils` for consistent serialization/deserialization:
 - `ProtobufUtils.serializeTaskExecution()` / `deserializeTaskExecution()`
 - `ProtobufUtils.serializePlanExecution()` / `deserializePlanExecution()`
+- `ProtobufUtils.serializePlanInput()` / `deserializePlanInput()`
 - `ProtobufUtils.serializeTaskResult()` / `deserializeTaskResult()`
 - `ProtobufUtils.serializePlanResult()` / `deserializePlanResult()`
 

@@ -2,7 +2,7 @@ package com.pcallahan.agentic.taskexecutor.kafka;
 
 import com.pcallahan.agentic.common.ProtobufUtils;
 import com.pcallahan.agentic.common.TopicNames;
-import agentic.task.Task.TaskExecution;
+import io.arl.proto.model.Task.TaskExecution;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

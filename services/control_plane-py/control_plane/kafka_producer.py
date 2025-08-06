@@ -14,11 +14,11 @@ from structlog import get_logger
 
 from agentic_common.kafka_utils import (
     create_kafka_producer,
-    get_controlled_task_executions_topic,
+    get_plan_inputs_topic,
     get_controlled_plan_executions_topic,
 )
 from agentic_common.logging_config import log_kafka_message
-from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common.pb import TaskExecution, PlanExecution, PlanInput
 from agentic_common import ProtobufUtils
 
 logger = get_logger(__name__)
@@ -57,34 +57,34 @@ class ControlPlaneProducer:
             await self.producer.close()
             logger.info("Control plane producer stopped")
     
-    async def publish_task_execution(
+    async def publish_plan_input(
         self,
         tenant_id: str,
-        task_execution: TaskExecution,
+        plan_input: PlanInput,
         **kwargs
     ) -> None:
         """
-        Publish TaskExecution to controlled-task-executions topic.
+        Publish PlanInput to plan-inputs topic.
         
         Args:
             tenant_id: Tenant identifier
-            task_execution: TaskExecution protobuf message
+            plan_input: PlanInput protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = get_controlled_task_executions_topic(tenant_id)
+            topic = get_plan_inputs_topic(tenant_id)
             
             # Serialize protobuf message using consistent utilities
-            message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
+            message_bytes = ProtobufUtils.serialize_plan_input(plan_input)
             
-            # Send message with execution_id as key for ordering
-            execution_id = task_execution.header.id
+            # Send message with plan_name as key for ordering
+            plan_name = plan_input.plan_name
             await self.producer.send_and_wait(
                 topic=topic,
-                key=execution_id.encode('utf-8'),
+                key=plan_name.encode('utf-8'),
                 value=message_bytes,
             )
             
@@ -96,16 +96,17 @@ class ControlPlaneProducer:
                 offset=0,     # Will be set by Kafka
                 message_size=len(message_bytes),
                 tenant_id=tenant_id,
-                execution_id=execution_id,
+                execution_id=plan_input.input_id,
             )
             
-            logger.info("TaskExecution published to controlled-task-executions", 
-                       execution_id=execution_id,
+            logger.info("PlanInput published to plan-inputs", 
+                       input_id=plan_input.input_id,
+                       plan_name=plan_name,
                        tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish TaskExecution", 
-                        task_execution=task_execution,
+            logger.error("Failed to publish PlanInput", 
+                        plan_input=plan_input,
                         tenant_id=tenant_id,
                         error=str(e))
             raise
@@ -134,7 +135,7 @@ class ControlPlaneProducer:
             message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
             
             # Send message with execution_id as key for ordering
-            execution_id = plan_execution.header.id
+            execution_id = plan_execution.header.exec_id
             await self.producer.send_and_wait(
                 topic=topic,
                 key=execution_id.encode('utf-8'),
@@ -180,13 +181,153 @@ class ControlPlaneProducer:
         execution_type = execution_data.get("type")
         
         if execution_type == "task":
-            await self.publish_task_execution(tenant_id, execution_data, **kwargs)
+            # Implement Next Plan Prep logic for task executions
+            await self._publish_task_execution_with_next_plan_prep(tenant_id, execution_data, **kwargs)
         elif execution_type == "plan":
             await self.publish_plan_execution(tenant_id, execution_data, **kwargs)
         else:
             logger.warning("Unknown execution type for publishing", 
                           execution_type=execution_type,
                           execution_id=execution_data.get("execution_id"))
+    
+    async def _publish_task_execution_with_next_plan_prep(
+        self,
+        tenant_id: str,
+        execution_data: Dict[str, Any],
+        **kwargs
+    ) -> None:
+        """
+        Implement Next Plan Prep logic for task executions.
+        
+        When execution_type is 'task', examine the TaskExecution, look up the next plan 
+        in the graph (stub implementation), create a PlanInput message containing the 
+        original TaskExecution plus the determined plan name, and publish it using 
+        publish_plan_input.
+        
+        Args:
+            tenant_id: Tenant identifier
+            execution_data: Task execution data
+            **kwargs: Additional metadata
+        """
+        try:
+            # Extract TaskExecution from the execution data
+            # Note: This assumes execution_data contains a TaskExecution protobuf or dict representation
+            task_execution = self._extract_task_execution(execution_data)
+            
+            if not task_execution:
+                logger.error("Failed to extract TaskExecution from execution data", 
+                           execution_data=execution_data,
+                           tenant_id=tenant_id)
+                return
+            
+            # Look up the next plan in the graph (stub implementation)
+            next_plan_name = self._lookup_next_plan_in_graph(task_execution, tenant_id)
+            
+            # Create PlanInput message containing the original TaskExecution plus the determined plan name
+            plan_input = PlanInput(
+                input_id=task_execution.header.exec_id,
+                plan_name=next_plan_name,
+                task_executions=[task_execution]
+            )
+            
+            # Publish using publish_plan_input
+            await self.publish_plan_input(tenant_id, plan_input, **kwargs)
+            
+            logger.info("TaskExecution processed with Next Plan Prep logic", 
+                       execution_id=task_execution.header.exec_id,
+                       tenant_id=tenant_id,
+                       next_plan_name=next_plan_name)
+            
+        except Exception as e:
+            logger.error("Failed to process task execution with Next Plan Prep", 
+                        execution_data=execution_data,
+                        tenant_id=tenant_id,
+                        error=str(e))
+            raise
+    
+    def _extract_task_execution(self, execution_data: Dict[str, Any]) -> Optional[TaskExecution]:
+        """
+        Extract TaskExecution from execution data.
+        
+        Args:
+            execution_data: Execution data dictionary
+            
+        Returns:
+            TaskExecution protobuf object or None if extraction fails
+        """
+        try:
+            # Handle case where execution_data is already a TaskExecution protobuf
+            if isinstance(execution_data, TaskExecution):
+                return execution_data
+            
+            # Handle case where execution_data is a dict representation
+            if isinstance(execution_data, dict):
+                # This is a stub implementation - in a real scenario, you would
+                # deserialize the TaskExecution from the dict representation
+                # For now, we'll create a minimal TaskExecution for demonstration
+                
+                # Extract basic fields from the dict
+                execution_id = execution_data.get("execution_id", "unknown")
+                task_name = execution_data.get("name", "unknown")
+                
+                # Create a minimal TaskExecution (this is a stub - real implementation
+                # would properly deserialize the protobuf)
+                task_execution = TaskExecution()
+                task_execution.header.exec_id = execution_id
+                task_execution.header.name = task_name
+                task_execution.header.tenant_id = execution_data.get("tenant_id", "default")
+                task_execution.header.created_at = self._get_current_timestamp()
+                
+                # Add result if available
+                if "result" in execution_data:
+                    # This would need proper protobuf deserialization in real implementation
+                    pass
+                
+                return task_execution
+            
+            logger.warning("Unsupported execution_data type for TaskExecution extraction", 
+                          type=type(execution_data))
+            return None
+            
+        except Exception as e:
+            logger.error("Failed to extract TaskExecution", 
+                        execution_data=execution_data,
+                        error=str(e))
+            return None
+    
+    def _lookup_next_plan_in_graph(self, task_execution: TaskExecution, tenant_id: str) -> str:
+        """
+        Look up the next Plan in the graph based on TaskExecution.
+        
+        Args:
+            task_execution: TaskExecution to examine
+            tenant_id: Tenant identifier
+            
+        Returns:
+            Name of the next plan in the graph path
+        """
+        # TODO: Implement actual graph lookup logic
+        # This should examine the TaskExecution and determine the next plan in the graph
+        # For now, return a stub implementation
+        
+        logger.debug("Looking up next plan in graph for task execution", 
+                   execution_id=task_execution.header.exec_id,
+                   tenant_id=tenant_id,
+                   task_name=task_execution.header.name)
+        
+        # Stub implementation - replace with actual graph lookup
+        # This could involve:
+        # 1. Loading the agent graph for the tenant
+        # 2. Examining the task_execution.header.name to identify the current task
+        # 3. Looking up outgoing edges from this task to find the next plan
+        # 4. Returning the plan name
+        
+        # For now, return a predictable stub name based on the task name
+        task_name = task_execution.header.name
+        if task_name:
+            return f"next-plan-after-{task_name}"
+        else:
+            return "next-plan-stub"
     
     def _get_current_timestamp(self) -> str:
         """

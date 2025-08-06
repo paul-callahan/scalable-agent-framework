@@ -9,9 +9,9 @@ import com.pcallahan.agentic.dataplane.entity.TaskResultEntity;
 import com.pcallahan.agentic.dataplane.repository.PlanExecutionRepository;
 import com.pcallahan.agentic.dataplane.repository.TaskExecutionRepository;
 import com.pcallahan.agentic.dataplane.repository.TaskResultRepository;
-import agentic.plan.Plan.PlanExecution;
-import agentic.task.Task.TaskExecution;
-import agentic.task.Task.TaskResult;
+import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Task.TaskResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,7 +133,6 @@ public class PersistenceService {
         var header = taskExecution.getHeader();
         entity.setExecId(header.getExecId());  
         entity.setName(header.getName());
-        entity.setParentId(header.getParentId());
         entity.setGraphId(header.getGraphId());
         entity.setLifetimeId(header.getLifetimeId());
         entity.setTenantId(tenantId);
@@ -142,9 +141,6 @@ public class PersistenceService {
         entity.setCreatedAt(Instant.parse(header.getCreatedAt()));
         entity.setStatus(convertStatus(header.getStatus()));
         entity.setEdgeTaken(header.getEdgeTaken());
-        
-        // Set task-specific fields
-        entity.setTaskType(taskExecution.getTaskType());
         
         // Set task result ID using the saved entity's ID
         if (savedTaskResult != null) {
@@ -172,7 +168,6 @@ public class PersistenceService {
         var header = planExecution.getHeader();
         entity.setExecId(header.getExecId());
         entity.setName(header.getName());
-        entity.setParentId(header.getParentId());
         entity.setGraphId(header.getGraphId());
         entity.setLifetimeId(header.getLifetimeId());
         entity.setTenantId(tenantId);
@@ -182,20 +177,15 @@ public class PersistenceService {
         entity.setStatus(convertPlanStatus(header.getStatus()));
         entity.setEdgeTaken(header.getEdgeTaken());
         
-        // Set plan-specific fields
-        entity.setPlanType(planExecution.getPlanType());
-        entity.setInputTaskId(planExecution.getInputTaskId());
-        
         // Set parent relationship fields
-        entity.setParentTaskNames(planExecution.getParentTaskNamesList());
+        entity.setParentTaskExecIds(planExecution.getParentTaskExecIdsList());
+        entity.setParentTaskNames(String.join(",", planExecution.getParentTaskNamesList()));
         
         // Set result fields
         if (planExecution.hasResult()) {
             var result = planExecution.getResult();
-            entity.setResultNextTaskIds(result.getNextTaskIdsList());
-            entity.setResultMetadata(convertResultMetadata(result.getMetadata()));
+            entity.setResultNextTaskNames(result.getNextTaskNamesList());
             entity.setErrorMessage(result.getErrorMessage());
-            entity.setConfidence((double) result.getConfidence());
             
             // Extract upstream TaskResult IDs
             if (!result.getUpstreamTasksResultsList().isEmpty()) {
@@ -215,7 +205,7 @@ public class PersistenceService {
      * @param status the protobuf status
      * @return the JPA status enum
      */
-    private TaskExecutionEntity.ExecutionStatus convertStatus(agentic.common.Common.ExecutionStatus status) {
+    private TaskExecutionEntity.ExecutionStatus convertStatus(io.arl.proto.model.Common.ExecutionStatus status) {
         return switch (status) {
             case EXECUTION_STATUS_PENDING -> TaskExecutionEntity.ExecutionStatus.EXECUTION_STATUS_PENDING;
             case EXECUTION_STATUS_RUNNING -> TaskExecutionEntity.ExecutionStatus.EXECUTION_STATUS_RUNNING;
@@ -231,7 +221,7 @@ public class PersistenceService {
      * @param status the protobuf status
      * @return the JPA status enum
      */
-    private PlanExecutionEntity.ExecutionStatus convertPlanStatus(agentic.common.Common.ExecutionStatus status) {
+    private PlanExecutionEntity.ExecutionStatus convertPlanStatus(io.arl.proto.model.Common.ExecutionStatus status) {
         return switch (status) {
             case EXECUTION_STATUS_PENDING -> PlanExecutionEntity.ExecutionStatus.EXECUTION_STATUS_PENDING;
             case EXECUTION_STATUS_RUNNING -> PlanExecutionEntity.ExecutionStatus.EXECUTION_STATUS_RUNNING;
@@ -247,19 +237,19 @@ public class PersistenceService {
      * @param result the TaskResult protobuf
      * @return the result data map
      */
-    private Map<String, Object> convertResultData(agentic.task.Task.TaskResult result) {
+    private Map<String, Object> convertResultData(TaskResult result) {
         Map<String, Object> data = new HashMap<>();
-        data.put("mime_type", result.getMimeType());
-        data.put("size_bytes", result.getSizeBytes());
         data.put("error_message", result.getErrorMessage());
         
         // Handle data field
         if (result.hasInlineData()) {
             data.put("data_type", "inline");
             data.put("data", result.getInlineData().toString());
-        } else if (result.hasUri()) {
-            data.put("data_type", "uri");
-            data.put("data", result.getUri());
+        } else if (result.hasExternalData()) {
+            data.put("data_type", "external");
+            var externalData = result.getExternalData();
+            data.put("uri", externalData.getUri());
+            data.put("metadata", externalData.getMetadata());
         }
         
         return data;
@@ -279,21 +269,9 @@ public class PersistenceService {
         String taskResultId = taskResult.getId().isEmpty() ? UUID.randomUUID().toString() : taskResult.getId();
         entity.setId(taskResultId);
         entity.setTenantId(tenantId);
-        entity.setMimeType(taskResult.getMimeType());
-        entity.setSizeBytes(taskResult.getSizeBytes());
         entity.setErrorMessage(taskResult.getErrorMessage());
         entity.setResultData(convertResultData(taskResult));
         
         return entity;
-    }
-    
-    /**
-     * Convert PlanResult metadata to Map.
-     * 
-     * @param metadata the protobuf metadata map
-     * @return the metadata map
-     */
-    private Map<String, Object> convertResultMetadata(java.util.Map<String, String> metadata) {
-        return new HashMap<>(metadata);
     }
 } 

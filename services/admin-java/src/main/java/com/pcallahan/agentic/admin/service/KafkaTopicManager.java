@@ -123,7 +123,7 @@ public class KafkaTopicManager {
             TopicNames.planExecutions(tenantId),
             TopicNames.persistedTaskExecutions(tenantId),
             TopicNames.persistedPlanExecutions(tenantId),
-            TopicNames.controlledTaskExecutions(tenantId),
+            TopicNames.planInputs(tenantId),
             TopicNames.controlledPlanExecutions(tenantId)
         );
     }

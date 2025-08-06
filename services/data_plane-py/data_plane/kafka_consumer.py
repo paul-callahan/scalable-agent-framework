@@ -142,8 +142,8 @@ class DataPlaneConsumer:
             # Persist to database
             async for session in get_async_session():
                 db_task = TaskExecution(
-                    id=task_execution.header.id,
-                    parent_id=task_execution.header.parent_id or None,
+                    id=task_execution.header.exec_id,
+                    name=task_execution.header.name,
                     graph_id=task_execution.header.graph_id,
                     lifetime_id=task_execution.header.lifetime_id,
                     tenant_id=tenant_id,
@@ -152,10 +152,9 @@ class DataPlaneConsumer:
                     created_at=task_execution.header.created_at,
                     status=task_execution.header.status.name,
                     edge_taken=task_execution.header.edge_taken or None,
-                    task_type=task_execution.task_type,
+                    parent_plan_exec_id=task_execution.parent_plan_exec_id or None,
+                    parent_plan_name=task_execution.parent_plan_name or None,
                     result_data=self._extract_task_result_data(task_execution.result),
-                    result_mime_type=task_execution.result.mime_type or None,
-                    result_size_bytes=task_execution.result.size_bytes or None,
                     error_message=task_execution.result.error_message or None,
                 )
                 
@@ -163,13 +162,12 @@ class DataPlaneConsumer:
                 await session.commit()
                 
                 logger.info("TaskExecution persisted", 
-                           execution_id=task_execution.header.id,
-                           tenant_id=tenant_id,
-                           task_type=task_execution.task_type)
+                           execution_id=task_execution.header.exec_id,
+                           tenant_id=tenant_id)
                 
         except Exception as e:
             logger.error("Failed to process TaskExecution", 
-                        execution_id=getattr(task_execution, 'header', {}).get('id', 'unknown'),
+                        execution_id=getattr(task_execution, 'header', {}).get('exec_id', 'unknown'),
                         error=str(e))
             raise
     
@@ -190,8 +188,8 @@ class DataPlaneConsumer:
             # Persist to database
             async for session in get_async_session():
                 db_plan = PlanExecution(
-                    id=plan_execution.header.id,
-                    parent_id=plan_execution.header.parent_id or None,
+                    id=plan_execution.header.exec_id,
+                    name=plan_execution.header.name,
                     graph_id=plan_execution.header.graph_id,
                     lifetime_id=plan_execution.header.lifetime_id,
                     tenant_id=tenant_id,
@@ -200,25 +198,22 @@ class DataPlaneConsumer:
                     created_at=plan_execution.header.created_at,
                     status=plan_execution.header.status.name,
                     edge_taken=plan_execution.header.edge_taken or None,
-                    plan_type=plan_execution.plan_type,
-                    input_task_id=plan_execution.input_task_id or None,
-                    result_next_task_ids=list(plan_execution.result.next_task_ids),
-                    result_metadata=dict(plan_execution.result.metadata),
+                    parent_task_exec_ids=list(plan_execution.parent_task_exec_ids),
+                    parent_task_names=plan_execution.parent_task_names or None,
+                    result_next_task_names=list(plan_execution.result.next_task_names),
                     error_message=plan_execution.result.error_message or None,
-                    confidence=plan_execution.result.confidence or None,
                 )
                 
                 session.add(db_plan)
                 await session.commit()
                 
                 logger.info("PlanExecution persisted", 
-                           execution_id=plan_execution.header.id,
-                           tenant_id=tenant_id,
-                           plan_type=plan_execution.plan_type)
+                           execution_id=plan_execution.header.exec_id,
+                           tenant_id=tenant_id)
                 
         except Exception as e:
             logger.error("Failed to process PlanExecution", 
-                        execution_id=getattr(plan_execution, 'header', {}).get('id', 'unknown'),
+                        execution_id=getattr(plan_execution, 'header', {}).get('exec_id', 'unknown'),
                         error=str(e))
             raise
     
@@ -238,10 +233,12 @@ class DataPlaneConsumer:
                 "type": "inline",
                 "data": task_result.inline_data,
             }
-        elif task_result.HasField("uri"):
+        elif task_result.HasField("external_data"):
+            external_data = task_result.external_data
             return {
-                "type": "uri",
-                "uri": task_result.uri,
+                "type": "external",
+                "uri": external_data.uri,
+                "metadata": dict(external_data.metadata),
             }
         else:
             return None 

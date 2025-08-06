@@ -96,7 +96,7 @@ A record emitted on every TaskExecution.  Three sections:
 3. **Control Plane** reads the reference, loads TaskExecution headers (and blob metadata), and evaluates YAML guardrails.
    * **Pass** → forwards the envelope (or just its reference) to the target **Plan** executor queue.
    * **Fail** → issues `REJECT_EXECUTION`, `PAUSE_LIFETIME`, or `ABORT_LIFETIME` events.
-4. **Plan** is passed the previous **TaskExecution** and **TaskResult** from the **Control Plane**, produces a **PlanResult** listing `next_task_ids[]`, and emits its own **PlanExecution**.
+4. **Plan** is passed the previous **TaskExecution**s and **TaskResult**s from the **Control Plane**, produces a **PlanResult** listing `next_task_names[]`, and emits its own **PlanExecution**.
 5. **Data Plane** persists the **PlanExecution** in the State DB (append‑only) and republishes a *lightweight reference message* to the **Control Plane** topic.
 6. Step 1 repeats for the downstream **Task**, but with the **PlanResult** passed as input from the Control Plane.
 7. Steps 2-6 repeat following the path of the graphuntil an edge of type `FINAL` is taken, completing the AgentLifetime.

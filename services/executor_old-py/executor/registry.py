@@ -13,50 +13,50 @@ from typing import Any, Dict, Optional, Type
 
 from structlog import get_logger
 
-from agentic.core.task import Task
-from agentic.core.plan import Plan
+from agentic.core.task import DeprecatedTaskExecutor
+from agentic.core.plan import DeprecatedPlanExecutor
 
 logger = get_logger(__name__)
 
 
 class TaskRegistry:
     """
-    Registry for Task classes.
+    Registry for DeprecatedTaskExecutor classes.
     
-    Maps task_type strings to concrete Task classes and provides
-    functionality to register and load Task subclasses dynamically.
+    Maps task_type strings to concrete DeprecatedTaskExecutor classes and provides
+    functionality to register and load DeprecatedTaskExecutor subclasses dynamically.
     """
     
     def __init__(self):
         """Initialize the task registry."""
-        self._tasks: Dict[str, Type[Task]] = {}
+        self._tasks: Dict[str, Type[DeprecatedTaskExecutor]] = {}
         self._task_modules: Dict[str, str] = {}
     
-    def register_task(self, task_type: str, task_class: Type[Task]) -> None:
+    def register_task(self, task_type: str, task_class: Type[DeprecatedTaskExecutor]) -> None:
         """
-        Register a Task class.
+        Register a DeprecatedTaskExecutor class.
         
         Args:
             task_type: Unique identifier for the task type
-            task_class: Task class to register
+            task_class: DeprecatedTaskExecutor class to register
         """
         if not inspect.isclass(task_class):
             raise ValueError(f"task_class must be a class, got {type(task_class)}")
         
-        if not issubclass(task_class, Task):
-            raise ValueError(f"task_class must inherit from Task, got {task_class}")
+        if not issubclass(task_class, DeprecatedTaskExecutor):
+            raise ValueError(f"task_class must inherit from DeprecatedTaskExecutor, got {task_class}")
         
         self._tasks[task_type] = task_class
         logger.info("Task registered", task_type=task_type, class_name=task_class.__name__)
     
     def register_task_from_module(self, task_type: str, module_path: str, class_name: str) -> None:
         """
-        Register a Task class from a module path.
+        Register a DeprecatedTaskExecutor class from a module path.
         
         Args:
             task_type: Unique identifier for the task type
             module_path: Python module path (e.g., "myapp.tasks")
-            class_name: Name of the Task class in the module
+            class_name: Name of the DeprecatedTaskExecutor class in the module
         """
         try:
             module = importlib.import_module(module_path)
@@ -78,28 +78,28 @@ class TaskRegistry:
                         error=str(e))
             raise
     
-    def get_task_class(self, task_type: str) -> Optional[Type[Task]]:
+    def get_task_class(self, task_type: str) -> Optional[Type[DeprecatedTaskExecutor]]:
         """
-        Get a Task class by type.
+        Get a DeprecatedTaskExecutor class by type.
         
         Args:
             task_type: Task type identifier
             
         Returns:
-            Task class or None if not found
+            DeprecatedTaskExecutor class or None if not found
         """
         return self._tasks.get(task_type)
     
-    def create_task(self, task_type: str, **kwargs) -> Optional[Task]:
+    def create_task(self, task_type: str, **kwargs) -> Optional[DeprecatedTaskExecutor]:
         """
-        Create a Task instance by type.
+        Create a DeprecatedTaskExecutor instance by type.
         
         Args:
             task_type: Task type identifier
             **kwargs: Arguments to pass to task constructor
             
         Returns:
-            Task instance or None if not found
+            DeprecatedTaskExecutor instance or None if not found
         """
         task_class = self.get_task_class(task_type)
         if task_class:
@@ -149,42 +149,42 @@ class TaskRegistry:
 
 class PlanRegistry:
     """
-    Registry for Plan classes.
+    Registry for DeprecatedPlanExecutor classes.
     
-    Maps plan_type strings to concrete Plan classes and provides
-    functionality to register and load Plan subclasses dynamically.
+    Maps plan_type strings to concrete DeprecatedPlanExecutor classes and provides
+    functionality to register and load DeprecatedPlanExecutor subclasses dynamically.
     """
     
     def __init__(self):
         """Initialize the plan registry."""
-        self._plans: Dict[str, Type[Plan]] = {}
+        self._plans: Dict[str, Type[DeprecatedPlanExecutor]] = {}
         self._plan_modules: Dict[str, str] = {}
     
-    def register_plan(self, plan_type: str, plan_class: Type[Plan]) -> None:
+    def register_plan(self, plan_type: str, plan_class: Type[DeprecatedPlanExecutor]) -> None:
         """
-        Register a Plan class.
+        Register a DeprecatedPlanExecutor class.
         
         Args:
             plan_type: Unique identifier for the plan type
-            plan_class: Plan class to register
+            plan_class: DeprecatedPlanExecutor class to register
         """
         if not inspect.isclass(plan_class):
             raise ValueError(f"plan_class must be a class, got {type(plan_class)}")
         
-        if not issubclass(plan_class, Plan):
-            raise ValueError(f"plan_class must inherit from Plan, got {plan_class}")
+        if not issubclass(plan_class, DeprecatedPlanExecutor):
+            raise ValueError(f"plan_class must inherit from DeprecatedPlanExecutor, got {plan_class}")
         
         self._plans[plan_type] = plan_class
         logger.info("Plan registered", plan_type=plan_type, class_name=plan_class.__name__)
     
     def register_plan_from_module(self, plan_type: str, module_path: str, class_name: str) -> None:
         """
-        Register a Plan class from a module path.
+        Register a DeprecatedPlanExecutor class from a module path.
         
         Args:
             plan_type: Unique identifier for the plan type
             module_path: Python module path (e.g., "myapp.plans")
-            class_name: Name of the Plan class in the module
+            class_name: Name of the DeprecatedPlanExecutor class in the module
         """
         try:
             module = importlib.import_module(module_path)
@@ -206,28 +206,28 @@ class PlanRegistry:
                         error=str(e))
             raise
     
-    def get_plan_class(self, plan_type: str) -> Optional[Type[Plan]]:
+    def get_plan_class(self, plan_type: str) -> Optional[Type[DeprecatedPlanExecutor]]:
         """
-        Get a Plan class by type.
+        Get a DeprecatedPlanExecutor class by type.
         
         Args:
             plan_type: Plan type identifier
             
         Returns:
-            Plan class or None if not found
+            DeprecatedPlanExecutor class or None if not found
         """
         return self._plans.get(plan_type)
     
-    def create_plan(self, plan_type: str, **kwargs) -> Optional[Plan]:
+    def create_plan(self, plan_type: str, **kwargs) -> Optional[DeprecatedPlanExecutor]:
         """
-        Create a Plan instance by type.
+        Create a DeprecatedPlanExecutor instance by type.
         
         Args:
             plan_type: Plan type identifier
             **kwargs: Arguments to pass to plan constructor
             
         Returns:
-            Plan instance or None if not found
+            DeprecatedPlanExecutor instance or None if not found
         """
         plan_class = self.get_plan_class(plan_type)
         if plan_class:
@@ -287,11 +287,11 @@ class RegistryManager:
         self.task_registry = TaskRegistry()
         self.plan_registry = PlanRegistry()
     
-    def register_task(self, task_type: str, task_class: Type[Task]) -> None:
+    def register_task(self, task_type: str, task_class: Type[DeprecatedTaskExecutor]) -> None:
         """Register a task class."""
         self.task_registry.register_task(task_type, task_class)
     
-    def register_plan(self, plan_type: str, plan_class: Type[Plan]) -> None:
+    def register_plan(self, plan_type: str, plan_class: Type[DeprecatedPlanExecutor]) -> None:
         """Register a plan class."""
         self.plan_registry.register_plan(plan_type, plan_class)
     
@@ -303,19 +303,19 @@ class RegistryManager:
         """Register a plan class from module."""
         self.plan_registry.register_plan_from_module(plan_type, module_path, class_name)
     
-    def get_task_class(self, task_type: str) -> Optional[Type[Task]]:
+    def get_task_class(self, task_type: str) -> Optional[Type[DeprecatedTaskExecutor]]:
         """Get a task class."""
         return self.task_registry.get_task_class(task_type)
     
-    def get_plan_class(self, plan_type: str) -> Optional[Type[Plan]]:
+    def get_plan_class(self, plan_type: str) -> Optional[Type[DeprecatedPlanExecutor]]:
         """Get a plan class."""
         return self.plan_registry.get_plan_class(plan_type)
     
-    def create_task(self, task_type: str, **kwargs) -> Optional[Task]:
+    def create_task(self, task_type: str, **kwargs) -> Optional[DeprecatedTaskExecutor]:
         """Create a task instance."""
         return self.task_registry.create_task(task_type, **kwargs)
     
-    def create_plan(self, plan_type: str, **kwargs) -> Optional[Plan]:
+    def create_plan(self, plan_type: str, **kwargs) -> Optional[DeprecatedPlanExecutor]:
         """Create a plan instance."""
         return self.plan_registry.create_plan(plan_type, **kwargs)
     

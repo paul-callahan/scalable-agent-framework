@@ -2,8 +2,8 @@ package com.pcallahan.agentic.dataplane.kafka;
 
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.common.ProtobufUtils;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

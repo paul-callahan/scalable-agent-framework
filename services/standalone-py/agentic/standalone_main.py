@@ -79,22 +79,17 @@ async def run_standalone(log_level: str = "INFO",
         return {
             "result": f"Mock task executed with parameters: {parameters}",
             "status": "completed",
-            "metadata": {
-                "handler": "mock",
-                "timestamp": "2024-01-01T00:00:00Z"
-            }
+            "handler": "mock",
+            "timestamp": "2024-01-01T00:00:00Z"
         }
     
     def mock_plan_handler(parameters: dict, input_task_id: str) -> dict:
         """Mock plan handler for demonstration."""
         return {
-            "next_task_ids": [f"mock_task_{input_task_id}_next"],
-            "metadata": {
-                "handler": "mock",
-                "input_task_id": input_task_id,
-                "timestamp": "2024-01-01T00:00:00Z"
-            },
-            "confidence": 0.8
+            "next_task_names": [f"mock_task_{input_task_id}_next"],
+            "handler": "mock",
+            "input_task_id": input_task_id,
+            "timestamp": "2024-01-01T00:00:00Z"
         }
     
     task_executor_service.register_task("mock_task", mock_task_handler)

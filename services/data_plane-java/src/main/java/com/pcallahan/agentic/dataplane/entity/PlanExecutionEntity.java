@@ -6,7 +6,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 /**
  * JPA entity representing a PlanExecution in the database.
@@ -19,7 +18,7 @@ import java.util.Map;
     @Index(name = "idx_plan_executions_graph_id", columnList = "graph_id"),
     @Index(name = "idx_plan_executions_status", columnList = "status"),
     @Index(name = "idx_plan_executions_created_at", columnList = "created_at"),
-    @Index(name = "idx_plan_executions_input_task_id", columnList = "input_task_id"),
+    @Index(name = "idx_plan_executions_parent_task_exec_ids", columnList = "parent_task_exec_ids"),
     @Index(name = "idx_plan_executions_parent_task_names", columnList = "parent_task_names")
 })
 public class PlanExecutionEntity {
@@ -30,9 +29,6 @@ public class PlanExecutionEntity {
     
     @Column(name = "name", length = 100, nullable = false)
     private String name;
-    
-    @Column(name = "parent_id", length = 36)
-    private String parentId;
     
     @Column(name = "graph_id", length = 36, nullable = false)
     private String graphId;
@@ -60,31 +56,20 @@ public class PlanExecutionEntity {
     private String edgeTaken;
     
     // Plan-specific fields
-    @Column(name = "plan_type", length = 100, nullable = false)
-    private String planType;
-    
-    @Column(name = "input_task_id", length = 36)
-    private String inputTaskId;
-    
-    // Parent relationship tracking field
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "parent_task_names", columnDefinition = "jsonb")
-    private List<String> parentTaskNames;
+    @Column(name = "parent_task_exec_ids", columnDefinition = "jsonb")
+    private List<String> parentTaskExecIds;
+    
+    @Column(name = "parent_task_names", length = 500)
+    private String parentTaskNames;
     
     // Result fields
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "result_next_task_ids", columnDefinition = "jsonb")
-    private List<String> resultNextTaskIds;
-    
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "result_metadata", columnDefinition = "jsonb")
-    private Map<String, Object> resultMetadata;
+    @Column(name = "result_next_task_names", columnDefinition = "jsonb")
+    private List<String> resultNextTaskNames;
     
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
-    
-    @Column(name = "confidence")
-    private Double confidence;
     
     // Foreign key list to TaskResult objects
     @JdbcTypeCode(SqlTypes.JSON)
@@ -127,14 +112,6 @@ public class PlanExecutionEntity {
     
     public void setName(String name) {
         this.name = name;
-    }
-    
-    public String getParentId() {
-        return parentId;
-    }
-    
-    public void setParentId(String parentId) {
-        this.parentId = parentId;
     }
     
     public String getGraphId() {
@@ -201,44 +178,28 @@ public class PlanExecutionEntity {
         this.edgeTaken = edgeTaken;
     }
     
-    public String getPlanType() {
-        return planType;
+    public List<String> getParentTaskExecIds() {
+        return parentTaskExecIds;
     }
     
-    public void setPlanType(String planType) {
-        this.planType = planType;
+    public void setParentTaskExecIds(List<String> parentTaskExecIds) {
+        this.parentTaskExecIds = parentTaskExecIds;
     }
     
-    public String getInputTaskId() {
-        return inputTaskId;
-    }
-    
-    public void setInputTaskId(String inputTaskId) {
-        this.inputTaskId = inputTaskId;
-    }
-    
-    public List<String> getParentTaskNames() {
+    public String getParentTaskNames() {
         return parentTaskNames;
     }
     
-    public void setParentTaskNames(List<String> parentTaskNames) {
+    public void setParentTaskNames(String parentTaskNames) {
         this.parentTaskNames = parentTaskNames;
     }
     
-    public List<String> getResultNextTaskIds() {
-        return resultNextTaskIds;
+    public List<String> getResultNextTaskNames() {
+        return resultNextTaskNames;
     }
     
-    public void setResultNextTaskIds(List<String> resultNextTaskIds) {
-        this.resultNextTaskIds = resultNextTaskIds;
-    }
-    
-    public Map<String, Object> getResultMetadata() {
-        return resultMetadata;
-    }
-    
-    public void setResultMetadata(Map<String, Object> resultMetadata) {
-        this.resultMetadata = resultMetadata;
+    public void setResultNextTaskNames(List<String> resultNextTaskNames) {
+        this.resultNextTaskNames = resultNextTaskNames;
     }
     
     public String getErrorMessage() {
@@ -247,14 +208,6 @@ public class PlanExecutionEntity {
     
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
-    }
-    
-    public Double getConfidence() {
-        return confidence;
-    }
-    
-    public void setConfidence(Double confidence) {
-        this.confidence = confidence;
     }
     
     public List<String> getUpstreamTaskResultIds() {

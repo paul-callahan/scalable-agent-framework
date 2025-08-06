@@ -5,8 +5,8 @@ This package contains the main domain logic classes that are not part of the IDL
 These classes implement the business logic for Tasks, Plans, Graphs, and Lifetimes.
 """
 
-from .task import Task
-from .plan import Plan
+from .task import Task, DeprecatedTaskExecutor
+from .plan import Plan, DeprecatedPlanExecutor
 from .graph import AgentGraph
 from .lifetime import AgentLifetime
 from .edge import Edge
@@ -14,6 +14,8 @@ from .edge import Edge
 __all__ = [
     "Task",
     "Plan",
+    "DeprecatedTaskExecutor",
+    "DeprecatedPlanExecutor",
     "AgentGraph", 
     "AgentLifetime",
     "Edge",

@@ -284,7 +284,7 @@ The services track various metrics automatically:
 ### Common Issues
 
 1. **Port conflicts**: Ensure ports 50051, 50052, 8080, and 8081 are available
-2. **Import errors**: Run `./scripts/gen_proto.sh` to generate protobuf files
+2. **Import errors**: Protobuf files are now provided by the common-py dependency
 3. **Permission errors**: Ensure write permissions for log files and database
 
 ### Debug Mode

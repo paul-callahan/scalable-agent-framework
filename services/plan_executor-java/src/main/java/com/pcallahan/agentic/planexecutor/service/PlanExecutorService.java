@@ -1,11 +1,12 @@
 package com.pcallahan.agentic.planexecutor.service;
 
 import com.pcallahan.agentic.planexecutor.kafka.PlanExecutionProducer;
-import agentic.task.Task.TaskExecution;
-import agentic.task.Task.TaskResult;
-import agentic.plan.Plan.PlanExecution;
-import agentic.plan.Plan.PlanResult;
-import agentic.common.Common.ExecutionHeader;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Task.TaskResult;
+import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanInput;
+import io.arl.proto.model.Plan.PlanResult;
+import io.arl.proto.model.Common.ExecutionHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,11 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
- * Service responsible for executing plans based on TaskExecution messages.
+ * Service responsible for executing plans based on PlanInput messages.
  * 
  * This service:
- * - Consumes TaskExecution protobuf messages from Kafka via TaskResultListener
- * - Executes plans based on TaskExecution data
+ * - Consumes PlanInput protobuf messages from Kafka via PlanInputListener
+ * - Executes plans based on PlanInput data (which contains TaskExecution objects)
  * - Produces PlanExecution protobuf messages to Kafka via PlanExecutionProducer
  * - Manages plan execution lifecycle and error handling
  * - Enhances parent relationship population with actual upstream execution data
@@ -41,16 +42,27 @@ public class PlanExecutorService {
     }
     
     /**
-     * Execute plans from a TaskExecution protobuf message
+     * Execute plans from a PlanInput protobuf message
      * 
-     * @param taskExecution the TaskExecution protobuf message containing plans to execute
+     * @param planInput the PlanInput protobuf message containing TaskExecution objects
      * @param tenantId the tenant identifier
      * @return true if execution was successful, false otherwise
      */
-    public boolean executePlansFromTaskExecution(TaskExecution taskExecution, String tenantId) {
-        logger.info("Executing plans from TaskExecution protobuf for tenant: {}", tenantId);
+    public boolean executePlansFromPlanInput(PlanInput planInput, String tenantId) {
+        logger.info("Executing plans from PlanInput protobuf for tenant: {}", tenantId);
         
         try {
+            // Extract TaskExecution objects from PlanInput
+            List<TaskExecution> taskExecutions = planInput.getTaskExecutionsList();
+            
+            if (taskExecutions.isEmpty()) {
+                logger.error("PlanInput contains no TaskExecution objects for tenant: {}", tenantId);
+                return false;
+            }
+            
+            // For now, process the first TaskExecution (can be enhanced to handle multiple)
+            TaskExecution taskExecution = taskExecutions.get(0);
+            
             // Extract TaskResult from TaskExecution
             TaskResult taskResult = taskExecution.getResult();
             
@@ -60,8 +72,8 @@ public class PlanExecutorService {
                 return false;
             }
             
-            logger.debug("TaskExecution protobuf for tenant {}: mime_type={}, size_bytes={}", 
-                tenantId, taskResult.getMimeType(), taskResult.getSizeBytes());
+            logger.debug("PlanInput protobuf for tenant {}: input_id={}, plan_name={}, task_executions_count={}", 
+                tenantId, planInput.getInputId(), planInput.getPlanName(), taskExecutions.size());
             
             // Determine plan type from task result data
             String planType = extractPlanType(taskExecution);
@@ -95,7 +107,7 @@ public class PlanExecutorService {
             return true;
             
         } catch (Exception e) {
-            logger.error("Error executing plans from TaskExecution protobuf for tenant: {}", tenantId, e);
+            logger.error("Error executing plans from PlanInput protobuf for tenant: {}", tenantId, e);
             return false;
         }
     }
@@ -150,6 +162,7 @@ public class PlanExecutorService {
             TaskResult taskResult = taskExecution.getResult();
             
             // Enhanced parent relationship population using actual upstream data
+            List<String> parentTaskExecIds = buildParentTaskExecIds(taskExecution, tenantId);
             List<String> parentTaskNames = buildParentTaskNames(taskExecution, tenantId);
             List<TaskResult> upstreamTaskResults = buildUpstreamTaskResults(taskExecution, tenantId);
             
@@ -158,16 +171,16 @@ public class PlanExecutorService {
                 upstreamTaskResults.add(taskResult);
             }
             
-            logger.debug("Plan execution will have {} parent task names: {}", 
-                parentTaskNames.size(), parentTaskNames);
+            logger.debug("Plan execution will have {} parent task exec IDs: {}", 
+                parentTaskExecIds.size(), parentTaskExecIds);
+            logger.debug("Plan execution will have parent task names: {}", parentTaskNames);
             logger.debug("Plan execution will have {} upstream task results", 
                 upstreamTaskResults.size());
             
             PlanResult planResult = PlanResult.newBuilder()
                 .addAllUpstreamTasksResults(upstreamTaskResults)
-                .addNextTaskIds("task-1")
-                .addNextTaskIds("task-2")
-                .setConfidence(0.8f)
+                .addNextTaskNames("task-1")
+                .addNextTaskNames("task-2")
                 .build();
             
             return PlanExecution.newBuilder()
@@ -178,32 +191,58 @@ public class PlanExecutorService {
                     .setCreatedAt(Instant.now().toString())
                     .build())
                 .setResult(planResult)
-                .setPlanType("default")
-                .setInputTaskId(taskResult.getId())
+                .addAllParentTaskExecIds(parentTaskExecIds)
                 .addAllParentTaskNames(parentTaskNames)
                 .build();
         }
         
         /**
-         * Build parent task names list based on the current task execution context
+         * Build parent task execution IDs list based on the current task execution context
          * 
          * @param currentTaskExecution the current TaskExecution that triggered the plan
          * @param tenantId the tenant identifier
-         * @return list of parent task names from the current execution context
+         * @return list of parent task execution IDs from the current execution context
+         */
+        private List<String> buildParentTaskExecIds(TaskExecution currentTaskExecution, String tenantId) {
+            List<String> parentTaskExecIds = new ArrayList<>();
+            
+            // Add the current task execution ID as the primary parent
+            String currentTaskExecId = currentTaskExecution.getHeader().getExecId();
+            if (currentTaskExecId != null && !currentTaskExecId.isEmpty()) {
+                parentTaskExecIds.add(currentTaskExecId);
+            }
+            
+            // TODO: In a real implementation, this would look up the graph definition
+            // to find the actual parent task execution IDs based on the graph structure.
+            // For now, we only include the current task execution ID as it's the immediate parent
+            // that triggered this plan execution.
+            
+            logger.debug("Built parent task exec IDs for tenant {}: {}", tenantId, parentTaskExecIds);
+            
+            return parentTaskExecIds;
+        }
+        
+        /**
+         * Build parent task names based on the current task execution context
+         * 
+         * @param currentTaskExecution the current TaskExecution that triggered the plan
+         * @param tenantId the tenant identifier
+         * @return parent task names string
          */
         private List<String> buildParentTaskNames(TaskExecution currentTaskExecution, String tenantId) {
             List<String> parentTaskNames = new ArrayList<>();
             
-            // Add the current task name as the primary parent
-            String currentTaskName = currentTaskExecution.getHeader().getName();
-            if (currentTaskName != null && !currentTaskName.isEmpty()) {
-                parentTaskNames.add(currentTaskName);
-            }
+            // Extract parent task name from current TaskExecution
+            String parentTaskName = currentTaskExecution.getHeader().getName();
             
             // TODO: In a real implementation, this would look up the graph definition
             // to find the actual parent task names based on the graph structure.
             // For now, we only include the current task name as it's the immediate parent
             // that triggered this plan execution.
+            
+            if (parentTaskName != null && !parentTaskName.isEmpty()) {
+                parentTaskNames.add(parentTaskName);
+            }
             
             logger.debug("Built parent task names for tenant {}: {}", tenantId, parentTaskNames);
             
@@ -248,8 +287,7 @@ public class PlanExecutorService {
         private boolean isValidTaskResult(TaskResult taskResult) {
             return taskResult != null && 
                    taskResult.getErrorMessage().isEmpty() &&
-                   !taskResult.getMimeType().isEmpty() &&
-                   taskResult.getSizeBytes() > 0;
+                   !taskResult.getId().isEmpty();
         }
     }
 } 

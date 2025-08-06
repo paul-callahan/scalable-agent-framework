@@ -103,7 +103,7 @@ async def main():
     
     def my_plan_handler(parameters, input_task_id):
         return {
-            "next_task_ids": ["next_task_1", "next_task_2"],
+            "next_task_names": ["next_task_1", "next_task_2"],
             "metadata": {"input_task_id": input_task_id},
             "confidence": 0.8
         }

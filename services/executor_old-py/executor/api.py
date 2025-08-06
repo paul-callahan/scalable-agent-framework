@@ -223,7 +223,7 @@ def create_executor_app(
                 # Create a mock PlanResult for task execution
                 from agentic.core.plan import PlanResult
                 plan_result = PlanResult(
-                    next_task_ids=[],
+                    next_task_names=[],
                     metadata=request.input_data,
                 )
                 

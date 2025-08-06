@@ -18,7 +18,7 @@ from agentic import (
     TaskExecutorService,
     PlanExecutorService
 )
-from agentic.pb import task_pb2, plan_pb2, common_pb2
+from agentic_common.pb import task_pb2, plan_pb2, common_pb2
 
 
 async def test_standalone_integration():
@@ -38,11 +38,10 @@ async def test_standalone_integration():
     def test_task_handler(parameters):
         return {"result": f"Task executed with parameters: {parameters}", "status": "success"}
     
-    def test_plan_handler(parameters, input_task_id):
+    def test_plan_handler(parameters, parent_task_exec_ids):
         return {
-            "next_task_ids": [f"next_task_{uuid.uuid4().hex[:8]}"],
-            "metadata": {"input_task_id": input_task_id},
-            "confidence": 0.9
+            "next_task_names": [f"next_task_{uuid.uuid4().hex[:8]}"],
+            "parent_task_exec_ids": parent_task_exec_ids
         }
     
     task_executor.register_task("test_task", test_task_handler)
@@ -67,18 +66,17 @@ async def test_standalone_integration():
     
     # Create a test task execution
     task_execution = task_pb2.TaskExecution()
-    task_execution.header.id = f"task_{uuid.uuid4().hex[:8]}"
+    task_execution.header.exec_id = f"task_{uuid.uuid4().hex[:8]}"
     task_execution.header.tenant_id = tenant_id
     task_execution.header.status = common_pb2.EXECUTION_STATUS_PENDING
     task_execution.header.created_at = datetime.utcnow().isoformat()
-    task_execution.task_type = "test_task"
     
     # Publish to task-executions queue
     task_executions_topic = f"task-executions_{tenant_id}"
     task_bytes = task_execution.SerializeToString()
     await broker.publish(task_executions_topic, task_bytes)
     
-    print(f"Published task execution: {task_execution.header.id}")
+    print(f"Published task execution: {task_execution.header.exec_id}")
     
     # Wait for processing
     await asyncio.sleep(0.5)
@@ -88,19 +86,17 @@ async def test_standalone_integration():
     
     # Create a test plan execution
     plan_execution = plan_pb2.PlanExecution()
-    plan_execution.header.id = f"plan_{uuid.uuid4().hex[:8]}"
+    plan_execution.header.exec_id = f"plan_{uuid.uuid4().hex[:8]}"
     plan_execution.header.tenant_id = tenant_id
     plan_execution.header.status = common_pb2.EXECUTION_STATUS_PENDING
     plan_execution.header.created_at = datetime.utcnow().isoformat()
-    plan_execution.plan_type = "test_plan"
-    plan_execution.input_task_id = task_execution.header.id
     
     # Publish to plan-executions queue
     plan_executions_topic = f"plan-executions_{tenant_id}"
     plan_bytes = plan_execution.SerializeToString()
     await broker.publish(plan_executions_topic, plan_bytes)
     
-    print(f"Published plan execution: {plan_execution.header.id}")
+    print(f"Published plan execution: {plan_execution.header.exec_id}")
     
     # Wait for processing
     await asyncio.sleep(0.5)

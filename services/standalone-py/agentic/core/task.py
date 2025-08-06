@@ -8,18 +8,22 @@ Each task takes the result of the previous plan and returns a TaskResult.
 import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Union
+from pathlib import Path
 
-from ..pb import task_pb2
+from agentic_common.pb import task_pb2
 from google.protobuf import any_pb2
 from agentic_common import ProtobufUtils
 
 # PlanResult is imported as a string type annotation to avoid circular imports
 
 
-class Task(ABC):
+class DeprecatedTaskExecutor(ABC):
     """
-    Base class for all tasks in the agentic framework.
-
+    DEPRECATED: Base class for all tasks in the agentic framework.
+    
+    This class is deprecated and will be removed in a future version.
+    Use the new Task data class for graph structure instead.
+    
     Tasks are individual units of work that can be executed. Each task
     takes the result of the previous plan and returns a TaskResult.
     """
@@ -38,6 +42,77 @@ class Task(ABC):
         pass
 
 
+class Task:
+    """
+    Represents a task in the agent graph specification.
+    
+    A task is a node in the agent graph that processes results from a single upstream plan
+    and produces a task result that can be consumed by downstream plans. Each task has a unique
+    name and is associated with a Python subproject directory containing the task implementation.
+    
+    The task's Python subproject should contain:
+    - A task.py file with a execute(upstream_plan: PlanResult) -> TaskResult function
+    - A requirements.txt file listing dependencies
+    
+    Tasks can only have one upstream plan (enforcing the constraint that tasks process
+    single plan results), but can feed into multiple downstream plans.
+    """
+    
+    def __init__(self, name: str, label: str, task_source: Path, upstream_plan_id: str):
+        """
+        Initialize a Task.
+        
+        Args:
+            name: The unique identifier for this task
+            label: The human-readable label for this task
+            task_source: Path to the Python subproject directory containing the task implementation
+            upstream_plan_id: ID of the single plan that feeds into this task
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if not name or not name.strip():
+            raise ValueError("Task name cannot be null or empty")
+        if task_source is None:
+            raise ValueError("Task source cannot be null")
+        if not upstream_plan_id or not upstream_plan_id.strip():
+            raise ValueError("Upstream plan ID cannot be null or empty")
+            
+        self.name = name
+        self.label = label
+        self.task_source = task_source
+        self.upstream_plan_id = upstream_plan_id
+    
+    @classmethod
+    def of(cls, name: str, task_source: Path, upstream_plan_id: str) -> "Task":
+        """
+        Creates a new Task with the specified name, source directory, and upstream plan.
+        
+        Args:
+            name: The task name
+            task_source: The task source directory
+            upstream_plan_id: The upstream plan ID
+            
+        Returns:
+            A new Task
+        """
+        return cls(name, name, task_source, upstream_plan_id)
+    
+    def __eq__(self, other):
+        if not isinstance(other, Task):
+            return False
+        return (self.name == other.name and 
+                self.label == other.label and 
+                self.task_source == other.task_source and 
+                self.upstream_plan_id == other.upstream_plan_id)
+    
+    def __hash__(self):
+        return hash((self.name, self.label, self.task_source, self.upstream_plan_id))
+    
+    def __repr__(self):
+        return f"Task(name='{self.name}', label='{self.label}', task_source={self.task_source}, upstream_plan_id='{self.upstream_plan_id}')"
+
+
 class TaskResult:
     """
     Result of a task execution.
@@ -49,8 +124,6 @@ class TaskResult:
     def __init__(
         self,
         data: Optional[Union[Any, str]] = None,
-        mime_type: str = "application/json",
-        size_bytes: int = 0,
         error_message: Optional[str] = None
     ):
         """
@@ -58,13 +131,9 @@ class TaskResult:
 
         Args:
             data: Result data (inline object or URI string)
-            mime_type: MIME type of the result data
-            size_bytes: Size of the result data in bytes
             error_message: Optional error message if execution failed
         """
         self.data = data
-        self.mime_type = mime_type
-        self.size_bytes = size_bytes
         self.error_message = error_message
 
     def to_protobuf(self) -> "task_pb2.TaskResult":
@@ -76,11 +145,9 @@ class TaskResult:
         """
         # Use consistent protobuf utilities for creation
         return ProtobufUtils.create_task_result(
-            mime_type=self.mime_type,
-            size_bytes=self.size_bytes,
             error_message=self.error_message or "",
             inline_data=self.data if not isinstance(self.data, str) else None,
-            uri=self.data if isinstance(self.data, str) else ""
+            external_data_uri=self.data if isinstance(self.data, str) else ""
         )
 
     @classmethod
@@ -97,12 +164,10 @@ class TaskResult:
         data = None
         if proto.HasField("inline_data"):
             data = proto.inline_data
-        elif proto.HasField("uri"):
-            data = proto.uri
+        elif proto.HasField("external_data"):
+            data = proto.external_data.uri
 
         return cls(
             data=data,
-            mime_type=proto.mime_type,
-            size_bytes=proto.size_bytes,
             error_message=proto.error_message if proto.error_message else None
         )

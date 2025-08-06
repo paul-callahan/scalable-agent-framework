@@ -64,7 +64,7 @@ docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
 #### Kafka (Port 9092)
 - **Purpose**: Message broker for inter-service communication
-- **Topics**: task-executions, plan-executions, controlled-task-executions, controlled-plan-executions
+- **Topics**: task-executions, plan-executions, plan-inputs, controlled-plan-executions
 - **Management**: Kafka UI at http://localhost:8080
 
 #### PostgreSQL (Port 5432)

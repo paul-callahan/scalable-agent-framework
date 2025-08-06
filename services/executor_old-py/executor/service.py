@@ -178,7 +178,7 @@ class ExecutorService:
             # Create PlanResult from message data
             from agentic.core.plan import PlanResult
             plan_result = PlanResult(
-                next_task_ids=message_data.get("next_task_ids", []),
+                next_task_names=message_data.get("next_task_names", []),
                 metadata=message_data.get("metadata", {}),
                 error_message=message_data.get("error_message"),
                 confidence=message_data.get("confidence", 1.0),

@@ -1,10 +1,11 @@
 package com.pcallahan.agentic.common;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import agentic.task.Task.TaskExecution;
-import agentic.plan.Plan.PlanExecution;
-import agentic.task.Task.TaskResult;
-import agentic.plan.Plan.PlanResult;
+import io.arl.proto.model.Task.TaskExecution;
+import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanInput;
+import io.arl.proto.model.Task.TaskResult;
+import io.arl.proto.model.Plan.PlanResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,44 @@ public class ProtobufUtils {
             return TaskExecution.parseFrom(data);
         } catch (InvalidProtocolBufferException e) {
             logger.error("Failed to deserialize TaskExecution from byte array: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Serialize a PlanInput protobuf message to byte array.
+     * 
+     * @param planInput the PlanInput message to serialize
+     * @return byte array representation, or null if serialization fails
+     */
+    public static byte[] serializePlanInput(PlanInput planInput) {
+        try {
+            if (planInput == null) {
+                logger.warn("Cannot serialize null PlanInput");
+                return null;
+            }
+            return planInput.toByteArray();
+        } catch (Exception e) {
+            logger.error("Failed to serialize PlanInput: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Deserialize a byte array to PlanInput protobuf message.
+     * 
+     * @param data the byte array to deserialize
+     * @return PlanInput message, or null if deserialization fails
+     */
+    public static PlanInput deserializePlanInput(byte[] data) {
+        try {
+            if (data == null || data.length == 0) {
+                logger.warn("Cannot deserialize null or empty byte array to PlanInput");
+                return null;
+            }
+            return PlanInput.parseFrom(data);
+        } catch (InvalidProtocolBufferException e) {
+            logger.error("Failed to deserialize PlanInput from byte array: {}", e.getMessage(), e);
             return null;
         }
     }
