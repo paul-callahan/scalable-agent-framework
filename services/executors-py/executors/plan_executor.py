@@ -172,17 +172,14 @@ class PlanExecutor:
                 status=ExecutionStatus.EXECUTION_STATUS_FAILED
             )
             
-            # Extract parent task execution IDs
+            # Extract parent task names and execution IDs
             parent_task_exec_ids = []
+            parent_task_names = []
             for task_exec in plan_input.task_executions:
                 if task_exec.header and task_exec.header.exec_id:
                     parent_task_exec_ids.append(task_exec.header.exec_id)
-            
-            # Extract parent task names
-            parent_task_names = []
-            for task_exec in plan_input.task_executions:
-                if task_exec.header and task_exec.header.name:
                     parent_task_names.append(task_exec.header.name)
+
             
             return PlanExecution(
                 header=header,

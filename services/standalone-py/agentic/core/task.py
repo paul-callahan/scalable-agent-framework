@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Union
 from pathlib import Path
 
-from ..pb import task_pb2
+from agentic_common.pb import task_pb2
 from google.protobuf import any_pb2
 from agentic_common import ProtobufUtils
 

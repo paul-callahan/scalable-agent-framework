@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..message_bus import InMemoryBroker
-from ..pb import task_pb2, plan_pb2, common_pb2
+from agentic_common.pb import task_pb2, plan_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
 from agentic_common import ProtobufUtils
 

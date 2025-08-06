@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Dict, Optional, Callable, Any
 
 from ..message_bus import InMemoryBroker
-from ..pb import task_pb2, common_pb2
+from agentic_common.pb import task_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
 from agentic_common.kafka_utils import get_controlled_task_executions_topic
 

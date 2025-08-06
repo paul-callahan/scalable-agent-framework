@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Set
 from pathlib import Path
 
-from ..pb import plan_pb2
+from agentic_common.pb import plan_pb2
 
 
 class DeprecatedPlanExecutor(ABC):

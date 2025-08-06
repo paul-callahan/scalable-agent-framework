@@ -15,7 +15,7 @@ from .core.lifetime import AgentLifetime
 from .core.edge import Edge
 
 # Re-export key protobuf types for convenience
-from .pb import task_pb2, plan_pb2, common_pb2
+from agentic_common.pb import task_pb2, plan_pb2, common_pb2
 
 # Re-export message bus components
 from .message_bus import InMemoryBroker

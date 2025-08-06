@@ -18,7 +18,7 @@ from agentic import (
     TaskExecutorService,
     PlanExecutorService
 )
-from agentic.pb import task_pb2, plan_pb2, common_pb2
+from agentic_common.pb import task_pb2, plan_pb2, common_pb2
 
 
 async def test_standalone_integration():
