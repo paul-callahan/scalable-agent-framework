@@ -11,6 +11,27 @@ The Agent Graph Specification System allows defining dynamic agent graphs using 
 - **Extensible**: Pluggable parser architecture supports multiple specification formats
 - **Type Safety**: Strong typing with Java records ensures data integrity
 
+## Message Flow Architecture
+
+The system implements a sophisticated message flow architecture that ensures proper data transformation and routing between services:
+
+### ControlPlane Message Conversion
+
+The ControlPlane service plays a crucial role in the message flow by examining TaskExecution messages and looking up the next Plan in the graph:
+
+1. **TaskExecution Reception**: ControlPlane receives TaskExecution protobuf messages from DataPlane via `persisted-task-executions-{tenantId}` topics
+2. **Guardrail Evaluation**: ControlPlane evaluates guardrails and policies on the TaskExecution data
+3. **Next Plan Prep**: ControlPlane examines the TaskExecution and looks up the next Plan in the graph
+4. **PlanInput Publication**: ControlPlane publishes the PlanInput to `plan-inputs-{tenantId}` topics for PlanExecutor consumption
+
+### PlanInput Message Structure
+
+The PlanInput protobuf message contains:
+- **input_id**: Unique identifier for this input for auditing
+- **plan_name**: Name of the next plan in the graph path
+- **task_executions**: List of TaskExecution objects that provide input to this plan
+
+This process ensures that PlanExecutor receives properly structured input data with the correct next plan information from the graph.
 ## Directory Structure
 
 A complete agent graph specification consists of the following directory structure:

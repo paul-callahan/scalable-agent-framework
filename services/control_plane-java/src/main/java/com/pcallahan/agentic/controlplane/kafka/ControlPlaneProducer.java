@@ -79,7 +79,7 @@ public class ControlPlaneProducer {
             );
             
             logger.debug("Sending task execution rejection for tenant {}: {}", tenantId, rejection);
-            kafkaTemplate.send(TopicNames.controlledTaskExecutions(tenantId), rejection);
+            kafkaTemplate.send(TopicNames.planInputs(tenantId), rejection);
             logger.info("Task execution rejection sent for tenant: {}", tenantId);
         } catch (Exception e) {
             logger.error("Failed to send task execution rejection for tenant: {}", tenantId, e);
@@ -103,7 +103,7 @@ public class ControlPlaneProducer {
             );
             
             logger.debug("Sending plan execution rejection for tenant {}: {}", tenantId, rejection);
-            kafkaTemplate.send(TopicNames.controlledPlanExecutions(tenantId), rejection);
+            kafkaTemplate.send(TopicNames.planInputs(tenantId), rejection);
             logger.info("Plan execution rejection sent for tenant: {}", tenantId);
         } catch (Exception e) {
             logger.error("Failed to send plan execution rejection for tenant: {}", tenantId, e);

@@ -24,7 +24,7 @@ spring:
 
 kafka:
   topic-patterns:
-    controlled-task-executions: "controlled-task-executions-.*"
+    plan-inputs: "plan-inputs-.*"
 
 logging:
   level:

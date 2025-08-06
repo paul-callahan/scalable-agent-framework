@@ -25,7 +25,7 @@ public class KafkaTopicPatterns {
     private String planExecutions = "plan-executions-.*";
     private String persistedTaskExecutions = "persisted-task-executions-.*";
     private String persistedPlanExecutions = "persisted-plan-executions-.*";
-    private String controlledTaskExecutions = "controlled-task-executions-.*";
+    private String planInputs = "plan-inputs-.*";
     private String controlledPlanExecutions = "controlled-plan-executions-.*";
     
     // Getters and setters
@@ -65,13 +65,13 @@ public class KafkaTopicPatterns {
         logger.debug("Set persisted plan executions pattern: {}", persistedPlanExecutions);
     }
     
-    public String getControlledTaskExecutionsPattern() {
-        return controlledTaskExecutions;
+    public String getPlanInputsPattern() {
+        return planInputs;
     }
     
-    public void setControlledTaskExecutions(String controlledTaskExecutions) {
-        this.controlledTaskExecutions = controlledTaskExecutions;
-        logger.debug("Set controlled task executions pattern: {}", controlledTaskExecutions);
+    public void setPlanInputs(String planInputs) {
+        this.planInputs = planInputs;
+        logger.debug("Set plan inputs pattern: {}", planInputs);
     }
     
     public String getControlledPlanExecutionsPattern() {
@@ -94,7 +94,7 @@ public class KafkaTopicPatterns {
             "planExecutions", planExecutions,
             "persistedTaskExecutions", persistedTaskExecutions,
             "persistedPlanExecutions", persistedPlanExecutions,
-            "controlledTaskExecutions", controlledTaskExecutions,
+            "planInputs", planInputs,
             "controlledPlanExecutions", controlledPlanExecutions
         );
     }
@@ -127,8 +127,8 @@ public class KafkaTopicPatterns {
             isValid = false;
         }
         
-        if (controlledTaskExecutions == null || controlledTaskExecutions.isEmpty()) {
-            logger.error("Controlled task executions pattern is not configured");
+        if (planInputs == null || planInputs.isEmpty()) {
+            logger.error("Plan inputs pattern is not configured");
             isValid = false;
         }
         

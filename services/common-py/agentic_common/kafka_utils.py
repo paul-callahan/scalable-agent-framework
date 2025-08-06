@@ -17,8 +17,16 @@ def get_task_execution_topic(tenant_id: str) -> str:
     return f"task-executions_{tenant_id}"
 
 
+def get_plan_inputs_topic(tenant_id: str) -> str:
+    """Get the plan inputs topic name for a tenant."""
+    return f"plan-inputs-{tenant_id}"
+
+
 def get_controlled_task_executions_topic(tenant_id: str) -> str:
-    """Get the controlled task executions topic name for a tenant."""
+    """Get the controlled task executions topic name for a tenant.
+    
+    @deprecated Use get_plan_inputs_topic instead
+    """
     return f"controlled-task-executions-{tenant_id}"
 
 

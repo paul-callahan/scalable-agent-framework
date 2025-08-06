@@ -4,6 +4,7 @@ import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.common.ProtobufUtils;
 import io.arl.proto.model.Task.TaskExecution;
 import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanInput;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * Kafka producer for the Control Plane service.
  * 
  * This producer correctly routes protobuf messages:
- * - TaskExecution messages to controlled-task-executions-{tenantId} topics (for PlanExecutor to consume)
+ * - PlanInput messages to plan-inputs-{tenantId} topics (for PlanExecutor to consume)
  * - PlanExecution messages to controlled-plan-executions-{tenantId} topics (for TaskExecutor to consume)
  * - Enhanced with proper parent relationship handling and logging
  */
@@ -35,33 +36,30 @@ public class ExecutorProducer {
     }
     
     /**
-     * Publish TaskExecution protobuf to controlled-task-executions topic for PlanExecutor to consume.
+     * Publish PlanInput protobuf to plan-inputs topic for PlanExecutor to consume.
      * 
      * @param tenantId the tenant identifier
-     * @param taskExecution the TaskExecution protobuf message
+     * @param planInput the PlanInput protobuf message
      * @return CompletableFuture for the send result
      */
-    public CompletableFuture<SendResult<String, byte[]>> publishTaskExecution(String tenantId, TaskExecution taskExecution) {
+    public CompletableFuture<SendResult<String, byte[]>> publishPlanInput(String tenantId, PlanInput planInput) {
         try {
-            String topic = TopicNames.controlledTaskExecutions(tenantId);
+            String topic = TopicNames.planInputs(tenantId);
             
-            byte[] message = ProtobufUtils.serializeTaskExecution(taskExecution);
+            byte[] message = ProtobufUtils.serializePlanInput(planInput);
             if (message == null) {
-                throw new RuntimeException("Failed to serialize TaskExecution");
+                throw new RuntimeException("Failed to serialize PlanInput");
             }
             
-            String messageKey = taskExecution.getHeader().getName();
+            String messageKey = planInput.getPlanName();
             
-            // Log enhanced parent relationship information
-            logParentRelationshipInfo("TaskExecution", taskExecution, tenantId);
-            
-            logger.debug("Publishing TaskExecution protobuf to topic {}: {}", topic, messageKey);
+            logger.debug("Publishing PlanInput protobuf to topic {}: {}", topic, messageKey);
             
             ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
-            logger.error("Failed to publish TaskExecution protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
+            logger.error("Failed to publish PlanInput protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
             CompletableFuture<SendResult<String, byte[]>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
@@ -103,23 +101,6 @@ public class ExecutorProducer {
     }
     
     /**
-     * Log enhanced parent relationship information for TaskExecution messages
-     * 
-     * @param messageType the type of message
-     * @param taskExecution the TaskExecution message
-     * @param tenantId the tenant identifier
-     */
-    private void logParentRelationshipInfo(String messageType, TaskExecution taskExecution, String tenantId) {
-        if (taskExecution != null) {
-            String parentPlanExecId = taskExecution.getParentPlanExecId();
-            String parentPlanName = taskExecution.getParentPlanName();
-            
-            logger.debug("{} parent relationships for tenant {}: plan_exec_id={}, plan_name={}", 
-                messageType, tenantId, parentPlanExecId, parentPlanName);
-        }
-    }
-    
-    /**
      * Log enhanced parent relationship information for PlanExecution messages
      * 
      * @param messageType the type of message
@@ -149,7 +130,7 @@ public class ExecutorProducer {
      * @param future the CompletableFuture from the send operation
      * @param tenantId the tenant identifier
      * @param messageId the message identifier
-     * @param messageType the type of message (TaskExecution/PlanExecution)
+     * @param messageType the type of message (PlanInput/PlanExecution)
      */
     public void handleSendResult(CompletableFuture<SendResult<String, byte[]>> future, 
                                 String tenantId, String messageId, String messageType) {

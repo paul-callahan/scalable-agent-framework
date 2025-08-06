@@ -4,6 +4,7 @@ import com.pcallahan.agentic.planexecutor.kafka.PlanExecutionProducer;
 import io.arl.proto.model.Task.TaskExecution;
 import io.arl.proto.model.Task.TaskResult;
 import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Plan.PlanInput;
 import io.arl.proto.model.Plan.PlanResult;
 import io.arl.proto.model.Common.ExecutionHeader;
 import org.slf4j.Logger;
@@ -18,11 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
- * Service responsible for executing plans based on TaskExecution messages.
+ * Service responsible for executing plans based on PlanInput messages.
  * 
  * This service:
- * - Consumes TaskExecution protobuf messages from Kafka via TaskResultListener
- * - Executes plans based on TaskExecution data
+ * - Consumes PlanInput protobuf messages from Kafka via PlanInputListener
+ * - Executes plans based on PlanInput data (which contains TaskExecution objects)
  * - Produces PlanExecution protobuf messages to Kafka via PlanExecutionProducer
  * - Manages plan execution lifecycle and error handling
  * - Enhances parent relationship population with actual upstream execution data
@@ -41,16 +42,27 @@ public class PlanExecutorService {
     }
     
     /**
-     * Execute plans from a TaskExecution protobuf message
+     * Execute plans from a PlanInput protobuf message
      * 
-     * @param taskExecution the TaskExecution protobuf message containing plans to execute
+     * @param planInput the PlanInput protobuf message containing TaskExecution objects
      * @param tenantId the tenant identifier
      * @return true if execution was successful, false otherwise
      */
-    public boolean executePlansFromTaskExecution(TaskExecution taskExecution, String tenantId) {
-        logger.info("Executing plans from TaskExecution protobuf for tenant: {}", tenantId);
+    public boolean executePlansFromPlanInput(PlanInput planInput, String tenantId) {
+        logger.info("Executing plans from PlanInput protobuf for tenant: {}", tenantId);
         
         try {
+            // Extract TaskExecution objects from PlanInput
+            List<TaskExecution> taskExecutions = planInput.getTaskExecutionsList();
+            
+            if (taskExecutions.isEmpty()) {
+                logger.error("PlanInput contains no TaskExecution objects for tenant: {}", tenantId);
+                return false;
+            }
+            
+            // For now, process the first TaskExecution (can be enhanced to handle multiple)
+            TaskExecution taskExecution = taskExecutions.get(0);
+            
             // Extract TaskResult from TaskExecution
             TaskResult taskResult = taskExecution.getResult();
             
@@ -60,8 +72,8 @@ public class PlanExecutorService {
                 return false;
             }
             
-            logger.debug("TaskExecution protobuf for tenant {}: task_id={}", 
-                tenantId, taskResult.getId());
+            logger.debug("PlanInput protobuf for tenant {}: input_id={}, plan_name={}, task_executions_count={}", 
+                tenantId, planInput.getInputId(), planInput.getPlanName(), taskExecutions.size());
             
             // Determine plan type from task result data
             String planType = extractPlanType(taskExecution);
@@ -95,7 +107,7 @@ public class PlanExecutorService {
             return true;
             
         } catch (Exception e) {
-            logger.error("Error executing plans from TaskExecution protobuf for tenant: {}", tenantId, e);
+            logger.error("Error executing plans from PlanInput protobuf for tenant: {}", tenantId, e);
             return false;
         }
     }

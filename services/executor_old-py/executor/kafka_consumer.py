@@ -2,14 +2,14 @@
 Kafka consumer for executor microservice.
 
 This module implements Kafka consumer for executor topics using
-aiokafka==0.11.0. Subscribe to task-results_* and plan-results_* topics
+aiokafka==0.11.0. Subscribe to plan-inputs-* topics
 using pattern matching.
 """
 
 import asyncio
 from typing import Optional
 
-from agentic_common.pb import TaskExecution, PlanExecution
+from agentic_common.pb import PlanInput, PlanExecution
 
 from aiokafka import AIOKafkaConsumer
 from structlog import get_logger
@@ -24,7 +24,7 @@ class ExecutorConsumer:
     """
     Kafka consumer for the executor service.
     
-    Consumes TaskResult and PlanResult messages from executor topics and
+    Consumes PlanInput and PlanExecution messages from executor topics and
     processes them through task and plan execution.
     """
     
@@ -38,17 +38,17 @@ class ExecutorConsumer:
         self.group_id = group_id
         self.consumer: Optional[AIOKafkaConsumer] = None
         self.running = False
-        self.task_processor = None
+        self.plan_input_processor = None
         self.plan_processor = None
         
-    def set_task_processor(self, processor):
+    def set_plan_input_processor(self, processor):
         """
-        Set the task processor callback.
+        Set the plan input processor callback.
         
         Args:
-            processor: Function to process task messages
+            processor: Function to process plan input messages
         """
-        self.task_processor = processor
+        self.plan_input_processor = processor
         
     def set_plan_processor(self, processor):
         """
@@ -64,8 +64,7 @@ class ExecutorConsumer:
         try:
             # Create consumer for executor topics
             topics = [
-                "controlled-task-executions_*",  # Pattern for tenant-specific topics
-                "controlled-plan-executions_*",  # Pattern for tenant-specific topics
+                "plan-inputs-*",  # Pattern for tenant-specific topics
             ]
             
             self.consumer = await create_kafka_consumer(
@@ -137,28 +136,18 @@ class ExecutorConsumer:
         
         try:
             # Extract tenant_id from topic
-            tenant_id = message.topic.split("_", 1)[1]
+            tenant_id = message.topic.split("-", 1)[1]
             
             # Determine message type and deserialize protobuf
-            if message.topic.startswith("controlled-task-executions_"):
-                task_execution = TaskExecution.FromString(message.value)
-                if self.task_processor:
-                    await self.task_processor({
+            if message.topic.startswith("plan-inputs-"):
+                plan_input = PlanInput.FromString(message.value)
+                if self.plan_input_processor:
+                    await self.plan_input_processor({
                         "tenant_id": tenant_id,
-                        "task_execution": task_execution
+                        "plan_input": plan_input
                     })
                 else:
-                    logger.warning("No task processor set")
-                    
-            elif message.topic.startswith("controlled-plan-executions_"):
-                plan_execution = PlanExecution.FromString(message.value)
-                if self.plan_processor:
-                    await self.plan_processor({
-                        "tenant_id": tenant_id,
-                        "plan_execution": plan_execution
-                    })
-                else:
-                    logger.warning("No plan processor set")
+                    logger.warning("No plan input processor set")
                     
             else:
                 logger.warning("Unknown topic", topic=message.topic)

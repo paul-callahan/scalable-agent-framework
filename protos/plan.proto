@@ -31,3 +31,27 @@ message PlanExecution {
   // Names of parent tasks
   string parent_task_names = 4;
 }
+
+// PlanInput represents the input data for a Plan execution
+message PlanInput {
+  // Unique identifier for this input
+  string input_id = 1;
+  
+  // Name of the plan to execute
+  string plan_name = 2;
+  
+  // Task executions that provide input to this plan
+  repeated io.arl.proto.model.TaskExecution task_executions = 3;
+}
+
+// TaskInput represents the input data for a Task execution
+message TaskInput {
+  // Unique identifier for this input
+  string input_id = 1;
+  
+  // Name of the task to execute
+  string task_name = 2;
+  
+  // Plan execution that provides input to this task
+  io.arl.proto.model.PlanExecution plan_execution = 3;
+}
