@@ -23,7 +23,7 @@ All topics follow the pattern: `{message-type}-{tenant-id}`
 - `persisted-task-executions-{tenantId}` - Persisted task execution messages
 - `persisted-plan-executions-{tenantId}` - Persisted plan execution messages
 - `plan-inputs-{tenantId}` - Plan input messages
-- `controlled-plan-executions-{tenantId}` - Controlled plan execution messages
+- `task-inputs-{tenantId}` - Task input messages
 - `task-executions-dlq-{tenantId}` - Task execution dead letter queue
 - `plan-executions-dlq-{tenantId}` - Plan execution dead letter queue
 
@@ -39,7 +39,7 @@ kafka:
     persisted-task-executions: "persisted-task-executions-.*"
     persisted-plan-executions: "persisted-plan-executions-.*"
     plan-inputs: "plan-inputs-.*"
-    controlled-plan-executions: "controlled-plan-executions-.*"
+    task-inputs: "task-inputs-.*"
     task-executions-dlq: "task-executions-dlq-.*"
     plan-executions-dlq: "plan-executions-dlq-.*"
 ```
@@ -329,6 +329,10 @@ kafka:
 - Set up alerts for tenant-specific issues
 - Monitor tenant message processing delays
 - Alert on tenant-specific error thresholds
+
+## TaskInput Message Flow
+
+TaskExecutors receive TaskInput messages (the upstream PlanExecution). This enables more granular task execution control and better separation of concerns between planning and execution phases.
 
 ## Future Enhancements
 

@@ -5,6 +5,7 @@ import com.pcallahan.agentic.common.ProtobufUtils;
 import io.arl.proto.model.Task.TaskExecution;
 import io.arl.proto.model.Plan.PlanExecution;
 import io.arl.proto.model.Plan.PlanInput;
+import io.arl.proto.model.Plan.TaskInput;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  * 
  * This producer correctly routes protobuf messages:
  * - PlanInput messages to plan-inputs-{tenantId} topics (for PlanExecutor to consume)
- * - PlanExecution messages to controlled-plan-executions-{tenantId} topics (for TaskExecutor to consume)
+ * - TaskInput messages to task-inputs-{tenantId} topics (for TaskExecutor to consume)
  * - Enhanced with proper parent relationship handling and logging
  */
 @Component
@@ -67,39 +68,37 @@ public class ExecutorProducer {
     }
     
     /**
-     * Publish PlanExecution protobuf to controlled-plan-executions topic for TaskExecutor to consume.
+     * Publish TaskInput protobuf to task-inputs topic for TaskExecutor to consume.
      * 
      * @param tenantId the tenant identifier
-     * @param planExecution the PlanExecution protobuf message
+     * @param taskInput the TaskInput protobuf message
      * @return CompletableFuture for the send result
      */
-    public CompletableFuture<SendResult<String, byte[]>> publishPlanExecution(String tenantId, PlanExecution planExecution) {
+    public CompletableFuture<SendResult<String, byte[]>> publishTaskInput(String tenantId, TaskInput taskInput) {
         try {
-            String topic = TopicNames.controlledPlanExecutions(tenantId);
+            String topic = TopicNames.taskInputs(tenantId);
             
-            byte[] message = ProtobufUtils.serializePlanExecution(planExecution);
+            byte[] message = ProtobufUtils.serializeTaskInput(taskInput);
             if (message == null) {
-                throw new RuntimeException("Failed to serialize PlanExecution");
+                throw new RuntimeException("Failed to serialize TaskInput");
             }
             
-            String messageKey = planExecution.getHeader().getName();
+            String messageKey = taskInput.getTaskName();
             
-            // Log enhanced parent relationship information
-            logParentRelationshipInfo("PlanExecution", planExecution, tenantId);
-            
-            logger.debug("Publishing PlanExecution protobuf to topic {}: {}", topic, messageKey);
+            logger.debug("Publishing TaskInput protobuf to topic {}: {}", topic, messageKey);
             
             ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, messageKey, message);
             return kafkaTemplate.send(record);
             
         } catch (Exception e) {
-            logger.error("Failed to publish PlanExecution protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
+            logger.error("Failed to publish TaskInput protobuf for tenant {}: {}", tenantId, e.getMessage(), e);
             CompletableFuture<SendResult<String, byte[]>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
         }
     }
     
+
     /**
      * Log enhanced parent relationship information for PlanExecution messages
      * 

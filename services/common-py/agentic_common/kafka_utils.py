@@ -22,12 +22,6 @@ def get_plan_inputs_topic(tenant_id: str) -> str:
     return f"plan-inputs-{tenant_id}"
 
 
-def get_controlled_task_executions_topic(tenant_id: str) -> str:
-    """Get the controlled task executions topic name for a tenant.
-    
-    @deprecated Use get_plan_inputs_topic instead
-    """
-    return f"controlled-task-executions-{tenant_id}"
 
 
 def get_plan_execution_topic(tenant_id: str) -> str:
@@ -35,9 +29,6 @@ def get_plan_execution_topic(tenant_id: str) -> str:
     return f"plan-executions_{tenant_id}"
 
 
-def get_controlled_plan_executions_topic(tenant_id: str) -> str:
-    """Get the controlled plan executions topic name for a tenant."""
-    return f"controlled-plan-executions-{tenant_id}"
 
 
 def get_persisted_task_executions_topic(tenant_id: str) -> str:
@@ -64,6 +55,11 @@ def get_plan_results_topic(tenant_id: str) -> str:
     @deprecated Use get_controlled_plan_executions_topic instead
     """
     return f"plan-results_{tenant_id}"
+
+
+def get_task_inputs_topic(tenant_id: str) -> str:
+    """Get the task inputs topic name for a tenant."""
+    return f"task-inputs-{tenant_id}"
 
 
 async def create_kafka_producer(

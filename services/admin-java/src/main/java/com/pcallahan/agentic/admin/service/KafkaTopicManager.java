@@ -124,7 +124,7 @@ public class KafkaTopicManager {
             TopicNames.persistedTaskExecutions(tenantId),
             TopicNames.persistedPlanExecutions(tenantId),
             TopicNames.planInputs(tenantId),
-            TopicNames.controlledPlanExecutions(tenantId)
+            TopicNames.taskInputs(tenantId)
         );
     }
     

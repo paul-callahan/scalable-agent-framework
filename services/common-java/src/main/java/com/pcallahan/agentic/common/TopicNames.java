@@ -10,7 +10,7 @@ import java.util.Map;
  * 
  * The system uses only tenant-specific topics with the pattern {prefix}-{tenantId}
  * where prefix is one of: task-executions, plan-executions, persisted-task-executions, 
- * persisted-plan-executions, plan-inputs, controlled-plan-executions.
+ * persisted-plan-executions, plan-inputs, task-inputs.
  */
 public class TopicNames {
     
@@ -71,20 +71,20 @@ public class TopicNames {
     }
     
     /**
-     * Generate controlled plan executions topic name for a tenant.
+     * Generate task inputs topic name for a tenant.
      * 
      * @param tenantId the tenant identifier
-     * @return topic name in format: controlled-plan-executions-{tenantId}
+     * @return topic name in format: task-inputs-{tenantId}
      */
-    public static String controlledPlanExecutions(String tenantId) {
-        return "controlled-plan-executions-" + tenantId;
+    public static String taskInputs(String tenantId) {
+        return "task-inputs-" + tenantId;
     }
     
 
     
     /**
      * Extract tenant ID from a topic name by splitting on the last hyphen.
-     * Handles patterns like task-executions-{tenantId}, controlled-plan-executions-{tenantId}, etc.
+     * Handles patterns like task-executions-{tenantId}, etc.
      * 
      * @param topicName the full topic name
      * @return the tenant ID, or null if not found
@@ -207,8 +207,8 @@ public class TopicNames {
                        prefix.equals("plan-executions") || 
                        prefix.equals("persisted-task-executions") || 
                        prefix.equals("persisted-plan-executions") ||
-                       prefix.equals("controlled-task-executions") ||
-                       prefix.equals("plan-inputs");
+                       prefix.equals("plan-inputs") ||
+                       prefix.equals("task-inputs");
             }
         }
         

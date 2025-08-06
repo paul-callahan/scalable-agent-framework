@@ -4,6 +4,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.arl.proto.model.Task.TaskExecution;
 import io.arl.proto.model.Plan.PlanExecution;
 import io.arl.proto.model.Plan.PlanInput;
+import io.arl.proto.model.Plan.TaskInput;
 import io.arl.proto.model.Task.TaskResult;
 import io.arl.proto.model.Plan.PlanResult;
 import org.slf4j.Logger;
@@ -131,6 +132,44 @@ public class ProtobufUtils {
             return PlanExecution.parseFrom(data);
         } catch (InvalidProtocolBufferException e) {
             logger.error("Failed to deserialize PlanExecution from byte array: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Serialize a TaskInput protobuf message to byte array.
+     * 
+     * @param taskInput the TaskInput message to serialize
+     * @return byte array representation, or null if serialization fails
+     */
+    public static byte[] serializeTaskInput(TaskInput taskInput) {
+        try {
+            if (taskInput == null) {
+                logger.warn("Cannot serialize null TaskInput");
+                return null;
+            }
+            return taskInput.toByteArray();
+        } catch (Exception e) {
+            logger.error("Failed to serialize TaskInput: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Deserialize a byte array to TaskInput protobuf message.
+     * 
+     * @param data the byte array to deserialize
+     * @return TaskInput message, or null if deserialization fails
+     */
+    public static TaskInput deserializeTaskInput(byte[] data) {
+        try {
+            if (data == null || data.length == 0) {
+                logger.warn("Cannot deserialize null or empty byte array to TaskInput");
+                return null;
+            }
+            return TaskInput.parseFrom(data);
+        } catch (InvalidProtocolBufferException e) {
+            logger.error("Failed to deserialize TaskInput from byte array: {}", e.getMessage(), e);
             return null;
         }
     }

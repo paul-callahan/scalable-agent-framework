@@ -13,8 +13,9 @@ from structlog import get_logger
 from agentic_common.kafka_utils import (
     get_controlled_plan_executions_topic,
     get_plan_inputs_topic,
+    get_task_inputs_topic,
 )
-from agentic_common.pb import TaskExecution, PlanExecution, PlanInput
+from agentic_common.pb import TaskExecution, PlanExecution, PlanInput, TaskInput
 
 logger = get_logger(__name__)
 
@@ -23,9 +24,9 @@ class ExecutionRouter:
     """
     Execution router for control plane service.
     
-    Routes TaskExecutions to plan-inputs_{tenant_id} topics after examining
-    the TaskExecution and looking up the next Plan in the graph. Routes
-    PlanExecutions to controlled-plan-executions_{tenant_id} topics.
+    Routes PlanInputs to plan-inputs_{tenant_id} topics after examining
+    the TaskExecution and looking up the next Plan in the graph. Routes TaskInputs to task-inputs_{tenant_id} topics
+     after examining the PlanExecution and looking up the next Task in the graph.
     """
     
     def __init__(self):
@@ -99,9 +100,47 @@ class ExecutionRouter:
         
         return "next-plan-stub"
     
+    def _lookup_tasks_by_names(self, task_names: List[str], tenant_id: str) -> List[Dict[str, any]]:
+        """
+        Look up task metadata by task names.
+        
+        Args:
+            task_names: List of task names to lookup
+            tenant_id: Tenant identifier
+            
+        Returns:
+            List of task metadata dictionaries
+        """
+        # TODO: Implement actual task lookup service
+        # This should look up task metadata from a service or database
+        # For now, return a stub implementation
+        
+        logger.debug("Looking up tasks by names", 
+                   task_names=task_names,
+                   tenant_id=tenant_id)
+        
+        # Stub implementation - replace with actual task lookup
+        # This could involve:
+        # 1. Calling a TaskLookupService
+        # 2. Querying a database for task metadata
+        # 3. Loading task definitions from files
+        
+        tasks = []
+        for task_name in task_names:
+            tasks.append({
+                'name': task_name,
+                'description': f'Task: {task_name}',
+                'type': 'default'
+            })
+        
+        return tasks
+    
     def route_plan_execution(self, plan_execution: PlanExecution, tenant_id: str) -> List[str]:
         """
-        Route PlanExecution to appropriate controlled-plan-executions topic.
+        Route PlanExecution to appropriate task-inputs topics.
+        
+        Examines PlanExecution.result.next_task_names, looks up Tasks, creates TaskInput messages,
+        and routes to task-inputs topics.
         
         Args:
             plan_execution: PlanExecution protobuf message
@@ -111,18 +150,52 @@ class ExecutionRouter:
             List of target topics
         """
         try:
-            # Route PlanExecution to controlled-plan-executions topic
-            target_topic = get_controlled_plan_executions_topic(tenant_id)
+            # Extract next_task_names from PlanExecution.result
+            next_task_names = []
+            if plan_execution.result and plan_execution.result.next_task_names:
+                next_task_names = list(plan_execution.result.next_task_names)
             
-            logger.info("Routing PlanExecution to controlled-plan-executions", 
+            if not next_task_names:
+                logger.info("No next tasks found in plan execution", 
+                           execution_id=plan_execution.header.exec_id,
+                           tenant_id=tenant_id)
+                return []
+            
+            logger.info("Found next tasks in plan execution", 
                        execution_id=plan_execution.header.exec_id,
                        tenant_id=tenant_id,
-                       target_topic=target_topic)
+                       next_task_names=next_task_names)
             
-            # TODO: Future routing logic may use the new parent_task_exec_ids field
-            # for more sophisticated routing decisions based on parent execution relationships
+            # Look up task metadata for each task name (stub implementation)
+            # TODO: Implement actual task lookup service
+            tasks = self._lookup_tasks_by_names(next_task_names, tenant_id)
             
-            return [target_topic]
+            # Create TaskInput messages for each task
+            target_topics = []
+            for task in tasks:
+                task_input = TaskInput(
+                    input_id=f"task-input-{task['name']}-{plan_execution.header.exec_id}",
+                    task_name=task['name'],
+                    plan_execution=plan_execution
+                )
+                
+                # Route TaskInput to task-inputs topic
+                target_topic = get_task_inputs_topic(tenant_id)
+                target_topics.append(target_topic)
+                
+                logger.debug("Created TaskInput for task", 
+                           task_name=task['name'],
+                           input_id=task_input.input_id,
+                           tenant_id=tenant_id,
+                           target_topic=target_topic)
+            
+            logger.info("Successfully created TaskInput messages for plan execution", 
+                       execution_id=plan_execution.header.exec_id,
+                       tenant_id=tenant_id,
+                       task_count=len(tasks),
+                       target_topics=target_topics)
+            
+            return target_topics
             
         except Exception as e:
             logger.error("Failed to route PlanExecution", 
@@ -183,8 +256,12 @@ class ExecutionRouter:
             elif isinstance(execution_data, PlanExecution):
                 execution_type = "plan"
                 execution_id = execution_data.header.exec_id
-                target_topic = get_controlled_plan_executions_topic(tenant_id)
-                routing_type = "plan_to_task"
+                # Extract next_task_names for routing info
+                next_task_names = []
+                if execution_data.result and execution_data.result.next_task_names:
+                    next_task_names = list(execution_data.result.next_task_names)
+                target_topic = get_task_inputs_topic(tenant_id) if next_task_names else None
+                routing_type = "plan_to_task_inputs"
                 next_plan_name = None
             else:
                 # Handle dictionary format (for backward compatibility)
@@ -196,8 +273,8 @@ class ExecutionRouter:
                     routing_type = "task_to_plan"
                     next_plan_name = "next-plan-stub"  # Stub for dict format
                 elif execution_type == "plan":
-                    target_topic = get_controlled_plan_executions_topic(tenant_id)
-                    routing_type = "plan_to_task"
+                    target_topic = get_task_inputs_topic(tenant_id)
+                    routing_type = "plan_to_task_inputs"
                     next_plan_name = None
                 else:
                     target_topic = None

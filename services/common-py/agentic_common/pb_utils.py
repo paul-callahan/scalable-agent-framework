@@ -9,7 +9,7 @@ import json
 from typing import Any, Dict, Optional, Union
 from datetime import datetime
 
-from .pb import TaskExecution, PlanExecution, PlanInput, TaskResult, PlanResult, ExecutionHeader
+from .pb import TaskExecution, PlanExecution, PlanInput, TaskInput, TaskResult, PlanResult, ExecutionHeader
 
 
 class ProtobufUtils:
@@ -99,6 +99,46 @@ class ProtobufUtils:
             return plan_input
         except Exception as e:
             raise ValueError(f"Failed to deserialize PlanInput: {e}")
+    
+    @staticmethod
+    def serialize_task_input(task_input: TaskInput) -> bytes:
+        """
+        Serialize TaskInput protobuf message to bytes.
+        
+        Args:
+            task_input: TaskInput protobuf message
+            
+        Returns:
+            Serialized bytes
+            
+        Raises:
+            ValueError: If serialization fails
+        """
+        try:
+            return task_input.SerializeToString()
+        except Exception as e:
+            raise ValueError(f"Failed to serialize TaskInput: {e}")
+    
+    @staticmethod
+    def deserialize_task_input(message_bytes: bytes) -> TaskInput:
+        """
+        Deserialize bytes to TaskInput protobuf message.
+        
+        Args:
+            message_bytes: Serialized protobuf message bytes
+            
+        Returns:
+            TaskInput protobuf message
+            
+        Raises:
+            ValueError: If deserialization fails
+        """
+        try:
+            task_input = TaskInput()
+            task_input.ParseFromString(message_bytes)
+            return task_input
+        except Exception as e:
+            raise ValueError(f"Failed to deserialize TaskInput: {e}")
     
     @staticmethod
     def serialize_plan_execution(plan_execution: PlanExecution) -> bytes:
