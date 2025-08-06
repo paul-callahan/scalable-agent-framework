@@ -179,7 +179,7 @@ public class PersistenceService {
         
         // Set parent relationship fields
         entity.setParentTaskExecIds(planExecution.getParentTaskExecIdsList());
-        entity.setParentTaskNames(planExecution.getParentTaskNames());
+        entity.setParentTaskNames(String.join(",", planExecution.getParentTaskNamesList()));
         
         // Set result fields
         if (planExecution.hasResult()) {

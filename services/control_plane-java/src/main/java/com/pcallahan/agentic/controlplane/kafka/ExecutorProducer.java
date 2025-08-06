@@ -110,7 +110,7 @@ public class ExecutorProducer {
     private void logParentRelationshipInfo(String messageType, PlanExecution planExecution, String tenantId) {
         if (planExecution != null) {
             var parentTaskExecIds = planExecution.getParentTaskExecIdsList();
-            String parentTaskNames = planExecution.getParentTaskNames();
+            var parentTaskNames = planExecution.getParentTaskNamesList();
             
             logger.debug("{} parent relationships for tenant {}: parent_task_exec_ids={}, parent_task_names={}", 
                 messageType, tenantId, parentTaskExecIds, parentTaskNames);

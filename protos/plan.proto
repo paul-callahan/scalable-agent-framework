@@ -29,7 +29,7 @@ message PlanExecution {
   PlanResult result = 3;
   
   // Names of parent tasks
-  string parent_task_names = 4;
+  repeated string parent_task_names = 4;
 }
 
 // PlanInput represents the input data for a Plan execution

@@ -163,7 +163,7 @@ public class PlanExecutorService {
             
             // Enhanced parent relationship population using actual upstream data
             List<String> parentTaskExecIds = buildParentTaskExecIds(taskExecution, tenantId);
-            String parentTaskNames = buildParentTaskNames(taskExecution, tenantId);
+            List<String> parentTaskNames = buildParentTaskNames(taskExecution, tenantId);
             List<TaskResult> upstreamTaskResults = buildUpstreamTaskResults(taskExecution, tenantId);
             
             // Add the current task result to upstream results if it's valid
@@ -192,7 +192,7 @@ public class PlanExecutorService {
                     .build())
                 .setResult(planResult)
                 .addAllParentTaskExecIds(parentTaskExecIds)
-                .setParentTaskNames(parentTaskNames)
+                .addAllParentTaskNames(parentTaskNames)
                 .build();
         }
         
@@ -229,7 +229,9 @@ public class PlanExecutorService {
          * @param tenantId the tenant identifier
          * @return parent task names string
          */
-        private String buildParentTaskNames(TaskExecution currentTaskExecution, String tenantId) {
+        private List<String> buildParentTaskNames(TaskExecution currentTaskExecution, String tenantId) {
+            List<String> parentTaskNames = new ArrayList<>();
+            
             // Extract parent task name from current TaskExecution
             String parentTaskName = currentTaskExecution.getHeader().getName();
             
@@ -238,9 +240,13 @@ public class PlanExecutorService {
             // For now, we only include the current task name as it's the immediate parent
             // that triggered this plan execution.
             
-            logger.debug("Built parent task names for tenant {}: {}", tenantId, parentTaskName);
+            if (parentTaskName != null && !parentTaskName.isEmpty()) {
+                parentTaskNames.add(parentTaskName);
+            }
             
-            return parentTaskName != null ? parentTaskName : "";
+            logger.debug("Built parent task names for tenant {}: {}", tenantId, parentTaskNames);
+            
+            return parentTaskNames;
         }
         
         /**
