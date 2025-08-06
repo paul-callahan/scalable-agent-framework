@@ -9,6 +9,7 @@
       <module fileurl="file://$PROJECT_DIR$/services/control_plane-py/control_plane-py.iml" filepath="$PROJECT_DIR$/services/control_plane-py/control_plane-py.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/data_plane-py/data_plane-py.iml" filepath="$PROJECT_DIR$/services/data_plane-py/data_plane-py.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/executor_old-py/executor_old-py.iml" filepath="$PROJECT_DIR$/services/executor_old-py/executor_old-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/services/executors-py/executors-py.iml" filepath="$PROJECT_DIR$/services/executors-py/executors-py.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/plan_executor-java/plan_executor-java.iml" filepath="$PROJECT_DIR$/services/plan_executor-java/plan_executor-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/standalone-py/standalone-py.iml" filepath="$PROJECT_DIR$/services/standalone-py/standalone-py.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/task_executor-java/task_executor-java.iml" filepath="$PROJECT_DIR$/services/task_executor-java/task_executor-java.iml" />
