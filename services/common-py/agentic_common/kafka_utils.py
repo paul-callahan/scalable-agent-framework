@@ -41,21 +41,6 @@ def get_persisted_plan_executions_topic(tenant_id: str) -> str:
     return f"persisted-plan-executions_{tenant_id}"
 
 
-def get_task_results_topic(tenant_id: str) -> str:
-    """Get the task results topic name for a tenant.
-    
-    @deprecated Use get_controlled_task_executions_topic instead
-    """
-    return f"task-results_{tenant_id}"
-
-
-def get_plan_results_topic(tenant_id: str) -> str:
-    """Get the plan results topic name for a tenant.
-    
-    @deprecated Use get_controlled_plan_executions_topic instead
-    """
-    return f"plan-results_{tenant_id}"
-
 
 def get_task_inputs_topic(tenant_id: str) -> str:
     """Get the task inputs topic name for a tenant."""

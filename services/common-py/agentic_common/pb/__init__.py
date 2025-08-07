@@ -11,8 +11,8 @@ proto generation individually.
 # Import all protobuf generated classes from local files
 try:
     from .common_pb2 import ExecutionHeader, ExecutionStatus
-    from .task_pb2 import TaskExecution, TaskResult, TaskInput
-    from .plan_pb2 import PlanExecution, PlanResult, PlanInput
+    from .task_pb2 import TaskExecution, TaskResult
+    from .plan_pb2 import PlanExecution, PlanResult, PlanInput, TaskInput
 except ImportError:
     raise ImportError(
         "No protobuf files found. Please generate them using:\n"

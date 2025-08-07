@@ -1,6 +1,25 @@
 # Makefile for the Agentic Framework
 # Provides common development tasks and build automation
 
+# Python configuration
+PYTHON := /opt/homebrew/bin/python3
+VENV := .venv
+VENV_PYTHON := $(VENV)/bin/python
+VENV_PIP := $(VENV)/bin/pip
+
+# Python version check function
+define check_python_version
+	@$(PYTHON) -c "import sys; assert sys.version_info >= (3, 13, 5), f'Python 3.13.5+ required, got {sys.version}'" || (echo "Python 3.13.5+ required. Please install Python 3.13.5 or later." && exit 1)
+endef
+
+# Create virtual environment function
+define create_venv
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "Creating virtual environment..."; \
+		$(PYTHON) -m venv $(VENV); \
+	fi
+endef
+
 .PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test
 
 # Default target
@@ -8,6 +27,10 @@ help:
 	@echo "Agentic Framework - Available targets:"
 	@echo ""
 	@echo "  proto      - Generate Python protobuf code from .proto files"
+	@echo "  gen-proto-py - Generate Python protobuf files for common-py"
+	@echo "  deps-common-py - Install dependencies for common-py"
+	@echo "  deps-executors-py - Install dependencies for executors-py"
+	@echo "  test-executor-py - Run executors-py tests (depends on gen-proto-py and deps)"
 	@echo "  install    - Install Python dependencies using uv"
 	@echo "  install-dev - Install development dependencies using uv"
 	@echo "  sync       - Sync dependencies with uv"
@@ -41,6 +64,37 @@ help:
 proto:
 	@echo "Generating protobuf files..."
 	@./scripts/gen_proto.sh
+
+# Generate Python protobuf code for common-py
+gen-proto-py: deps-common-py
+	@echo "Generating Python protobuf files for common-py..."
+	$(call check_python_version)
+	$(call create_venv)
+	@cd services/common-py && $(VENV_PYTHON) -m grpc_tools.protoc --python_out=agentic_common/pb --grpc_python_out=agentic_common/pb --proto_path=../../protos ../../protos/*.proto
+
+# Install dependencies for common-py
+deps-common-py:
+	@echo "Installing dependencies for common-py..."
+	$(call check_python_version)
+	$(call create_venv)
+	@$(VENV_PIP) install --upgrade pip
+	@$(VENV_PIP) install grpcio grpcio-tools protobuf
+
+# Install dependencies for executors-py
+deps-executors-py: deps-common-py
+	@echo "Installing dependencies for executors-py..."
+	$(call check_python_version)
+	$(call create_venv)
+	@$(VENV_PIP) install pytest pytest-asyncio mockafka-py aiokafka structlog
+	@echo "Installing common-py package in editable mode..."
+	@cd services/common-py && ../../$(VENV_PIP) install -e .
+
+# Run executors-py tests
+test-executor-py: gen-proto-py deps-executors-py
+	@echo "Running executors-py tests..."
+	$(call check_python_version)
+	$(call create_venv)
+	@cd services/executors-py && PYTHONPATH=../common-py/agentic_common/pb:$$PYTHONPATH ../../$(VENV_PYTHON) -m pytest tests/ -v
 
 # Install Python dependencies using uv
 install:

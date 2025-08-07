@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Union
 from structlog import get_logger
 
 from agentic_common.kafka_utils import (
-    get_controlled_plan_executions_topic,
     get_plan_inputs_topic,
     get_task_inputs_topic,
 )
