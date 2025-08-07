@@ -26,7 +26,7 @@ public class KafkaTopicPatterns {
     private String persistedTaskExecutions = "persisted-task-executions-.*";
     private String persistedPlanExecutions = "persisted-plan-executions-.*";
     private String planInputs = "plan-inputs-.*";
-    private String controlledPlanExecutions = "controlled-plan-executions-.*";
+    private String taskInputs = "task-inputs-.*";
     
     // Getters and setters
     public String getTaskExecutionsPattern() {
@@ -74,13 +74,13 @@ public class KafkaTopicPatterns {
         logger.debug("Set plan inputs pattern: {}", planInputs);
     }
     
-    public String getControlledPlanExecutionsPattern() {
-        return controlledPlanExecutions;
+    public String getTaskInputsPattern() {
+        return taskInputs;
     }
     
-    public void setControlledPlanExecutions(String controlledPlanExecutions) {
-        this.controlledPlanExecutions = controlledPlanExecutions;
-        logger.debug("Set controlled plan executions pattern: {}", controlledPlanExecutions);
+    public void setTaskInputs(String taskInputs) {
+        this.taskInputs = taskInputs;
+        logger.debug("Set task inputs pattern: {}", taskInputs);
     }
     
     /**
@@ -95,7 +95,7 @@ public class KafkaTopicPatterns {
             "persistedTaskExecutions", persistedTaskExecutions,
             "persistedPlanExecutions", persistedPlanExecutions,
             "planInputs", planInputs,
-            "controlledPlanExecutions", controlledPlanExecutions
+            "taskInputs", taskInputs
         );
     }
     
@@ -132,8 +132,8 @@ public class KafkaTopicPatterns {
             isValid = false;
         }
         
-        if (controlledPlanExecutions == null || controlledPlanExecutions.isEmpty()) {
-            logger.error("Controlled plan executions pattern is not configured");
+        if (taskInputs == null || taskInputs.isEmpty()) {
+            logger.error("Task inputs pattern is not configured");
             isValid = false;
         }
         

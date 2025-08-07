@@ -16,9 +16,10 @@ from agentic_common.kafka_utils import (
     create_kafka_producer,
     get_plan_inputs_topic,
     get_controlled_plan_executions_topic,
+    get_task_inputs_topic,
 )
 from agentic_common.logging_config import log_kafka_message
-from agentic_common.pb import TaskExecution, PlanExecution, PlanInput
+from agentic_common.pb import TaskExecution, PlanExecution, PlanInput, TaskInput
 from agentic_common import ProtobufUtils
 
 logger = get_logger(__name__)
@@ -111,34 +112,34 @@ class ControlPlaneProducer:
                         error=str(e))
             raise
     
-    async def publish_plan_execution(
+    async def publish_task_input(
         self,
         tenant_id: str,
-        plan_execution: PlanExecution,
+        task_input: TaskInput,
         **kwargs
     ) -> None:
         """
-        Publish PlanExecution to controlled-plan-executions topic.
+        Publish TaskInput to task-inputs topic.
         
         Args:
             tenant_id: Tenant identifier
-            plan_execution: PlanExecution protobuf message
+            task_input: TaskInput protobuf message
             **kwargs: Additional metadata
         """
         if not self.producer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = get_controlled_plan_executions_topic(tenant_id)
+            topic = get_task_inputs_topic(tenant_id)
             
             # Serialize protobuf message using consistent utilities
-            message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)
+            message_bytes = ProtobufUtils.serialize_task_input(task_input)
             
-            # Send message with execution_id as key for ordering
-            execution_id = plan_execution.header.exec_id
+            # Send message with task_name as key for ordering
+            task_name = task_input.task_name
             await self.producer.send_and_wait(
                 topic=topic,
-                key=execution_id.encode('utf-8'),
+                key=task_name.encode('utf-8'),
                 value=message_bytes,
             )
             
@@ -150,15 +151,76 @@ class ControlPlaneProducer:
                 offset=0,     # Will be set by Kafka
                 message_size=len(message_bytes),
                 tenant_id=tenant_id,
-                execution_id=execution_id,
+                execution_id=task_input.input_id,
             )
             
-            logger.info("PlanExecution published to controlled-plan-executions", 
-                       execution_id=execution_id,
+            logger.info("TaskInput published to task-inputs", 
+                       input_id=task_input.input_id,
+                       task_name=task_name,
                        tenant_id=tenant_id)
             
         except Exception as e:
-            logger.error("Failed to publish PlanExecution", 
+            logger.error("Failed to publish TaskInput", 
+                        task_input=task_input,
+                        tenant_id=tenant_id,
+                        error=str(e))
+            raise
+    
+    async def publish_plan_execution(
+        self,
+        tenant_id: str,
+        plan_execution: PlanExecution,
+        **kwargs
+    ) -> None:
+        """
+        Publish PlanExecution by creating TaskInput messages for next tasks.
+        
+        Examines PlanExecution.result.next_task_names, creates TaskInput messages,
+        and publishes them to task-inputs topics.
+        
+        Args:
+            tenant_id: Tenant identifier
+            plan_execution: PlanExecution protobuf message
+            **kwargs: Additional metadata
+        """
+        if not self.producer:
+            raise RuntimeError("Producer not initialized")
+        
+        try:
+            # Extract next_task_names from PlanExecution.result
+            next_task_names = []
+            if plan_execution.result and plan_execution.result.next_task_names:
+                next_task_names = list(plan_execution.result.next_task_names)
+            
+            if not next_task_names:
+                logger.info("No next tasks found in plan execution", 
+                           execution_id=plan_execution.header.exec_id,
+                           tenant_id=tenant_id)
+                return
+            
+            logger.info("Found next tasks in plan execution", 
+                       execution_id=plan_execution.header.exec_id,
+                       tenant_id=tenant_id,
+                       next_task_names=next_task_names)
+            
+            # Create TaskInput messages for each task
+            for task_name in next_task_names:
+                task_input = TaskInput(
+                    input_id=f"task-input-{task_name}-{plan_execution.header.exec_id}",
+                    task_name=task_name,
+                    plan_execution=plan_execution
+                )
+                
+                # Publish TaskInput to task-inputs topic
+                await self.publish_task_input(tenant_id, task_input, **kwargs)
+            
+            logger.info("Successfully published TaskInput messages for plan execution", 
+                       execution_id=plan_execution.header.exec_id,
+                       tenant_id=tenant_id,
+                       task_count=len(next_task_names))
+            
+        except Exception as e:
+            logger.error("Failed to publish TaskInputs", 
                         plan_execution=plan_execution,
                         tenant_id=tenant_id,
                         error=str(e))

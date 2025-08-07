@@ -2,20 +2,25 @@ package com.pcallahan.agentic.controlplane.service;
 
 import com.pcallahan.agentic.common.TopicNames;
 import com.pcallahan.agentic.controlplane.kafka.ExecutorProducer;
+import com.pcallahan.agentic.graph.model.Task;
 import io.arl.proto.model.Task.TaskExecution;
 import io.arl.proto.model.Plan.PlanExecution;
 import io.arl.proto.model.Plan.PlanInput;
+import io.arl.proto.model.Plan.TaskInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for routing execution messages to appropriate executors.
  * 
  * This service implements the corrected routing logic:
  * - TaskExecution gets examined to look up the next Plan in the graph and sent to PlanExecutor
- * - PlanExecution (full execution messages) goes to TaskExecutor to execute those tasks
+ * - PlanExecution gets examined to extract next_task_names, look up Tasks, and create TaskInput messages
  */
 @Service
 public class ExecutionRouter {
@@ -24,11 +29,13 @@ public class ExecutionRouter {
     
     private final ExecutorProducer executorProducer;
     private final GuardrailEngine guardrailEngine;
+    private final TaskLookupService taskLookupService;
     
     @Autowired
-    public ExecutionRouter(ExecutorProducer executorProducer, GuardrailEngine guardrailEngine) {
+    public ExecutionRouter(ExecutorProducer executorProducer, GuardrailEngine guardrailEngine, TaskLookupService taskLookupService) {
         this.executorProducer = executorProducer;
         this.guardrailEngine = guardrailEngine;
+        this.taskLookupService = taskLookupService;
     }
     
     /**
@@ -44,7 +51,8 @@ public class ExecutionRouter {
             
             // Evaluate guardrails for task execution
             boolean approved = guardrailEngine.evaluateTaskExecution(taskExecution, tenantId);
-            
+            // TODO:  This is all kinds of wrong.  This needs to wait for multiple TaskExecutions completing before seting a PlanInput
+            //  For now it will do.
             if (approved) {
                 // Examine TaskExecution and look up the next Plan in the graph
                 String nextPlanName = lookupNextPlanInGraph(taskExecution, tenantId);
@@ -91,6 +99,7 @@ public class ExecutionRouter {
     
     /**
      * Route plan execution protobuf message to appropriate handler.
+     * Examines PlanExecution.result.next_task_names, looks up Tasks, and creates TaskInput messages.
      * 
      * @param planExecution the PlanExecution protobuf message
      * @param tenantId the tenant identifier
@@ -103,17 +112,44 @@ public class ExecutionRouter {
             boolean approved = guardrailEngine.evaluatePlanExecution(planExecution, tenantId);
             
             if (approved) {
-                // Route full PlanExecution to TaskExecutor
-                executorProducer.publishPlanExecution(tenantId, planExecution);
+                // Extract next_task_names from PlanExecution.result
+                List<String> nextTaskNames = planExecution.getResult().getNextTaskNamesList();
                 
-                logger.info("Plan execution approved and routed to TaskExecutor for tenant: {}", tenantId);
+                if (nextTaskNames.isEmpty()) {
+                    logger.info("No next tasks found in plan execution for tenant: {}", tenantId);
+                    return;
+                }
+                
+                logger.info("Found {} next tasks in plan execution for tenant {}: {}", 
+                    nextTaskNames.size(), tenantId, nextTaskNames);
+                
+                // Look up task metadata for each task name
+                List<Task> tasks = taskLookupService.lookupTasksByNames(nextTaskNames, tenantId);
+                
+                // Create and publish TaskInput message for each task
+                for (Task task : tasks) {
+                    String inputId = UUID.randomUUID().toString();
+                    
+                    TaskInput taskInput = TaskInput.newBuilder()
+                        .setInputId(inputId)
+                        .setTaskName(task.name())
+                        .setPlanExecution(planExecution)
+                        .build();
+                    
+                    // Publish TaskInput to task-inputs topic
+                    executorProducer.publishTaskInput(tenantId, taskInput);
+                    
+                    logger.debug("Created and published TaskInput for task '{}' with input_id '{}' for tenant: {}", 
+                        task.name(), inputId, tenantId);
+                }
+                
+                logger.info("Successfully created and published {} TaskInput messages for tenant: {}", 
+                    tasks.size(), tenantId);
+                
             } else {
                 logger.warn("Plan execution rejected by guardrails for tenant: {}", tenantId);
                 // Could implement rejection handling here
             }
-            
-            // TODO: Future routing logic may use the new parent_task_exec_ids field
-            // for more sophisticated routing decisions based on parent execution relationships
             
         } catch (Exception e) {
             logger.error("Error routing plan execution for tenant {}: {}", tenantId, e.getMessage(), e);
