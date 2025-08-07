@@ -1,7 +1,7 @@
 """
 Task executor service implementation.
 
-This module implements the TaskExecutorService that consumes from controlled task execution queues,
+This module implements the TaskExecutorService that consumes from task-inputs queues,
 processes task execution requests, and publishes completed results back to execution queues.
 """
 
@@ -14,15 +14,15 @@ from typing import Dict, Optional, Callable, Any
 from ..message_bus import InMemoryBroker
 from agentic_common.pb import task_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
-from agentic_common.kafka_utils import get_controlled_task_executions_topic
+from agentic_common.kafka_utils import get_task_inputs_topic
 
 
 class TaskExecutorService:
     """
     Task executor service implementation.
     
-    Handles task execution by consuming from controlled execution queues and publishing
-    completed task executions back to execution queues.
+    Handles task execution by consuming from task-inputs queue and publishing
+    completed task executions to the task-execution queue.
     """
     
     def __init__(self, broker: InMemoryBroker):
@@ -219,21 +219,21 @@ class TaskExecutorService:
     
     async def _consumer_loop(self, tenant_id: str) -> None:
         """
-        Consumer loop for controlled task execution messages.
+        Consumer loop for task input messages.
         
         Args:
             tenant_id: Tenant identifier
         """
-        topic = get_controlled_task_executions_topic(tenant_id)
-        self.logger.info(f"Starting controlled task execution consumer for topic: {topic}")
+        topic = get_task_inputs_topic(tenant_id)
+        self.logger.info(f"Starting task-input consumer for topic: {topic}")
         
         try:
             async for message_bytes in self.broker.subscribe(topic):
                 await self._process_task_execution(message_bytes, tenant_id)
         except asyncio.CancelledError:
-            self.logger.info(f"Controlled task execution consumer cancelled for tenant: {tenant_id}")
+            self.logger.info(f"Task-input consumer cancelled for tenant: {tenant_id}")
         except Exception as e:
-            self.logger.error(f"Controlled task execution consumer error for tenant {tenant_id}: {e}")
+            self.logger.error(f"Task-input execution consumer error for tenant {tenant_id}: {e}")
             raise
     
     async def start(self, tenant_id: str = "default") -> None:

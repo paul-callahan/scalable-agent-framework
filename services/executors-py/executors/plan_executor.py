@@ -5,9 +5,12 @@ Dynamically loads and executes user-supplied plan.py files.
 
 import asyncio
 import importlib.util
+import inspect
 import os
 import sys
 import time
+import uuid
+from datetime import datetime, UTC
 from typing import Any, Optional
 
 import structlog
@@ -74,7 +77,6 @@ class PlanExecutor:
             self.plan_function = getattr(self.plan_module, "plan")
             
             # Validate plan function signature
-            import inspect
             sig = inspect.signature(self.plan_function)
             if len(sig.parameters) != 1:
                 raise ValueError("Plan function must take exactly one parameter (plan_input)")
@@ -117,15 +119,13 @@ class PlanExecutor:
             )
             
             # Create successful PlanExecution
-            import uuid
-            from datetime import datetime
             
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
             )
             
@@ -160,15 +160,13 @@ class PlanExecutor:
             )
             
             # Create timeout PlanExecution
-            import uuid
-            from datetime import datetime
             
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_FAILED
             )
             
@@ -202,15 +200,13 @@ class PlanExecutor:
             )
             
             # Create error PlanExecution
-            import uuid
-            from datetime import datetime
             
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_FAILED
             )
             

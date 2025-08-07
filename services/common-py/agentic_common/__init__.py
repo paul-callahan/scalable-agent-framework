@@ -12,9 +12,7 @@ from .kafka_utils import (
     get_persisted_plan_executions_topic,
     get_persisted_task_executions_topic,
     get_plan_execution_topic,
-    get_controlled_plan_executions_topic,
     get_task_execution_topic,
-    get_controlled_task_executions_topic,
 )
 from .health import create_health_router
 from .logging_config import setup_logging
@@ -23,9 +21,7 @@ from .pb_utils import ProtobufUtils
 __all__ = [
     # Kafka utilities
     "get_task_execution_topic",
-    "get_controlled_task_executions_topic",
     "get_plan_execution_topic",
-    "get_controlled_plan_executions_topic",
     "get_persisted_task_executions_topic",
     "get_persisted_plan_executions_topic",
     # Health check utilities

@@ -15,7 +15,6 @@ from structlog import get_logger
 from agentic_common.kafka_utils import (
     create_kafka_producer,
     get_plan_inputs_topic,
-    get_controlled_plan_executions_topic,
     get_task_inputs_topic,
 )
 from agentic_common.logging_config import log_kafka_message
