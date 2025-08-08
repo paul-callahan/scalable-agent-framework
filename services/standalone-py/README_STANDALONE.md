@@ -12,18 +12,18 @@ The standalone implementation replaces gRPC services with an in-memory message b
 
 1. **InMemoryBroker** (`agentic/message_bus/broker.py`)
    - Manages topic-based message routing using `asyncio.Queue` objects
-   - Supports wildcard subscriptions (e.g., `persisted-task-executions_*`)
+   - Supports wildcard subscriptions (e.g., `persisted-task-executions-*`)
    - Handles protobuf serialization boundaries
    - Provides metrics and graceful shutdown
 
 2. **DataPlaneService** (`agentic/data_plane/service.py`)
-   - Consumes from `task-executions_{tenantId}` and `plan-executions_{tenantId}` queues
+   - Consumes from `task-executions-{tenantId}` and `plan-executions-{tenantId}` queues
    - Persists TaskExecution and PlanExecution messages to SQLite database
    - Forwards lightweight reference messages to control queues
    - Provides async message processing with error handling
 
 3. **ControlPlaneService** (`agentic/control_plane/service.py`)
-   - Consumes from `persisted-task-executions_{tenantId}` and `persisted-plan-executions_{tenantId}` queues
+   - Consumes from `persisted-task-executions-{tenantId}` and `persisted-plan-executions-{tenantId}` queues
    - Evaluates guardrails (rate limiting, content filtering, etc.)
    - Routes approved executions to result queues
    - Publishes rejection messages with reasons for failed guardrails
@@ -44,16 +44,16 @@ The standalone implementation replaces gRPC services with an in-memory message b
 
 ```
 Task Execution Flow:
-1. TaskExecutor publishes TaskExecution to task-executions_{tenantId}
-2. DataPlane consumes, persists, forwards to persisted-task-executions_{tenantId}
+1. TaskExecutor publishes TaskExecution to task-executions-{tenantId}
+2. DataPlane consumes, persists, forwards to persisted-task-executions-{tenantId}
 3. ControlPlane evaluates guardrails, publishes to task-results_{tenantId}
-4. TaskExecutor consumes result, executes task, publishes back to task-executions_{tenantId}
+4. TaskExecutor consumes result, executes task, publishes back to task-executions-{tenantId}
 
 Plan Execution Flow:
-1. PlanExecutor publishes PlanExecution to plan-executions_{tenantId}
-2. DataPlane consumes, persists, forwards to persisted-plan-executions_{tenantId}
+1. PlanExecutor publishes PlanExecution to plan-executions-{tenantId}
+2. DataPlane consumes, persists, forwards to persisted-plan-executions-{tenantId}
 3. ControlPlane evaluates guardrails, publishes to plan-results_{tenantId}
-4. PlanExecutor consumes result, executes plan, publishes back to plan-executions_{tenantId}
+4. PlanExecutor consumes result, executes plan, publishes back to plan-executions-{tenantId}
 ```
 
 ## Usage

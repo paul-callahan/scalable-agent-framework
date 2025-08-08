@@ -168,7 +168,7 @@ class PlanExecutorService:
                 plan_execution = await self._execute_plan(plan_type, parent_task_exec_ids, execution_id)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"plan-executions_{tenant_id}"
+                execution_topic = f"plan-executions-{tenant_id}"
                 execution_bytes = plan_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
                 
@@ -192,7 +192,7 @@ class PlanExecutorService:
                 failed_execution.result.CopyFrom(error_result)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"plan-executions_{tenant_id}"
+                execution_topic = f"plan-executions-{tenant_id}"
                 execution_bytes = failed_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
             

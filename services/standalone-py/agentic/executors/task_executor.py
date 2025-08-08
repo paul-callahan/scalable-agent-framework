@@ -182,7 +182,7 @@ class TaskExecutorService:
                 task_execution = await self._execute_task(task_type, execution_id)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"task-executions_{tenant_id}"
+                execution_topic = f"task-executions-{tenant_id}"
                 execution_bytes = task_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
                 
@@ -206,7 +206,7 @@ class TaskExecutorService:
                 failed_execution.result.CopyFrom(error_result)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"task-executions_{tenant_id}"
+                execution_topic = f"task-executions-{tenant_id}"
                 execution_bytes = failed_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
             

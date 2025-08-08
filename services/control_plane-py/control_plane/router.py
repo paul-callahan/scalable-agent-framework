@@ -23,8 +23,8 @@ class ExecutionRouter:
     """
     Execution router for control plane service.
     
-    Routes PlanInputs to plan-inputs_{tenant_id} topics after examining
-    the TaskExecution and looking up the next Plan in the graph. Routes TaskInputs to task-inputs_{tenant_id} topics
+    Routes PlanInputs to plan-inputs-{tenant_id} topics after examining
+    the TaskExecution and looking up the next Plan in the graph. Routes TaskInputs to task-inputs-{tenant_id} topics
      after examining the PlanExecution and looking up the next Task in the graph.
     """
     

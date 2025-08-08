@@ -10,7 +10,7 @@ authors = [
     {name = "Paul Callahan", email = "paul@example.com"},
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13.5"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,6 +22,7 @@ dependencies = [
     "aiokafka>=0.8.0",
     "structlog>=23.0.0",
     "protobuf>=4.0.0",
+    "agentic-common",
 ]
 
 [project.optional-dependencies]
@@ -61,4 +62,17 @@ allow-direct-references = true
 target-version = "py313"
 line-length = 88
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
-ignore = ["E501", "B008"] 
+ignore = ["E501", "B008"]
+
+[tool.uv.sources]
+agentic-common = { path = "../common-py" }
+
+[dependency-groups]
+dev = [
+    "mockafka-py>=0.2.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["executors"] 

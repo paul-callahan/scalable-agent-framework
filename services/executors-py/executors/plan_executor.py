@@ -131,16 +131,12 @@ class PlanExecutor:
             
             # Extract parent task execution IDs
             parent_task_exec_ids = []
+            parent_task_names = []
             for task_exec in plan_input.task_executions:
                 if task_exec.header and task_exec.header.exec_id:
                     parent_task_exec_ids.append(task_exec.header.exec_id)
-            
-            # Extract parent task names
-            parent_task_names = []
-            for task_exec in plan_input.task_executions:
-                if task_exec.header and task_exec.header.name:
                     parent_task_names.append(task_exec.header.name)
-            
+
             return PlanExecution(
                 header=header,
                 parent_task_exec_ids=parent_task_exec_ids,
@@ -149,18 +145,14 @@ class PlanExecutor:
             )
             
         except asyncio.TimeoutError:
-            execution_time = time.time() - start_time
             error_msg = f"Plan execution timed out after {self.timeout} seconds"
             
             self.logger.error(
                 "Plan execution timed out",
                 plan_name=plan_input.plan_name,
                 timeout=self.timeout,
-                execution_time=execution_time
             )
-            
-            # Create timeout PlanExecution
-            
+
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
@@ -212,16 +204,12 @@ class PlanExecutor:
             
             # Extract parent task execution IDs
             parent_task_exec_ids = []
+            parent_task_names = []
             for task_exec in plan_input.task_executions:
                 if task_exec.header and task_exec.header.exec_id:
                     parent_task_exec_ids.append(task_exec.header.exec_id)
-            
-            # Extract parent task names
-            parent_task_names = []
-            for task_exec in plan_input.task_executions:
-                if task_exec.header and task_exec.header.name:
                     parent_task_names.append(task_exec.header.name)
-            
+
             return PlanExecution(
                 header=header,
                 parent_task_exec_ids=parent_task_exec_ids,

@@ -9,6 +9,7 @@ from datetime import datetime, UTC
 from typing import Generator
 
 import pytest
+from google.protobuf import any_pb2, wrappers_pb2
 from mockafka.aiokafka import aiokafka_consumer, aiokafka_producer
 
 from agentic_common.pb import (
@@ -31,16 +32,35 @@ def mockafka_patch():
 
 
 @pytest.fixture
+def mockafka_setup():
+    """Setup mockafka environment for Kafka message flow testing."""
+    # Configure mock topics for testing
+    topics = [
+        "task-inputs-test-tenant",
+        "task-executions-test-tenant", 
+        "plan-inputs-test-tenant",
+        "plan-executions-test-tenant"
+    ]
+    
+    # Mockafka will handle topic creation automatically
+    yield topics
+
+
+@pytest.fixture
 def test_config():
     """Common test configuration."""
     return {
-        "tenant_id": "test-tenant",
-        "plan_name": "test-plan",
-        "task_name": "test-task",
+        "tenant_id": "evil-corp",
+        "plan_name": "what_llm_should_we_use",
+        "task_name": "query_llm",
         "bootstrap_servers": "localhost:9092",
-        "group_id": "test-group",
+        "group_id": "executors",
         "plan_timeout": 30,
         "task_timeout": 30,
+        "task_input_topic": "task-inputs-evil-corp",
+        "task_execution_topic": "task-executions-evil-corp",
+        "plan_input_topic": "plan-inputs-evil-corp",
+        "plan_execution_topic": "plan-executions-evil-corp",
     }
 
 
@@ -101,7 +121,7 @@ def task(task_input):
 
 
 @pytest.fixture
-def sample_plan_input(test_config) -> PlanInput:
+def sample_plan_input_lite(test_config) -> PlanInput:
     """Create a sample PlanInput message for testing."""
     return PlanInput(
         input_id="test-input-123",
@@ -118,6 +138,52 @@ def sample_task_input(test_config) -> TaskInput:
         task_name=test_config["task_name"],
         plan_execution=None
     )
+
+
+@pytest.fixture
+def sample_task_input_with_key(test_config) -> TaskInput:
+    """Create a sample TaskInput message with specific task_name for key filtering tests."""
+    return TaskInput(
+        input_id="test-task-input-with-key-123",
+        task_name=test_config["task_name"],  # This will be used as the message key
+        plan_execution=None
+    )
+
+
+@pytest.fixture
+def sample_plan_input_with_key(test_config) -> PlanInput:
+    """Create a sample PlanInput message with specific plan_name for key filtering tests."""
+    return PlanInput(
+        input_id="test-plan-input-with-key-123",
+        plan_name=test_config["plan_name"],  # This will be used as the message key
+        task_executions=[]
+    )
+
+
+@pytest.fixture
+def error_task_input(test_config) -> TaskInput:
+    """Create a TaskInput that will cause task execution to fail."""
+    return TaskInput(
+        input_id="error-task-input-123",
+        task_name=test_config["task_name"],
+        plan_execution=None
+    )
+
+
+@pytest.fixture
+def error_plan_input(test_config) -> PlanInput:
+    """Create a PlanInput that will cause plan execution to fail."""
+    return PlanInput(
+        input_id="error-plan-input-123",
+        plan_name=test_config["plan_name"],
+        task_executions=[]
+    )
+
+
+@pytest.fixture
+def invalid_protobuf_data() -> bytes:
+    """Create invalid protobuf data for testing deserialization errors."""
+    return b"invalid protobuf data"
 
 
 @pytest.fixture
@@ -168,4 +234,33 @@ def sample_task_execution(test_config) -> TaskExecution:
         parent_plan_exec_id="parent-plan-123",
         result=result,
         parent_plan_name=test_config["plan_name"]
-    ) 
+    )
+
+
+def sample_plan_input_full() -> PlanInput:
+    return PlanInput(
+        plan_name="decide_which_llm_to_use",
+        task_executions=[TaskExecution(
+            header=ExecutionHeader(
+                name="call_llm",
+                tenant_id="evil_corp",
+                exec_id="1234f",
+            ),
+            result=TaskResult(
+                id="",
+                inline_data=any_pb2.Any(
+                    value=wrappers_pb2.StringValue(value="hello").SerializeToString(),
+                    type_url="type.googleapis.com/google.protobuf.StringValue",
+                )
+            ),
+        )]
+    )
+
+def serialize_protobuf_message(message) -> bytes:
+    """Helper function to serialize protobuf messages for testing."""
+    return message.SerializeToString()
+
+
+def deserialize_protobuf_message(data: bytes, message_type):
+    """Helper function to deserialize protobuf messages for testing."""
+    return message_type.FromString(data) 

@@ -1,10 +1,10 @@
 package com.pcallahan.agentic.taskexecutor.service;
 
 import com.pcallahan.agentic.taskexecutor.kafka.TaskExecutionProducer;
-import io.arl.proto.model.Plan.PlanExecution;
-import io.arl.proto.model.Plan.PlanResult;
-import io.arl.proto.model.Task.TaskExecution;
-import io.arl.proto.model.Task.TaskResult;
+import io.arl.proto.model.Common.PlanExecution;
+import io.arl.proto.model.Common.PlanResult;
+import io.arl.proto.model.Common.TaskExecution;
+import io.arl.proto.model.Common.TaskResult;
 import io.arl.proto.model.Common.ExecutionHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -71,7 +71,7 @@ class DataPlaneProducer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"persisted-task-executions_{tenant_id}"
+            topic = f"persisted-task-executions-{tenant_id}"
             
             # Serialize protobuf message using consistent utilities
             message_bytes = ProtobufUtils.serialize_task_execution(task_execution)
@@ -124,7 +124,7 @@ class DataPlaneProducer:
             raise RuntimeError("Producer not initialized")
         
         try:
-            topic = f"persisted-plan-executions_{tenant_id}"
+            topic = f"persisted-plan-executions-{tenant_id}"
             
             # Serialize protobuf message using consistent utilities
             message_bytes = ProtobufUtils.serialize_plan_execution(plan_execution)

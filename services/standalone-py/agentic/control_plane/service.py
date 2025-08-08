@@ -323,7 +323,7 @@ class ControlPlaneService:
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"persisted-task-executions_{tenant_id}"
+        topic = f"persisted-task-executions-{tenant_id}"
         self.logger.info(f"Starting task control consumer for topic: {topic}")
         
         try:
@@ -342,7 +342,7 @@ class ControlPlaneService:
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"persisted-plan-executions_{tenant_id}"
+        topic = f"persisted-plan-executions-{tenant_id}"
         self.logger.info(f"Starting persisted plan executions consumer for topic: {topic}")
         
         try:

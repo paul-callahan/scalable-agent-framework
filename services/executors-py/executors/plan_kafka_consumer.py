@@ -25,81 +25,61 @@ class PlanInputConsumer:
     - Calls plan execution logic
     - Handles errors and message acknowledgment
     """
-    
+
     def __init__(
-        self,
-        bootstrap_servers: str,
-        group_id: str,
-        tenant_id: str,
-        plan_name: str,
-        plan_executor: PlanExecutor,
-        producer: PlanExecutionProducer,
+            self,
+            consumer: aiokafka.AIOKafkaConsumer,
+            tenant_id: str,
+            plan_name: str,
+            plan_executor: PlanExecutor,
+            producer: PlanExecutionProducer,
     ):
-        self.bootstrap_servers = bootstrap_servers
-        self.group_id = group_id
+        self.consumer = consumer
         self.tenant_id = tenant_id
         self.plan_name = plan_name
         self.plan_executor = plan_executor
         self.producer = producer
-        
+
         self.logger = structlog.get_logger(__name__)
-        
-        # Kafka consumer
-        self.consumer: Optional[aiokafka.AIOKafkaConsumer] = None
-        self.topic = f"plan-inputs-{tenant_id}"
-        
+
         # Consumer state
         self._running = False
         self._consumer_task: Optional[asyncio.Task] = None
-    
+
     async def start(self) -> None:
         """Start the Kafka consumer."""
         if self._running:
             self.logger.warning("Consumer is already running")
             return
-        
+
         self.logger.info(
             "Starting PlanInput consumer",
-            topic=self.topic,
-            group_id=self.group_id,
+            topic=self.consumer.topics(),
+            # group_id=self.consumer.group_id,
             plan_name=self.plan_name
         )
-        
+
         try:
-            # Create Kafka consumer
-            self.consumer = aiokafka.AIOKafkaConsumer(
-                self.topic,
-                bootstrap_servers=self.bootstrap_servers,
-                group_id=self.group_id,
-                auto_offset_reset="earliest",
-                enable_auto_commit=True,
-                auto_commit_interval_ms=1000,
-                key_deserializer=lambda k: k.decode("utf-8") if k else None,
-                value_deserializer=lambda v: PlanInput.FromString(v) if v else None,
-            )
-            
-            await self.consumer.start()
-            
             # Start consumer task
             self._consumer_task = asyncio.create_task(self._consume_messages())
             self._running = True
-            
+
             self.logger.info("PlanInput consumer started successfully")
-            
+
         except Exception as e:
             self.logger.error("Failed to start PlanInput consumer", error=str(e), exc_info=True)
             await self.stop()
             raise
-    
+
     async def stop(self) -> None:
         """Stop the Kafka consumer."""
         if not self._running:
             self.logger.warning("Consumer is not running")
             return
-        
+
         self.logger.info("Stopping PlanInput consumer")
         self._running = False
-        
+
         # Cancel consumer task
         if self._consumer_task:
             self._consumer_task.cancel()
@@ -108,31 +88,39 @@ class PlanInputConsumer:
             except asyncio.CancelledError:
                 pass
             self._consumer_task = None
-        
+
         # Stop Kafka consumer
         if self.consumer:
             await self.consumer.stop()
             self.consumer = None
-        
+
         self.logger.info("PlanInput consumer stopped")
-    
+
     async def _consume_messages(self) -> None:
         """Consume messages from Kafka topic."""
-        if not self.consumer:
-            return
+        self.logger.info("_consume_messages() started")
         
+        if not self.consumer:
+            self.logger.warning("No consumer available, exiting _consume_messages")
+            return
+
         try:
+            self.logger.info("Starting to iterate over consumer messages")
             async for message in self.consumer:
+                self.logger.info(f"Received message: {message}")
                 if not self._running:
+                    self.logger.info("Consumer stopped, breaking message loop")
                     break
-                
+
                 await self._process_message(message)
-                
+
         except asyncio.CancelledError:
             self.logger.info("Consumer task cancelled")
         except Exception as e:
             self.logger.error("Error in consumer task", error=str(e), exc_info=True)
-    
+        finally:
+            self.logger.info("_consume_messages() finished")
+
     async def _process_message(self, message: aiokafka.ConsumerRecord) -> None:
         """Process a single Kafka message."""
         try:
@@ -144,32 +132,32 @@ class PlanInputConsumer:
                     expected_key=self.plan_name
                 )
                 return
-            
+
             # Deserialize PlanInput
             plan_input = message.value
             if not plan_input:
                 self.logger.warning("Received null message value")
                 return
-            
+
             self.logger.info(
                 "Processing PlanInput message",
                 plan_name=plan_input.plan_name,
                 tenant_id=self.tenant_id,
                 message_offset=message.offset
             )
-            
+
             # Execute plan
             plan_execution = await self.plan_executor.execute_plan(plan_input)
-            
+
             # Publish result
             await self.producer.publish_plan_execution(plan_execution)
-            
+
             self.logger.info(
                 "Successfully processed PlanInput message",
                 plan_name=plan_input.plan_name,
                 message_offset=message.offset
             )
-            
+
         except Exception as e:
             self.logger.error(
                 "Error processing PlanInput message",
@@ -177,13 +165,13 @@ class PlanInputConsumer:
                 message_offset=message.offset,
                 exc_info=True
             )
-            
+
             # Create error PlanExecution
             try:
                 import uuid
                 from datetime import datetime
                 from agentic_common.pb import ExecutionHeader, ExecutionStatus
-                
+
                 # Create ExecutionHeader
                 header = ExecutionHeader(
                     name=self.plan_name,
@@ -192,7 +180,7 @@ class PlanInputConsumer:
                     created_at=datetime.utcnow().isoformat(),
                     status=ExecutionStatus.EXECUTION_STATUS_FAILED
                 )
-                
+
                 error_execution = PlanExecution(
                     header=header,
                     parent_task_exec_ids=[],
@@ -208,12 +196,12 @@ class PlanInputConsumer:
                     error=str(publish_error),
                     exc_info=True
                 )
-    
+
     def is_healthy(self) -> bool:
         """Check if the consumer is healthy."""
         return (
-            self._running and
-            self.consumer is not None and
-            self._consumer_task is not None and
-            not self._consumer_task.done()
-        ) 
+                self._running and
+                self.consumer is not None and
+                self._consumer_task is not None and
+                not self._consumer_task.done()
+        )

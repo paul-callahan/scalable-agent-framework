@@ -72,7 +72,7 @@ async def test_standalone_integration():
     task_execution.header.created_at = datetime.utcnow().isoformat()
     
     # Publish to task-executions queue
-    task_executions_topic = f"task-executions_{tenant_id}"
+    task_executions_topic = f"task-executions-{tenant_id}"
     task_bytes = task_execution.SerializeToString()
     await broker.publish(task_executions_topic, task_bytes)
     
@@ -92,7 +92,7 @@ async def test_standalone_integration():
     plan_execution.header.created_at = datetime.utcnow().isoformat()
     
     # Publish to plan-executions queue
-    plan_executions_topic = f"plan-executions_{tenant_id}"
+    plan_executions_topic = f"plan-executions-{tenant_id}"
     plan_bytes = plan_execution.SerializeToString()
     await broker.publish(plan_executions_topic, plan_bytes)
     

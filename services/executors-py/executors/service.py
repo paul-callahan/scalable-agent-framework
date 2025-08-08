@@ -10,6 +10,7 @@ import sys
 from typing import Optional
 
 import structlog
+import aiokafka
 
 from .plan_kafka_consumer import PlanInputConsumer
 from .plan_kafka_producer import PlanExecutionProducer
@@ -126,18 +127,43 @@ class ExecutorService:
         )
         await self.plan_executor.load_plan()
         
+        # Create Kafka producer
+        from agentic_common.pb import PlanExecution
+        producer = aiokafka.AIOKafkaProducer(
+            bootstrap_servers=self.kafka_bootstrap_servers,
+            key_serializer=lambda k: k.encode("utf-8") if k else None,
+            value_serializer=lambda v: v.SerializeToString() if v else None,
+            acks="all",  # Wait for all replicas
+            retry_backoff_ms=100,
+        )
+        await producer.start()
+        
         # Initialize plan Kafka producer
         self.plan_producer = PlanExecutionProducer(
-            bootstrap_servers=self.kafka_bootstrap_servers,
+            producer=producer,
             tenant_id=self.tenant_id,
             plan_name=self.plan_name
         )
         await self.plan_producer.start()
         
-        # Initialize plan Kafka consumer
-        self.plan_consumer = PlanInputConsumer(
+        # Create Kafka consumer
+        from agentic_common.pb import PlanInput
+        topic = f"plan-inputs-{self.tenant_id}"
+        consumer = aiokafka.AIOKafkaConsumer(
+            topic,
             bootstrap_servers=self.kafka_bootstrap_servers,
             group_id=self.kafka_group_id,
+            auto_offset_reset="earliest",
+            enable_auto_commit=True,
+            auto_commit_interval_ms=1000,
+            key_deserializer=lambda k: k.decode("utf-8") if k else None,
+            value_deserializer=lambda v: PlanInput.FromString(v) if v else None,
+        )
+        await consumer.start()
+        
+        # Initialize plan Kafka consumer
+        self.plan_consumer = PlanInputConsumer(
+            consumer=consumer,
             tenant_id=self.tenant_id,
             plan_name=self.plan_name,
             plan_executor=self.plan_executor,
@@ -257,4 +283,4 @@ class ExecutorService:
             
         except Exception as e:
             self.logger.error("Health check failed", error=str(e))
-            return False 
+            return False

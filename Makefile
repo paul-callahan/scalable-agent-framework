@@ -1,11 +1,12 @@
 # Makefile for the Agentic Framework
 # Provides common development tasks and build automation
-
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # Python configuration
 PYTHON := /opt/homebrew/bin/python3
-VENV := .venv
+VENV := $(ROOT_DIR)/.venv
 VENV_PYTHON := $(VENV)/bin/python
 VENV_PIP := $(VENV)/bin/pip
+UV_PROJECT_ENVIRONMENT := $(VENV)
 
 # Python version check function
 define check_python_version
@@ -56,45 +57,37 @@ help:
 	@echo "  java-down           - Stop and clean up Java microservices"
 	@echo "  java-logs           - View logs from all Java microservices"
 	@echo "  java-test           - Run integration tests for Java microservices"
-	@echo "  java-proto          - Generate Java protobuf classes using Maven"
+	@echo "  gen-proto-java      - Generate Java protobuf classes using Maven"
 	@echo "  java-clean          - Clean Maven builds"
 	@echo ""
 
-# Generate Python protobuf code
-proto:
-	@echo "Generating protobuf files..."
-	@./scripts/gen_proto.sh
 
-# Generate Python protobuf code for common-py
 gen-proto-py: deps-common-py
 	@echo "Generating Python protobuf files for common-py..."
 	$(call check_python_version)
 	$(call create_venv)
-	@cd services/common-py && $(VENV_PYTHON) -m grpc_tools.protoc --python_out=agentic_common/pb --grpc_python_out=agentic_common/pb --proto_path=../../protos ../../protos/*.proto
+	@cd services/common-py && ./scripts/gen_proto.sh
 
 # Install dependencies for common-py
 deps-common-py:
 	@echo "Installing dependencies for common-py..."
 	$(call check_python_version)
 	$(call create_venv)
-	@$(VENV_PIP) install --upgrade pip
-	@$(VENV_PIP) install grpcio grpcio-tools protobuf
+	@cd services/common-py && UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv sync
 
-# Install dependencies for executors-py
+# Install dependencies for common-py
 deps-executors-py: deps-common-py
-	@echo "Installing dependencies for executors-py..."
+	@echo "Installing dependencies for common-py..."
 	$(call check_python_version)
 	$(call create_venv)
-	@$(VENV_PIP) install pytest pytest-asyncio mockafka-py aiokafka structlog
-	@echo "Installing common-py package in editable mode..."
-	@cd services/common-py && ../../$(VENV_PIP) install -e .
+	@cd services/executors-py && UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv sync
 
 # Run executors-py tests
-test-executor-py: gen-proto-py deps-executors-py
+test-executors-py: gen-proto-py deps-executors-py
 	@echo "Running executors-py tests..."
 	$(call check_python_version)
 	$(call create_venv)
-	@cd services/executors-py && PYTHONPATH=../common-py/agentic_common/pb:$$PYTHONPATH ../../$(VENV_PYTHON) -m pytest tests/ -v
+	@cd services/executors-py && $(VENV_PYTHON) -m pytest tests/ -v
 
 # Install Python dependencies using uv
 install:
@@ -109,6 +102,7 @@ install-dev: install
 # Sync dependencies with uv
 sync:
 	@echo "Syncing dependencies with uv..."
+	$(call create_venv)
 	@uv sync
 
 # Update all dependencies to latest versions
@@ -279,7 +273,7 @@ java-test:
 	@echo "Java integration tests completed successfully!"
 
 # Generate Java protobuf classes using Maven
-java-proto:
+gen-proto-java:
 	@echo "Generating Java protobuf classes..."
 	@./scripts/build_java_microservices.sh --protobuf
 

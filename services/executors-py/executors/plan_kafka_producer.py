@@ -25,22 +25,19 @@ class PlanExecutionProducer:
     
     def __init__(
         self,
-        bootstrap_servers: str,
+        producer: aiokafka.AIOKafkaProducer,
         tenant_id: str,
         plan_name: str,
     ):
-        self.bootstrap_servers = bootstrap_servers
+        self.producer = producer
         self.tenant_id = tenant_id
         self.plan_name = plan_name
         
         self.logger = structlog.get_logger(__name__)
         
-        # Kafka producer
-        self.producer: Optional[aiokafka.AIOKafkaProducer] = None
-        self.topic = f"plan-executions-{tenant_id}"
-        
         # Producer state
         self._running = False
+        self.topic = f"plan-executions-{tenant_id}"
     
     async def start(self) -> None:
         """Start the Kafka producer."""
@@ -55,16 +52,6 @@ class PlanExecutionProducer:
         )
         
         try:
-            # Create Kafka producer
-            self.producer = aiokafka.AIOKafkaProducer(
-                bootstrap_servers=self.bootstrap_servers,
-                key_serializer=lambda k: k.encode("utf-8") if k else None,
-                value_serializer=lambda v: v.SerializeToString() if v else None,
-                acks="all",  # Wait for all replicas
-                retry_backoff_ms=100,
-            )
-            
-            await self.producer.start()
             self._running = True
             
             self.logger.info("PlanExecution producer started successfully")

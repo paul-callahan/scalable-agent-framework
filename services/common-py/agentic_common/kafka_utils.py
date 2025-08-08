@@ -14,7 +14,7 @@ from aiokafka.errors import KafkaError
 
 def get_task_execution_topic(tenant_id: str) -> str:
     """Get the task execution topic name for a tenant."""
-    return f"task-executions_{tenant_id}"
+    return f"task-executions-{tenant_id}"
 
 
 def get_plan_inputs_topic(tenant_id: str) -> str:
@@ -26,19 +26,19 @@ def get_plan_inputs_topic(tenant_id: str) -> str:
 
 def get_plan_execution_topic(tenant_id: str) -> str:
     """Get the plan execution topic name for a tenant."""
-    return f"plan-executions_{tenant_id}"
+    return f"plan-executions-{tenant_id}"
 
 
 
 
 def get_persisted_task_executions_topic(tenant_id: str) -> str:
     """Get the persisted task executions topic name for a tenant."""
-    return f"persisted-task-executions_{tenant_id}"
+    return f"persisted-task-executions-{tenant_id}"
 
 
 def get_persisted_plan_executions_topic(tenant_id: str) -> str:
     """Get the persisted plan executions topic name for a tenant."""
-    return f"persisted-plan-executions_{tenant_id}"
+    return f"persisted-plan-executions-{tenant_id}"
 
 
 
