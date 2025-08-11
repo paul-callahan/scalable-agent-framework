@@ -5,9 +5,12 @@ Dynamically loads and executes user-supplied plan.py files.
 
 import asyncio
 import importlib.util
+import inspect
 import os
 import sys
 import time
+import uuid
+from datetime import datetime, UTC
 from typing import Any, Optional
 
 import structlog
@@ -74,7 +77,6 @@ class PlanExecutor:
             self.plan_function = getattr(self.plan_module, "plan")
             
             # Validate plan function signature
-            import inspect
             sig = inspect.signature(self.plan_function)
             if len(sig.parameters) != 1:
                 raise ValueError("Plan function must take exactly one parameter (plan_input)")
@@ -117,30 +119,24 @@ class PlanExecutor:
             )
             
             # Create successful PlanExecution
-            import uuid
-            from datetime import datetime
             
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
             )
             
             # Extract parent task execution IDs
             parent_task_exec_ids = []
+            parent_task_names = []
             for task_exec in plan_input.task_executions:
                 if task_exec.header and task_exec.header.exec_id:
                     parent_task_exec_ids.append(task_exec.header.exec_id)
-            
-            # Extract parent task names
-            parent_task_names = []
-            for task_exec in plan_input.task_executions:
-                if task_exec.header and task_exec.header.name:
                     parent_task_names.append(task_exec.header.name)
-            
+
             return PlanExecution(
                 header=header,
                 parent_task_exec_ids=parent_task_exec_ids,
@@ -149,26 +145,20 @@ class PlanExecutor:
             )
             
         except asyncio.TimeoutError:
-            execution_time = time.time() - start_time
             error_msg = f"Plan execution timed out after {self.timeout} seconds"
             
             self.logger.error(
                 "Plan execution timed out",
                 plan_name=plan_input.plan_name,
                 timeout=self.timeout,
-                execution_time=execution_time
             )
-            
-            # Create timeout PlanExecution
-            import uuid
-            from datetime import datetime
-            
+
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_FAILED
             )
             
@@ -202,30 +192,24 @@ class PlanExecutor:
             )
             
             # Create error PlanExecution
-            import uuid
-            from datetime import datetime
             
             # Create ExecutionHeader
             header = ExecutionHeader(
                 name=plan_input.plan_name,
                 exec_id=str(uuid.uuid4()),
                 tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
                 status=ExecutionStatus.EXECUTION_STATUS_FAILED
             )
             
             # Extract parent task execution IDs
             parent_task_exec_ids = []
+            parent_task_names = []
             for task_exec in plan_input.task_executions:
                 if task_exec.header and task_exec.header.exec_id:
                     parent_task_exec_ids.append(task_exec.header.exec_id)
-            
-            # Extract parent task names
-            parent_task_names = []
-            for task_exec in plan_input.task_executions:
-                if task_exec.header and task_exec.header.name:
                     parent_task_names.append(task_exec.header.name)
-            
+
             return PlanExecution(
                 header=header,
                 parent_task_exec_ids=parent_task_exec_ids,

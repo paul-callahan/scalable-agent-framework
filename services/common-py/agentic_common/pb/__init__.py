@@ -10,14 +10,13 @@ proto generation individually.
 
 # Import all protobuf generated classes from local files
 try:
-    from .common_pb2 import ExecutionHeader, ExecutionStatus
-    from .task_pb2 import TaskExecution, TaskResult, TaskInput
-    from .plan_pb2 import PlanExecution, PlanResult, PlanInput
-except ImportError:
-    raise ImportError(
-        "No protobuf files found. Please generate them using:\n"
-        "./scripts/gen_proto.sh"
-    )
+    from .common_pb2 import ExecutionHeader, ExecutionStatus, TaskExecution, TaskResult,  PlanExecution, PlanResult, PlanInput, TaskInput
+except ImportError as e:
+    raise e
+    # raise ImportError(
+    #     "No protobuf files found. Please generate them using:\n"
+    #     "./scripts/gen_proto.sh"
+    # ) from e
 
 __all__ = [
     # Common protobuf messages

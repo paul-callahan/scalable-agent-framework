@@ -2,7 +2,7 @@
 Kafka consumer for control plane microservice.
 
 This module implements Kafka consumer for control plane topics using
-aiokafka==0.11.0. Subscribe to persisted-task-executions_* and persisted-plan-executions_* topics
+aiokafka==0.11.0. Subscribe to persisted-task-executions-* and persisted-plan-executions-* topics
 using pattern matching.
 """
 
@@ -55,8 +55,8 @@ class ControlPlaneConsumer:
         try:
             # Create consumer for control plane topics
             topics = [
-                "persisted-task-executions_*",  # Pattern for tenant-specific topics
-                "persisted-plan-executions_*",  # Pattern for tenant-specific topics
+                "persisted-task-executions-*",  # Pattern for tenant-specific topics
+                "persisted-plan-executions-*",  # Pattern for tenant-specific topics
             ]
             
             self.consumer = await create_kafka_consumer(
@@ -134,14 +134,14 @@ class ControlPlaneConsumer:
             tenant_id = message.topic.split("_", 1)[1]
             
             # Determine execution type from topic and deserialize protobuf
-            if message.topic.startswith("persisted-task-executions_"):
+            if message.topic.startswith("persisted-task-executions-"):
                 task_execution = ProtobufUtils.deserialize_task_execution(message.value)
                 message_data = {
                     "type": "task",
                     "tenant_id": tenant_id,
                     "task_execution": task_execution
                 }
-            elif message.topic.startswith("persisted-plan-executions_"):
+            elif message.topic.startswith("persisted-plan-executions-"):
                 plan_execution = ProtobufUtils.deserialize_plan_execution(message.value)
                 message_data = {
                     "type": "plan", 

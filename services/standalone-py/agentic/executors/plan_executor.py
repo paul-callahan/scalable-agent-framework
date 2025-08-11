@@ -1,8 +1,8 @@
 """
 Plan executor service implementation.
 
-This module implements the PlanExecutorService that consumes from controlled plan execution queues,
-processes plan execution requests, and publishes completed results back to execution queues.
+This module implements the PlanExecutorService that consumes from plan-inputs queue,
+processes plan execution requests, and publishes completed executions plan-execution queue.
 """
 
 import asyncio
@@ -14,7 +14,7 @@ from typing import Dict, Optional, Callable, Any, List
 from ..message_bus import InMemoryBroker
 from agentic_common.pb import plan_pb2, common_pb2
 from ..core.logging import get_logger, log_metric, log_error
-from agentic_common.kafka_utils import get_controlled_plan_executions_topic
+from agentic_common.kafka_utils import get_plan_inputs_topic
 from agentic_common import ProtobufUtils
 
 
@@ -22,8 +22,8 @@ class PlanExecutorService:
     """
     Plan executor service implementation.
     
-    Handles plan execution by consuming from controlled execution queues and publishing
-    completed plan executions back to execution queues.
+    Handles plan execution by consuming from plan-inputs queue and publishing
+    completed plan executions  to plan-execution queue.
     """
     
     def __init__(self, broker: InMemoryBroker):
@@ -168,7 +168,7 @@ class PlanExecutorService:
                 plan_execution = await self._execute_plan(plan_type, parent_task_exec_ids, execution_id)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"plan-executions_{tenant_id}"
+                execution_topic = f"plan-executions-{tenant_id}"
                 execution_bytes = plan_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
                 
@@ -192,7 +192,7 @@ class PlanExecutorService:
                 failed_execution.result.CopyFrom(error_result)
                 
                 # Serialize and publish to execution queue
-                execution_topic = f"plan-executions_{tenant_id}"
+                execution_topic = f"plan-executions-{tenant_id}"
                 execution_bytes = failed_execution.SerializeToString()
                 await self.broker.publish(execution_topic, execution_bytes)
             
@@ -205,21 +205,21 @@ class PlanExecutorService:
     
     async def _consumer_loop(self, tenant_id: str) -> None:
         """
-        Consumer loop for controlled plan execution messages.
+        Consumer loop for plan-input messages.
         
         Args:
             tenant_id: Tenant identifier
         """
-        topic = get_controlled_plan_executions_topic(tenant_id)
-        self.logger.info(f"Starting controlled plan execution consumer for topic: {topic}")
+        topic = get_plan_inputs_topic(tenant_id)
+        self.logger.info(f"Starting plan-input consumer for topic: {topic}")
         
         try:
             async for message_bytes in self.broker.subscribe(topic):
                 await self._process_plan_execution(message_bytes, tenant_id)
         except asyncio.CancelledError:
-            self.logger.info(f"Controlled plan execution consumer cancelled for tenant: {tenant_id}")
+            self.logger.info(f"Plan-input consumer cancelled for tenant: {tenant_id}")
         except Exception as e:
-            self.logger.error(f"Controlled plan execution consumer error for tenant {tenant_id}: {e}")
+            self.logger.error(f"Plan-input consumer error for tenant {tenant_id}: {e}")
             raise
     
     async def start(self, tenant_id: str = "default") -> None:

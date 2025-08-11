@@ -46,8 +46,8 @@ class DataPlaneConsumer:
         try:
             # Create consumer for task and plan execution topics
             topics = [
-                "task-executions_*",  # Pattern for tenant-specific topics
-                "plan-executions_*",  # Pattern for tenant-specific topics
+                "task-executions-*",  # Pattern for tenant-specific topics
+                "plan-executions-*",  # Pattern for tenant-specific topics
             ]
             
             self.consumer = await create_kafka_consumer(
@@ -118,9 +118,9 @@ class DataPlaneConsumer:
         )
         
         # Determine message type based on topic
-        if message.topic.startswith("task-executions_"):
+        if message.topic.startswith("task-executions-"):
             await self._process_task_execution(message)
-        elif message.topic.startswith("plan-executions_"):
+        elif message.topic.startswith("plan-executions-"):
             await self._process_plan_execution(message)
         else:
             logger.warning("Unknown topic", topic=message.topic)

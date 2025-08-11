@@ -2,7 +2,6 @@
 venv/
 env/
 .venv/
-.venv
 **/.venv
 
 # Python
@@ -57,5 +56,5 @@ design prompt.txt
 .idea.bak/
 .idea.bak2/
 .idea.save.good
+**/mvnw
 foo
-

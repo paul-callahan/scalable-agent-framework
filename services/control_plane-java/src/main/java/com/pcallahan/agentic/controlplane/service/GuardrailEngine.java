@@ -1,8 +1,8 @@
 package com.pcallahan.agentic.controlplane.service;
 
 import com.pcallahan.agentic.common.TopicNames;
-import io.arl.proto.model.Task.TaskExecution;
-import io.arl.proto.model.Plan.PlanExecution;
+import io.arl.proto.model.Common.TaskExecution;
+import io.arl.proto.model.Common.PlanExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;

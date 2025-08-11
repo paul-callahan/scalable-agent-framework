@@ -11,7 +11,7 @@ from typing import Optional
 
 import structlog
 
-from executors.service import PlanExecutorService
+from executors.service import ExecutorService
 
 
 def setup_logging() -> None:
@@ -75,9 +75,9 @@ async def main() -> None:
         kafka_bootstrap_servers=kafka_bootstrap_servers,
         kafka_group_id=kafka_group_id
     )
-    
+
     # Create and start the service
-    service = PlanExecutorService(
+    service = ExecutorService(
         tenant_id=tenant_id,
         plan_name=plan_name,
         plan_path=plan_path,
@@ -104,4 +104,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

@@ -3,7 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/services/admin-java/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/common-java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/common-java/target/generated-sources/protobuf" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/common-java/target/generated-sources/protobuf/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/control_plane-java/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/data_plane-java/src/main/java" charset="UTF-8" />

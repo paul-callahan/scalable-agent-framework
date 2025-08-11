@@ -233,7 +233,7 @@ class DataPlaneService:
             await self._store_task_execution(task_execution)
             
             # Publish full protobuf message to control queue
-            control_topic = f"persisted-task-executions_{tenant_id}"
+            control_topic = f"persisted-task-executions-{tenant_id}"
             await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
@@ -263,7 +263,7 @@ class DataPlaneService:
             await self._store_plan_execution(plan_execution)
             
             # Publish full protobuf message to control queue
-            control_topic = f"persisted-plan-executions_{tenant_id}"
+            control_topic = f"persisted-plan-executions-{tenant_id}"
             await self.broker.publish(control_topic, message_bytes)
             
             self._messages_processed += 1
@@ -281,7 +281,7 @@ class DataPlaneService:
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"task-executions_{tenant_id}"
+        topic = f"task-executions-{tenant_id}"
         self.logger.info(f"Starting task execution consumer for topic: {topic}")
         
         try:
@@ -300,7 +300,7 @@ class DataPlaneService:
         Args:
             tenant_id: Tenant identifier
         """
-        topic = f"plan-executions_{tenant_id}"
+        topic = f"plan-executions-{tenant_id}"
         self.logger.info(f"Starting plan execution consumer for topic: {topic}")
         
         try:

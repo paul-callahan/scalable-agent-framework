@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Union
 from structlog import get_logger
 
 from agentic_common.kafka_utils import (
-    get_controlled_plan_executions_topic,
     get_plan_inputs_topic,
     get_task_inputs_topic,
 )
@@ -24,8 +23,8 @@ class ExecutionRouter:
     """
     Execution router for control plane service.
     
-    Routes PlanInputs to plan-inputs_{tenant_id} topics after examining
-    the TaskExecution and looking up the next Plan in the graph. Routes TaskInputs to task-inputs_{tenant_id} topics
+    Routes PlanInputs to plan-inputs-{tenant_id} topics after examining
+    the TaskExecution and looking up the next Plan in the graph. Routes TaskInputs to task-inputs-{tenant_id} topics
      after examining the PlanExecution and looking up the next Task in the graph.
     """
     
