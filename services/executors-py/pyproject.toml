@@ -72,6 +72,7 @@ dev = [
     "mockafka-py>=0.2.1",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
+    "testcontainers[kafka]>=4.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -37,11 +37,11 @@ def mockafka_setup():
     # Configure mock topics for testing
     topics = [
         "task-inputs-test-tenant",
-        "task-executions-test-tenant", 
+        "task-executions-test-tenant",
         "plan-inputs-test-tenant",
         "plan-executions-test-tenant"
     ]
-    
+
     # Mockafka will handle topic creation automatically
     yield topics
 
@@ -80,9 +80,9 @@ def plan(plan_input):
     )
 """)
         temp_file = f.name
-    
+
     yield temp_file
-    
+
     # Cleanup
     try:
         os.unlink(temp_file)
@@ -94,25 +94,28 @@ def plan(plan_input):
 def temp_task_file() -> Generator[str, None, None]:
     """Create a temporary task.py file for testing."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        # TODO: Switch to canonical Any.Pack(StringValue)/Unpack in temp task content and
+        # update tests accordingly. For now we write raw UTF-8 bytes to inline_data.value
+        # to match the current test assertions.
         f.write("""
 from agentic_common.pb import TaskInput, TaskResult
-import google.protobuf.any_pb2
+from google.protobuf import any_pb2, wrappers_pb2
 
-def task(task_input):
+def task(task_input: TaskInput) -> TaskResult:
     \"\"\"Sample task implementation for testing.\"\"\"
-    any_data = google.protobuf.any_pb2.Any()
-    any_data.type_url = "type.googleapis.com/google.protobuf.StringValue"
-    any_data.value = "sample-task-result".encode('utf-8')
     return TaskResult(
         id="sample-task-result",
-        inline_data=any_data,
+        inline_data=any_pb2.Any(
+                    value=b"hello from conftest temp task",
+                    type_url="type.googleapis.com/google.protobuf.StringValue",
+                ),
         error_message=""
     )
 """)
         temp_file = f.name
-    
+
     yield temp_file
-    
+
     # Cleanup
     try:
         os.unlink(temp_file)
@@ -190,7 +193,7 @@ def invalid_protobuf_data() -> bytes:
 def sample_plan_execution(test_config) -> PlanExecution:
     """Create a sample PlanExecution message for testing."""
     from datetime import datetime, UTC
-    
+
     header = ExecutionHeader(
         name=test_config["plan_name"],
         exec_id="test-exec-123",
@@ -198,13 +201,13 @@ def sample_plan_execution(test_config) -> PlanExecution:
         created_at=datetime.now(UTC).isoformat(),
         status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
     )
-    
+
     result = PlanResult(
         upstream_tasks_results=[],
         next_task_names=["sample-task"],
         error_message=""
     )
-    
+
     return PlanExecution(
         header=header,
         result=result
@@ -215,7 +218,7 @@ def sample_plan_execution(test_config) -> PlanExecution:
 def sample_task_execution(test_config) -> TaskExecution:
     """Create a sample TaskExecution message for testing."""
     from datetime import datetime, UTC
-    
+
     header = ExecutionHeader(
         name=test_config["task_name"],
         exec_id="test-task-exec-123",
@@ -223,12 +226,12 @@ def sample_task_execution(test_config) -> TaskExecution:
         created_at=datetime.now(UTC).isoformat(),
         status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
     )
-    
+
     result = TaskResult(
         id="test-task-result-123",
         error_message=""
     )
-    
+
     return TaskExecution(
         header=header,
         parent_plan_exec_id="parent-plan-123",
@@ -249,12 +252,37 @@ def sample_plan_input_full() -> PlanInput:
             result=TaskResult(
                 id="",
                 inline_data=any_pb2.Any(
-                    value=wrappers_pb2.StringValue(value="hello").SerializeToString(),
+                    value=wrappers_pb2.StringValue(value="hello from sample PlanInput").SerializeToString(),
                     type_url="type.googleapis.com/google.protobuf.StringValue",
                 )
             ),
         )]
     )
+
+
+def sample_task_input_full() -> TaskInput:
+    return TaskInput(
+        task_name="query_llm",
+        plan_execution=PlanExecution(
+            header=ExecutionHeader(
+                name="decide_which_llm_to_use",
+                tenant_id="evil_corp",
+                exec_id="1234",
+            ),
+            result=PlanResult(
+                upstream_tasks_results=[TaskResult(
+                    id="",
+                    inline_data=any_pb2.Any(
+                        value=wrappers_pb2.StringValue(value="hello from Sample TaskInput").SerializeToString(),
+                        type_url="type.googleapis.com/google.protobuf.StringValue",
+                    )
+                )],
+                next_task_names=["decide_which_llm_to_use"],
+                error_message=""
+            )
+        )
+    )
+
 
 def serialize_protobuf_message(message) -> bytes:
     """Helper function to serialize protobuf messages for testing."""
@@ -263,4 +291,4 @@ def serialize_protobuf_message(message) -> bytes:
 
 def deserialize_protobuf_message(data: bytes, message_type):
     """Helper function to deserialize protobuf messages for testing."""
-    return message_type.FromString(data) 
+    return message_type.FromString(data)

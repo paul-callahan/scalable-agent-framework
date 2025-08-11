@@ -2,7 +2,6 @@
 venv/
 env/
 .venv/
-.venv
 **/.venv
 
 # Python

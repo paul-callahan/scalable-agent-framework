@@ -52,9 +52,10 @@ class PlanInputConsumer:
             self.logger.warning("Consumer is already running")
             return
 
+        topics = await self.consumer.topics()
         self.logger.info(
             "Starting PlanInput consumer",
-            topic=self.consumer.topics(),
+            topic=topics,
             # group_id=self.consumer.group_id,
             plan_name=self.plan_name
         )

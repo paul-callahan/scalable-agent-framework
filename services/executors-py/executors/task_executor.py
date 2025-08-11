@@ -102,7 +102,23 @@ class TaskExecutor:
             "Executing task",
             task_name=task_input.task_name
         )
-        
+
+        # Create ExecutionHeader
+        header = ExecutionHeader(
+            name=task_input.task_name,
+            exec_id=str(uuid.uuid4()),
+            tenant_id=os.environ.get("TENANT_ID", ""),
+            created_at=datetime.now(UTC).isoformat(),
+            status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
+        )
+        # Extract parent plan name
+        # Extract parent plan execution ID
+        parent_plan_exec_id = ""
+        parent_plan_name = ""
+        if task_input.plan_execution and task_input.plan_execution.header:
+            parent_plan_exec_id = task_input.plan_execution.header.exec_id
+            parent_plan_name = task_input.plan_execution.header.name
+
         try:
             # Execute task with timeout
             task_result = await asyncio.wait_for(
@@ -119,26 +135,8 @@ class TaskExecutor:
             )
             
             # Create successful TaskExecution
-            
-            # Create ExecutionHeader
-            header = ExecutionHeader(
-                name=task_input.task_name,
-                exec_id=str(uuid.uuid4()),
-                tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.now(UTC).isoformat(),
-                status=ExecutionStatus.EXECUTION_STATUS_SUCCEEDED
-            )
-            
-            # Extract parent plan execution ID
-            parent_plan_exec_id = ""
-            if task_input.plan_execution and task_input.plan_execution.header:
-                parent_plan_exec_id = task_input.plan_execution.header.exec_id
-            
-            # Extract parent plan name
-            parent_plan_name = ""
-            if task_input.plan_execution and task_input.plan_execution.header:
-                parent_plan_name = task_input.plan_execution.header.name
-            
+
+
             return TaskExecution(
                 header=header,
                 parent_plan_exec_id=parent_plan_exec_id,
@@ -146,9 +144,12 @@ class TaskExecutor:
                 parent_plan_name=parent_plan_name
             )
             
-        except asyncio.TimeoutError:
+        except Exception as e:
             execution_time = time.time() - start_time
-            error_msg = f"Task execution timed out after {self.timeout} seconds"
+            if isinstance(e, asyncio.TimeoutError):
+                error_msg = f"Task execution timed out after {self.timeout} seconds"
+            else:
+                error_msg = f"Task execution failed: {str(e)}"
             
             self.logger.error(
                 "Task execution timed out",
@@ -160,21 +161,8 @@ class TaskExecutor:
             # Create timeout TaskExecution
             
             # Create ExecutionHeader
-            header = ExecutionHeader(
-                name=task_input.task_name,
-                exec_id=str(uuid.uuid4()),
-                tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.now(UTC).isoformat(),
-                status=ExecutionStatus.EXECUTION_STATUS_FAILED
-            )
-            
-            # Extract parent plan execution ID and name
-            parent_plan_exec_id = ""
-            parent_plan_name = ""
-            if task_input.plan_execution and task_input.plan_execution.header:
-                parent_plan_exec_id = task_input.plan_execution.header.exec_id
-                parent_plan_name = task_input.plan_execution.header.name
-            
+            header.status=ExecutionStatus.EXECUTION_STATUS_FAILED
+
             return TaskExecution(
                 header=header,
                 parent_plan_exec_id=parent_plan_exec_id,
@@ -183,44 +171,7 @@ class TaskExecutor:
                 ),
                 parent_plan_name=parent_plan_name
             )
-            
-        except Exception as e:
-            execution_time = time.time() - start_time
-            
-            self.logger.error(
-                "Task execution failed",
-                task_name=task_input.task_name,
-                error=str(e),
-                execution_time=execution_time,
-                exc_info=True
-            )
-            
-            # Create error TaskExecution
-            
-            # Create ExecutionHeader
-            header = ExecutionHeader(
-                name=task_input.task_name,
-                exec_id=str(uuid.uuid4()),
-                tenant_id=os.environ.get("TENANT_ID", ""),
-                created_at=datetime.now(UTC).isoformat(),
-                status=ExecutionStatus.EXECUTION_STATUS_FAILED
-            )
-            
-            # Extract parent plan execution ID and name
-            parent_plan_exec_id = ""
-            parent_plan_name = ""
-            if task_input.plan_execution and task_input.plan_execution.header:
-                parent_plan_exec_id = task_input.plan_execution.header.exec_id
-                parent_plan_name = task_input.plan_execution.header.name
-            
-            return TaskExecution(
-                header=header,
-                parent_plan_exec_id=parent_plan_exec_id,
-                result=TaskResult(
-                    error_message=str(e)
-                ),
-                parent_plan_name=parent_plan_name
-            )
+
     
     async def _execute_task_async(self, task_input: TaskInput) -> TaskResult:
         """Execute the task function asynchronously."""

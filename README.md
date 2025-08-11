@@ -19,30 +19,32 @@ The framework allows developers to compose and execute **directed cyclic graphs 
 
 ```mermaid
 graph TD
-    Start((Start)) --> DescApp[HumanTask: Describes App]
-    DescApp --> PlanNext{{Plan: GOTO Next}}
-    PlanNext --> LLMSummary[LLMTask: Summary/Proceed?]
-    LLMSummary --> PlanRefineAppDesc{{Plan: Accept/Elucidate}}
+   Start((Start)) --> TaskHITL[Task: Human In The Loop]
+   TaskHITL -- human input--> PlanRAG{{Plan: Call RAG}}
+   PlanRAG -- RAG query--> TaskCallRAG[Task: RAG Lookup]
+   TaskCallRAG -- RAG Output--> TaskLLMSubmit[Task: Submit <br>to LLM]
+   TaskLLMSubmit -- LLM Results --> PlanRefine{{Plan: Elucidate/<br> Do Execute}}
 
-    PlanRefineAppDesc -- clarification--> DescApp
+   PlanRefine -- clarification--> TaskHITL
 
-    PlanRefineAppDesc --> CodeLLM1[LLMTask: Gen Code 1]
-    PlanRefineAppDesc --> CodeLLM2[LLMTask: Gen Code ...N]
+   PlanRefine -- LLM Results --> CodeLLM1[Task: Tool <br> Call 1...]
+   PlanRefine -- LLM Results --> CodeLLM2[Task: Tool <br> Call ...n]
 
-    CodeLLM1 --> PostGenPlan1{{Plan: GOTO Next}}
-    CodeLLM2 --> PostGenPlan2{{Plan: GOTO Next}}
+   CodeLLM1 -- Tool 1 Results--> PostGenPlan1{{Plan: LLM}}
+   CodeLLM2 -- Tool n Results--> PostGenPlan2{{Plan: LLM}}
 
-    PostGenPlan1 --> CheckCodeLLM1[LLMTask: Validate Code]
-    PostGenPlan2 --> CheckCodeLLM2[LLMTask: Validate Code]
+   PostGenPlan1 -- plan results--> CheckCodeLLM1[Task: LLM <br>Validate]
+   PostGenPlan2 -- plan results --> CheckCodeLLM2[Task: LLM <br>Validate]
 
-    CheckCodeLLM1 --> PlanAccept1{{Plan: Pass/Fail}}
-    CheckCodeLLM2 --> PlanAccept2{{Plan: Pass/Fail}}
+   CheckCodeLLM1 -- Validated Results --> PlanAccept1{{Plan: Pass/Fail}}
+   CheckCodeLLM2 -- Validated Results --> PlanAccept2{{Plan: Pass/Fail}}
 
-    PlanAccept1 -- pass --> HumanAcceptReject1[HumanTask: Accept/Reject]
-    PlanAccept1 -- observe/refine --> CodeLLM1
+   PlanAccept1 -- pass --> HumanAcceptReject1[Task: Human In The Loop]
+   PlanAccept1 -- observe/refine --> CodeLLM1
 
-    PlanAccept2 -- pass --> HumanAcceptReject2[HumanTask: Accept/Reject]
-    PlanAccept2 -- observe/refine --> CodeLLM2
+   PlanAccept2 -- pass --> HumanAcceptReject1
+   HumanAcceptReject1 -- accept --> End((End))
+   HumanAcceptReject1 -- reject --> PlanRefine
 ```
 
 This Coding Agent example Agent Graph illustrates **plan → act → observe** loops:
