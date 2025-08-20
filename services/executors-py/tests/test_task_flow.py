@@ -4,6 +4,7 @@ Tests for task execution flow using Mockafka decorators.
 
 import pytest
 from mockafka import produce, consume, bulk_produce
+from unittest.mock import patch
 
 from executors.task_kafka_consumer import TaskInputConsumer
 from executors.task_kafka_producer import TaskExecutionProducer
@@ -11,6 +12,7 @@ from executors.task_executor import TaskExecutor
 from agentic_common.pb import ExecutionStatus, __all__
 from agentic_common.pb import PlanInput, PlanExecution, ExecutionHeader, PlanResult, TaskResult, TaskInput
 from google.protobuf import any_pb2, wrappers_pb2
+from tests.mock_utils import prepare_aio_kafka_consumer, prepare_aio_kafka_producer
 
 
 class TestTaskExecutor:
@@ -136,33 +138,34 @@ class TestTaskKafkaProducer:
     @pytest.mark.asyncio
     async def test_producer_start_stop(self, test_config):
         """Test producer start and stop."""
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        
-        await producer.start()
-        assert producer.is_healthy()
-        
-        await producer.stop()
-        assert not producer.is_healthy()
+        with patch('aiokafka.AIOKafkaProducer', autospec=True) as MockKafkaProducer:
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockKafkaProducer)
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+            assert producer.is_healthy()
+            await producer.stop()
+            assert not producer.is_healthy()
     
     @pytest.mark.asyncio
     async def test_publish_task_execution(self, test_config, sample_task_execution):
         """Test publishing TaskExecution message."""
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        
-        await producer.start()
-        
-        # Publish message
-        await producer.publish_task_execution(sample_task_execution)
-        
-        await producer.stop()
+        with patch('aiokafka.AIOKafkaProducer', autospec=True) as MockKafkaProducer:
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockKafkaProducer)
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+            # Publish message
+            await producer.publish_task_execution(sample_task_execution)
+            await producer.stop()
 
 
 class TestTaskKafkaConsumer:
@@ -171,71 +174,81 @@ class TestTaskKafkaConsumer:
     @pytest.mark.asyncio
     async def test_consumer_start_stop(self, temp_task_file, test_config):
         """Test consumer start and stop."""
-        executor = TaskExecutor(
-            task_path=temp_task_file,
-            task_name=test_config["task_name"],
-            timeout=test_config["task_timeout"]
-        )
-        await executor.load_task()
-        
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        await producer.start()
-        
-        consumer = TaskInputConsumer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            group_id=test_config["group_id"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"],
-            task_executor=executor,
-            producer=producer
-        )
-        
-        await consumer.start()
-        assert consumer.is_healthy()
-        
-        await consumer.stop()
-        assert not consumer.is_healthy()
-        
-        await producer.stop()
-        await executor.cleanup()
+        with (patch("aiokafka.AIOKafkaConsumer", autospec=True) as MockConsumer,
+              patch("aiokafka.AIOKafkaProducer", autospec=True) as MockProducer):
+            mock_aiokafka_consumer = await prepare_aio_kafka_consumer(MockConsumer)
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockProducer)
+
+            executor = TaskExecutor(
+                task_path=temp_task_file,
+                task_name=test_config["task_name"],
+                timeout=test_config["task_timeout"]
+            )
+            await executor.load_task()
+
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+
+            consumer = TaskInputConsumer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                group_id=test_config["group_id"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                task_executor=executor,
+                producer=producer,
+                consumer=mock_aiokafka_consumer,
+            )
+            await consumer.start()
+            assert consumer.is_healthy()
+            await consumer.stop()
+            assert not consumer.is_healthy()
+            await producer.stop()
+            await executor.cleanup()
     
     @pytest.mark.asyncio
     async def test_consumer_message_filtering(self, temp_task_file, test_config, sample_task_input):
         """Test consumer message filtering by task_name key."""
-        executor = TaskExecutor(
-            task_path=temp_task_file,
-            task_name=test_config["task_name"],
-            timeout=test_config["task_timeout"]
-        )
-        await executor.load_task()
-        
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        await producer.start()
-        
-        consumer = TaskInputConsumer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            group_id=test_config["group_id"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"],
-            task_executor=executor,
-            producer=producer
-        )
-        await consumer.start()
-        
-        # Test that messages with wrong key are filtered out
-        # This is tested by the consumer not processing them
+        with (patch("aiokafka.AIOKafkaConsumer", autospec=True) as MockConsumer,
+              patch("aiokafka.AIOKafkaProducer", autospec=True) as MockProducer):
+            mock_aiokafka_consumer = await prepare_aio_kafka_consumer(MockConsumer)
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockProducer)
 
-        await consumer.stop()
-        await producer.stop()
-        await executor.cleanup()
+            executor = TaskExecutor(
+                task_path=temp_task_file,
+                task_name=test_config["task_name"],
+                timeout=test_config["task_timeout"]
+            )
+            await executor.load_task()
+
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+
+            consumer = TaskInputConsumer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                group_id=test_config["group_id"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                task_executor=executor,
+                producer=producer,
+                consumer=mock_aiokafka_consumer,
+            )
+            await consumer.start()
+
+            # Test that messages with wrong key are filtered out (by not processing them)
+
+            await consumer.stop()
+            await producer.stop()
+            await executor.cleanup()
 
 
 class TestTaskFlowIntegration:
@@ -252,31 +265,38 @@ class TestTaskFlowIntegration:
         )
         await executor.load_task()
         
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        await producer.start()
-        
-        consumer = TaskInputConsumer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            group_id=test_config["group_id"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"],
-            task_executor=executor,
-            producer=producer
-        )
-        await consumer.start()
+        with (patch("aiokafka.AIOKafkaConsumer", autospec=True) as MockConsumer,
+              patch("aiokafka.AIOKafkaProducer", autospec=True) as MockProducer):
+            mock_aiokafka_consumer = await prepare_aio_kafka_consumer(MockConsumer)
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockProducer)
+
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+            
+            consumer = TaskInputConsumer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                group_id=test_config["group_id"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                task_executor=executor,
+                producer=producer,
+                consumer=mock_aiokafka_consumer,
+            )
+            await consumer.start()
         
         # Simulate message processing
         # In a real test, we would publish to Kafka and verify consumption
         # For now, we test the components work together
         
         # Cleanup
-        await consumer.stop()
-        await producer.stop()
-        await executor.cleanup()
+            await consumer.stop()
+            await producer.stop()
+            await executor.cleanup()
     
     @pytest.mark.asyncio
     async def test_task_flow_error_handling(self, temp_task_file, test_config, sample_task_input):
@@ -297,22 +317,29 @@ def task(task_input):
         )
         await executor.load_task()
         
-        producer = TaskExecutionProducer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"]
-        )
-        await producer.start()
-        
-        consumer = TaskInputConsumer(
-            bootstrap_servers=test_config["bootstrap_servers"],
-            group_id=test_config["group_id"],
-            tenant_id=test_config["tenant_id"],
-            task_name=test_config["task_name"],
-            task_executor=executor,
-            producer=producer
-        )
-        await consumer.start()
+        with (patch("aiokafka.AIOKafkaConsumer", autospec=True) as MockConsumer,
+              patch("aiokafka.AIOKafkaProducer", autospec=True) as MockProducer):
+            mock_aiokafka_consumer = await prepare_aio_kafka_consumer(MockConsumer)
+            mock_aiokafka_producer = await prepare_aio_kafka_producer(MockProducer)
+
+            producer = TaskExecutionProducer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                producer=mock_aiokafka_producer,
+            )
+            await producer.start()
+            
+            consumer = TaskInputConsumer(
+                bootstrap_servers=test_config["bootstrap_servers"],
+                group_id=test_config["group_id"],
+                tenant_id=test_config["tenant_id"],
+                task_name=test_config["task_name"],
+                task_executor=executor,
+                producer=producer,
+                consumer=mock_aiokafka_consumer,
+            )
+            await consumer.start()
         
         # Test error handling
         result = await executor.execute_task(sample_task_input)

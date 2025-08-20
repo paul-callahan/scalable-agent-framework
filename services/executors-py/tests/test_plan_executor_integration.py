@@ -21,7 +21,7 @@ from agentic_common.pb import (
     PlanExecution,
     PlanResult,
 )
-from executors.service import ExecutorService
+from executors.service import ExecutorService, ExecutorMode
 from tests.conftest import sample_plan_input_full
 
 
@@ -58,11 +58,12 @@ async def start_executor_service(
 
     service = ExecutorService(
         tenant_id=tenant_id,
-        plan_name=plan_name,
-        plan_path=plan_path,
+        mode=ExecutorMode.PLAN,
+        executor_name=plan_name,
+        executor_path=plan_path,
+        executor_timeout=15,
         kafka_bootstrap_servers=bootstrap_servers,
         kafka_group_id=f"it-{tenant_id}",
-        plan_timeout=15,
     )
 
     try:

@@ -25,7 +25,7 @@ from agentic_common.kafka_utils import (
     get_task_inputs_topic,
     get_task_execution_topic,
 )
-from executors.service import ExecutorService
+from executors.service import ExecutorService, ExecutorMode
 from tests.conftest import sample_task_input_full
 
 
@@ -62,11 +62,12 @@ async def start_task_executor_service(
 
     service = ExecutorService(
         tenant_id=tenant_id,
-        task_name=task_name,
-        task_path=task_path,
+        mode=ExecutorMode.TASK,
+        executor_name=task_name,
+        executor_path=task_path,
+        executor_timeout=15,
         kafka_bootstrap_servers=bootstrap_servers,
         kafka_group_id=f"it-{tenant_id}",
-        task_timeout=15,
     )
 
     try:
