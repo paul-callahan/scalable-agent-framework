@@ -67,8 +67,10 @@ def test_config():
 @pytest.fixture
 def temp_plan_file() -> Generator[str, None, None]:
     """Create a temporary plan.py file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-        f.write("""
+    temp_dir_obj = tempfile.TemporaryDirectory(prefix="llm_to_use_")
+    temp_dir = temp_dir_obj.name
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True, dir=temp_dir)
+    f.write("""
 from agentic_common.pb import PlanInput, PlanResult
 
 def plan(plan_input):
@@ -79,15 +81,15 @@ def plan(plan_input):
         error_message=""
     )
 """)
-        temp_file = f.name
+    f.flush()
 
-    yield temp_file
-
-    # Cleanup
     try:
-        os.unlink(temp_file)
-    except OSError:
-        pass
+        yield f.name
+    finally:
+        try:
+            f.close()  # auto-deletes because delete=True
+        finally:
+            temp_dir_obj.cleanup()
 
 
 @pytest.fixture
