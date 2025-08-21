@@ -1,0 +1,239 @@
+/* Graph Bundle Upload Specific Styles */
+
+/* File Upload Styling */
+.form-group input[type="file"] {
+    padding: 8px;
+    border: 2px dashed #e1e8ed;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-group input[type="file"]:hover {
+    border-color: #667eea;
+    background-color: #f0f2ff;
+}
+
+.form-group input[type="file"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-help {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Upload Progress */
+.upload-progress {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e1e8ed;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.progress-text {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Requirements Section */
+.requirements-list h3 {
+    color: #2c3e50;
+    margin: 20px 0 10px 0;
+    font-size: 1.2em;
+}
+
+.code-block {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+.validation-rules {
+    list-style-type: none;
+    padding: 0;
+}
+
+.validation-rules li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f4;
+    position: relative;
+    padding-left: 25px;
+}
+
+.validation-rules li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.validation-rules li:last-child {
+    border-bottom: none;
+}
+
+.validation-rules code {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    color: #e83e8c;
+}
+
+/* Status Indicators for Upload Table */
+.status.uploaded {
+    background-color: #cce5ff;
+    color: #0056b3;
+}
+
+.status.extracting {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status.parsing {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.persisting {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status.building-images {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Action Buttons in Table */
+.action-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+}
+
+.action-btn.view-status {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.action-btn.view-status:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+}
+
+/* File Validation Feedback */
+.file-validation {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    display: none;
+}
+
+.file-validation.valid {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.file-validation.invalid {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Loading State for Upload Button */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading:after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #ffffff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .code-block {
+        font-size: 11px;
+        padding: 10px;
+    }
+    
+    .validation-rules li {
+        padding-left: 20px;
+        font-size: 14px;
+    }
+    
+    .action-btn {
+        padding: 3px 6px;
+        font-size: 11px;
+        margin-bottom: 3px;
+    }
+}

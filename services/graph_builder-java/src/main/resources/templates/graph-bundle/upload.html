@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Graph Bundle Upload</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/graph-bundle.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 th:text="${pageTitle}">Graph Bundle Upload</h1>
+            <p>Upload compressed agent graph bundles for processing</p>
+        </header>
+
+        <!-- Messages -->
+        <div id="success-message" class="message success" style="display: none;"></div>
+        <div id="error-message" class="message error" style="display: none;"></div>
+
+        <!-- Upload Form Section -->
+        <div class="form-section">
+            <h2>Upload Graph Bundle</h2>
+            <form id="upload-form" class="admin-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="tenantId">Tenant ID *</label>
+                    <input type="text" id="tenantId" name="tenantId" required 
+                           placeholder="Enter tenant identifier">
+                    <small class="form-help">The tenant ID that will own this graph bundle</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="file">Graph Bundle File *</label>
+                    <input type="file" id="file" name="file" required 
+                           accept=".tar,.tar.gz,.zip"
+                           th:attr="data-max-size=${maxFileSize}">
+                    <small class="form-help">
+                        Supported formats: <span th:text="${allowedExtensions}">.tar, .tar.gz, .zip</span> 
+                        (Max size: <span th:text="${maxFileSize}">100MB</span>)
+                    </small>
+                </div>
+
+                <div class="upload-progress" id="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">Uploading...</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="upload-btn">
+                    Upload Bundle
+                </button>
+            </form>
+        </div>
+
+        <!-- File Validation Info -->
+        <div class="form-section">
+            <h2>Bundle Requirements</h2>
+            <div class="requirements-list">
+                <h3>Expected Bundle Structure:</h3>
+                <pre class="code-block">
+bundle.tar.gz/
+├── agent_graph.dot          (required)
+├── plans/
+│   ├── plan1/
+│   │   ├── plan.py         (required)
+│   │   └── requirements.txt (optional)
+│   └── plan2/
+│       ├── plan.py         (required)
+│       └── requirements.txt (optional)
+└── tasks/
+    ├── task1/
+    │   ├── task.py         (required)
+    │   └── requirements.txt (optional)
+    └── task2/
+        ├── task.py         (required)
+        └── requirements.txt (optional)
+                </pre>
+                
+                <h3>Validation Rules:</h3>
+                <ul class="validation-rules">
+                    <li>Bundle must contain an <code>agent_graph.dot</code> file in the root</li>
+                    <li>Each plan directory must contain a <code>plan.py</code> file</li>
+                    <li>Each task directory must contain a <code>task.py</code> file</li>
+                    <li>Requirements.txt files are optional but will be used if present</li>
+                    <li>File size must not exceed <span th:text="${maxFileSize}">100MB</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Recent Uploads Section -->
+        <div class="table-section">
+            <h2>Recent Uploads</h2>
+            <div class="table-container">
+                <table class="admin-table" id="uploads-table">
+                    <thead>
+                        <tr>
+                            <th>Process ID</th>
+                            <th>Tenant ID</th>
+                            <th>File Name</th>
+                            <th>Status</th>
+                            <th>Upload Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/graph-bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+spring:
+  application:
+    name: graph-builder
+  
+  # Multipart file upload configuration with size limits (Requirement 1.2)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
+  
+  # Async processing thread pool settings (Requirement 7.5)
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 60s
+      thread-name-prefix: graph-bundle-async-
+  
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/agentic}
+    username: ${SPRING_DATASOURCE_USERNAME:agentic}
+    password: ${SPRING_DATASOURCE_PASSWORD:agentic}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    defer-datasource-initialization: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+  
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML
+
+# Graph bundle processing configuration
+graph-bundle:
+  # Temporary directory and cleanup settings (Requirement 1.2, 7.5)
+  temp-directory: ${GRAPH_BUNDLE_TEMP_DIR:${java.io.tmpdir}/graph-bundles}
+  cleanup:
+    temp-files-retention-hours: 24
+    failed-uploads-retention-days: 7
+    completed-uploads-retention-days: 30
+  
+  # File upload validation settings
+  upload:
+    max-file-size: 100MB
+    allowed-extensions: 
+      - .tar
+      - .tar.gz
+      - .tgz
+      - .zip
+    max-concurrent-uploads: 10
+  
+  # Docker client configuration properties (Requirement 1.2, 7.5)
+  docker:
+    host: ${DOCKER_HOST:unix:///var/run/docker.sock}
+    tls-verify: ${DOCKER_TLS_VERIFY:false}
+    cert-path: ${DOCKER_CERT_PATH:}
+    api-version: ${DOCKER_API_VERSION:1.41}
+    registry-url: ${DOCKER_REGISTRY_URL:}
+    connection-timeout: 30s
+    read-timeout: 60s
+    
+    # Docker build timeout and concurrent build limits (Requirement 5.8)
+    build:
+      timeout: 300s
+      max-concurrent-builds: 5
+      retry-attempts: 3
+      retry-delay: 5s
+    
+    # Base image reference for executors-py (Requirement 5.8)
+    base-image: ${DOCKER_BASE_IMAGE:services/executors-py:latest}
+    
+    # Image naming and tagging configuration
+    image:
+      registry: ${DOCKER_IMAGE_REGISTRY:localhost:5000}
+      namespace: ${DOCKER_IMAGE_NAMESPACE:agentic}
+      tag-prefix: ${DOCKER_IMAGE_TAG_PREFIX:}
+  
+  # Processing status retention and cleanup settings (Requirement 7.5)
+  processing:
+    status:
+      retention-days: 30
+      cleanup-interval: 24h
+      max-processing-time: 1800s # 30 minutes
+    
+    # Processing queue and concurrency settings
+    queue:
+      max-size: 1000
+      processing-timeout: 1800s
+      max-concurrent-processing: 10
+    
+    # Step tracking configuration
+    steps:
+      track-detailed-progress: true
+      log-step-duration: true
+      enable-step-rollback: true
+
+logging:
+  level:
+    com.pcallahan.agentic: DEBUG
+    org.springframework.web.multipart: DEBUG
+    org.springframework.scheduling: DEBUG
+    com.github.dockerjava: INFO
+    org.flywaydb.core: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,async
+  endpoint:
+    health:
+      show-details: always
+
+server:
+  port: 8081

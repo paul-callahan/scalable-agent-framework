@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/agentic
+    username: agentic
+    password: agentic
+
+graph-bundle:
+  # Docker-specific temporary directory
+  temp-directory: /tmp/graph-bundles
+  
+  docker:
+    # Docker daemon in container environment
+    host: unix:///var/run/docker.sock
+    
+    # Base image for executors in container environment
+    base-image: executors-py:latest
+    
+    # Registry configuration for container environment
+    image:
+      registry: registry:5000
+      namespace: agentic
+
+logging:
+  level:
+    com.pcallahan.agentic: INFO
+    root: INFO
+
+server:
+  port: 8081
