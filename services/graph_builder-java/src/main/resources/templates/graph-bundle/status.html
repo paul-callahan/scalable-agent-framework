@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Processing Status</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/graph-bundle.css">
+    <link rel="stylesheet" href="/css/status-monitor.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 th:text="${pageTitle}">Processing Status</h1>
+            <p>Monitor the progress of your graph bundle uploads</p>
+        </header>
+
+        <!-- Messages -->
+        <div id="success-message" class="message success" style="display: none;"></div>
+        <div id="error-message" class="message error" style="display: none;"></div>
+
+        <!-- Process ID Input Section -->
+        <div class="form-section">
+            <h2>Monitor Specific Process</h2>
+            <form id="process-lookup-form" class="admin-form">
+                <div class="form-group">
+                    <label for="processIdInput">Process ID</label>
+                    <input type="text" id="processIdInput" name="processId" 
+                           th:value="${processId}" 
+                           placeholder="Enter process ID to monitor">
+                    <small class="form-help">Enter the process ID returned from your upload</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Monitor Process</button>
+            </form>
+        </div>
+
+        <!-- Status Display Section -->
+        <div id="status-section" class="form-section" style="display: none;">
+            <h2>Processing Status</h2>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+            </div>
+            <div id="status-content">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- All Processes Section -->
+        <div class="table-section">
+            <h2>All Recent Processes</h2>
+            <div class="controls-bar">
+                <button id="refresh-all-btn" class="btn btn-primary">Refresh All</button>
+                <label class="auto-refresh-control">
+                    <input type="checkbox" id="auto-refresh-checkbox"> Auto-refresh every 5 seconds
+                </label>
+            </div>
+            <div class="table-container">
+                <table class="admin-table" id="all-processes-table">
+                    <thead>
+                        <tr>
+                            <th>Process ID</th>
+                            <th>Tenant ID</th>
+                            <th>File Name</th>
+                            <th>Status</th>
+                            <th>Upload Time</th>
+                            <th>Completion Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Detail Modal -->
+    <div id="status-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Processing Details</h3>
+                <span class="close-modal" id="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/graph-bundle.js"></script>
+    <script src="/js/status-monitor.js"></script>
+</body>
+</html>

@@ -38,6 +38,7 @@
         <dropwizard-metrics.version>4.2.25</dropwizard-metrics.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
+        <docker-java.version>3.5.3</docker-java.version>
     </properties>
     
     <modules>
@@ -120,6 +121,19 @@
                         <groupId>org.testcontainers</groupId>
                         <artifactId>junit-jupiter</artifactId>
                         <version>1.19.7</version>
+                    </dependency>
+                    
+                    <!-- Docker Java Client -->
+                    <dependency>
+                        <groupId>com.github.docker-java</groupId>
+                        <artifactId>docker-java-core</artifactId>
+                        <version>${docker-java.version}</version>
+                    </dependency>
+                    
+                    <dependency>
+                        <groupId>com.github.docker-java</groupId>
+                        <artifactId>docker-java-transport-httpclient5</artifactId>
+                        <version>${docker-java.version}</version>
                     </dependency>
         </dependencies>
     </dependencyManagement>

@@ -75,12 +75,12 @@ public class PythonCodeBundleValidator {
                 String.format("Plan Python file not found: %s", planPyFile));
         }
         
+        // requirements.txt is optional for plans
         Path requirementsFile = planDir.resolve(REQUIREMENTS_FILE);
-        if (!Files.exists(requirementsFile)) {
-            throw GraphValidationException.invalidGraph(
-                GraphValidationException.ViolationType.MISSING_PYTHON_FILE,
-                planName,
-                String.format("Plan requirements file not found: %s", requirementsFile));
+        if (Files.exists(requirementsFile)) {
+            logger.debug("Found requirements.txt for plan: {}", planName);
+        } else {
+            logger.debug("No requirements.txt found for plan: {} (optional)", planName);
         }
     }
     
@@ -107,12 +107,12 @@ public class PythonCodeBundleValidator {
                 String.format("Task Python file not found: %s", taskPyFile));
         }
         
+        // requirements.txt is optional for tasks
         Path requirementsFile = taskDir.resolve(REQUIREMENTS_FILE);
-        if (!Files.exists(requirementsFile)) {
-            throw GraphValidationException.invalidGraph(
-                GraphValidationException.ViolationType.MISSING_PYTHON_FILE,
-                taskName,
-                String.format("Task requirements file not found: %s", requirementsFile));
+        if (Files.exists(requirementsFile)) {
+            logger.debug("Found requirements.txt for task: {}", taskName);
+        } else {
+            logger.debug("No requirements.txt found for task: {} (optional)", taskName);
         }
     }
 } 

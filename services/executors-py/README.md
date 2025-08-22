@@ -22,29 +22,25 @@ Configuration is single-mode: either plan parameters OR task parameters, not bot
 
 ## Configuration
 
-The service is configured via environment variables for either PlanExecutor OR TaskExecutor mode:
+The service is configured via environment variables. Unified vars are used for both modes.
 
-### PlanExecutor Mode
+### Common
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `TENANT_ID` | Yes | - | Tenant identifier for topic names |
-| `PLAN_NAME` | Yes | - | Plan name to filter messages |
-| `PLAN_PATH` | Yes | - | Path to the user-supplied plan.py file |
-| `PLAN_TIMEOUT` | No | 300 | Plan execution timeout in seconds |
+| `EXECUTOR_MODE` | Yes | - | `plan` or `task` |
+| `EXECUTOR_NAME` | Yes | - | Name used for filtering and keys |
+| `EXECUTOR_PATH` | Yes | - | Path to `plan.py` or `task.py` |
+| `EXECUTOR_TIMEOUT` | No | 300 | Execution timeout in seconds |
+| `AGENT_GRAPH_ID` | Yes | - | Graph identifier used to derive consumer group |
 | `KAFKA_BOOTSTRAP_SERVERS` | No | localhost:9092 | Kafka bootstrap servers |
-| `KAFKA_GROUP_ID` | No | executors-{tenantId} | Kafka consumer group ID |
 
-### TaskExecutor Mode
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `TENANT_ID` | Yes | - | Tenant identifier for topic names |
-| `TASK_NAME` | Yes | - | Task name to filter messages |
-| `TASK_PATH` | Yes | - | Path to the user-supplied task.py file |
-| `TASK_TIMEOUT` | No | 300 | Task execution timeout in seconds |
-| `KAFKA_BOOTSTRAP_SERVERS` | No | localhost:9092 | Kafka bootstrap servers |
-| `KAFKA_GROUP_ID` | No | executors-{tenantId} | Kafka consumer group ID |
+Group id derivation: `KAFKA_GROUP_ID = {AGENT_GRAPH_ID}-{EXECUTOR_NAME}` (no override).
 
-**Note**: The service must be configured for exactly one mode. Providing both plan and task parameters will result in a configuration error.
+### Mode selection
+Set `EXECUTOR_MODE=plan` for plan execution, or `EXECUTOR_MODE=task` for task execution.
+
+**Note**: Exactly one mode must be set; the service validates single-mode configuration.
 
 ## Kafka Topics
 
@@ -293,17 +289,23 @@ uv sync
 
 # Run as PlanExecutor
 export TENANT_ID=test-tenant
-export PLAN_NAME=test-plan
-export PLAN_PATH=/path/to/plan.py
-export PLAN_TIMEOUT=60
+export EXECUTOR_MODE=plan
+export EXECUTOR_NAME=test-plan
+export EXECUTOR_PATH=/path/to/plan.py
+export EXECUTOR_TIMEOUT=60
+export AGENT_GRAPH_ID=my-graph
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
 python main.py
 
 # Run as TaskExecutor
 export TENANT_ID=test-tenant
-export TASK_NAME=test-task
-export TASK_PATH=/path/to/task.py
-export TASK_TIMEOUT=60
+export EXECUTOR_MODE=task
+export EXECUTOR_NAME=test-task
+export EXECUTOR_PATH=/path/to/task.py
+export EXECUTOR_TIMEOUT=60
+export AGENT_GRAPH_ID=my-graph
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
 python main.py
 ```

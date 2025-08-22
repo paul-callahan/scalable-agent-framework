@@ -1,4 +1,4 @@
-/* Admin CSS for Tenant Management Interface */
+/* Common CSS for Agentic Framework Web Interfaces */
 
 * {
     margin: 0;
@@ -287,4 +287,4 @@ header h1 {
 .form-section,
 .table-section {
     animation: fadeIn 0.3s ease-out;
-} 
+}

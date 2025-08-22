@@ -89,27 +89,23 @@ class PythonCodeBundleValidatorTest {
     }
     
     @Test
-    void testValidateMissingPlanRequirements() throws Exception {
+    void testValidateWithoutPlanRequirements() throws Exception {
         // Given
         AgentGraph graph = createValidGraph();
         createFileStructureWithoutPlanRequirements();
         
-        // When & Then
-        assertThatThrownBy(() -> PythonCodeBundleValidator.validate(graph, specificationDirectory))
-            .isInstanceOf(GraphValidationException.class)
-            .hasMessageContaining("Plan requirements file not found");
+        // When & Then - should not throw exception since requirements.txt is optional
+        PythonCodeBundleValidator.validate(graph, specificationDirectory);
     }
     
     @Test
-    void testValidateMissingTaskRequirements() throws Exception {
+    void testValidateWithoutTaskRequirements() throws Exception {
         // Given
         AgentGraph graph = createValidGraph();
         createFileStructureWithoutTaskRequirements();
         
-        // When & Then
-        assertThatThrownBy(() -> PythonCodeBundleValidator.validate(graph, specificationDirectory))
-            .isInstanceOf(GraphValidationException.class)
-            .hasMessageContaining("Task requirements file not found");
+        // When & Then - should not throw exception since requirements.txt is optional
+        PythonCodeBundleValidator.validate(graph, specificationDirectory);
     }
     
     private AgentGraph createValidGraph() {

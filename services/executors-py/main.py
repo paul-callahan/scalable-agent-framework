@@ -11,7 +11,7 @@ from typing import Optional
 
 import structlog
 
-from executors.service import ExecutorService
+from executors.service import ExecutorService, ExecutorMode
 
 
 def setup_logging() -> None:
@@ -58,32 +58,44 @@ async def main() -> None:
     
     # Load configuration from environment variables
     tenant_id = get_required_env_var("TENANT_ID")
-    plan_name = get_required_env_var("PLAN_NAME")
-    plan_path = get_required_env_var("PLAN_PATH")
-    plan_timeout = int(get_optional_env_var("PLAN_TIMEOUT", "300"))  # 5 minutes default
+
+    # Unified executor variables used for both plan and task modes
+    executor_name = get_required_env_var("EXECUTOR_NAME")
+    executor_path = get_required_env_var("EXECUTOR_PATH")
+    executor_timeout = int(get_optional_env_var("EXECUTOR_TIMEOUT", "300"))  # 5 minutes default
     
     # Kafka configuration
     kafka_bootstrap_servers = get_optional_env_var("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-    kafka_group_id = get_optional_env_var("KAFKA_GROUP_ID", f"executors-{tenant_id}")
+    agent_graph_id = get_required_env_var("AGENT_GRAPH_ID")
+    # Group id is derived; no env override
+    kafka_group_id = f"{agent_graph_id}-{executor_name}"
     
+    # Runtime selection: EXECUTOR_MODE=plan|task
+    executor_mode_str = get_required_env_var("EXECUTOR_MODE").strip().lower()
+    if executor_mode_str not in ("plan", "task"):
+        print("Error: EXECUTOR_MODE must be 'plan' or 'task'", file=sys.stderr)
+        sys.exit(1)
+    exec_mode = ExecutorMode.PLAN if executor_mode_str == "plan" else ExecutorMode.TASK
+
     logger.info(
         "Configuration loaded",
+        mode=exec_mode,
         tenant_id=tenant_id,
-        plan_name=plan_name,
-        plan_path=plan_path,
-        plan_timeout=plan_timeout,
+        executor_name=executor_name,
+        executor_path=executor_path,
+        executor_timeout=executor_timeout,
         kafka_bootstrap_servers=kafka_bootstrap_servers,
-        kafka_group_id=kafka_group_id
+        kafka_group_id=kafka_group_id,
     )
 
-    # Create and start the service
     service = ExecutorService(
         tenant_id=tenant_id,
-        plan_name=plan_name,
-        plan_path=plan_path,
-        plan_timeout=plan_timeout,
+        mode=exec_mode,
+        executor_name=executor_name,
+        executor_path=executor_path,
+        executor_timeout=executor_timeout,
         kafka_bootstrap_servers=kafka_bootstrap_servers,
-        kafka_group_id=kafka_group_id
+        kafka_group_id=kafka_group_id,
     )
     
     try:

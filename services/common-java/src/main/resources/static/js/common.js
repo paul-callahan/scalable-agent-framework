@@ -1,7 +1,7 @@
-// Simple Admin JavaScript for Tenant Management
+// Common JavaScript for Agentic Framework Web Interfaces
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Admin JS loaded');
+    console.log('Common JS loaded');
     setupForms();
     refreshTenantsTable();
 });
@@ -273,4 +273,4 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-} 
+}

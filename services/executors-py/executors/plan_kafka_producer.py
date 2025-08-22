@@ -10,9 +10,10 @@ import aiokafka
 import structlog
 
 from agentic_common.pb import PlanExecution, PlanResult
+from .base_execution_producer import BaseExecutionProducer
 
 
-class PlanExecutionProducer:
+class PlanExecutionProducer(BaseExecutionProducer):
     """
     Kafka producer for PlanExecution messages.
     
@@ -29,89 +30,23 @@ class PlanExecutionProducer:
         tenant_id: str,
         plan_name: str,
     ):
-        self.producer = producer
-        self.tenant_id = tenant_id
-        self.plan_name = plan_name
-        
-        self.logger = structlog.get_logger(__name__)
-        
-        # Producer state
-        self._running = False
-        self.topic = f"plan-executions-{tenant_id}"
+        topic = f"plan-executions-{tenant_id}"
+        super().__init__(
+            producer=producer,
+            tenant_id=tenant_id,
+            executor_name=plan_name,
+            topic=topic,
+            label="PlanExecution",
+        )
     
     async def start(self) -> None:
-        """Start the Kafka producer."""
-        if self._running:
-            self.logger.warning("Producer is already running")
-            return
-        
-        self.logger.info(
-            "Starting PlanExecution producer",
-            topic=self.topic,
-            plan_name=self.plan_name
-        )
-        
-        try:
-            self._running = True
-            
-            self.logger.info("PlanExecution producer started successfully")
-            
-        except Exception as e:
-            self.logger.error("Failed to start PlanExecution producer", error=str(e), exc_info=True)
-            await self.stop()
-            raise
+        await super().start()
     
     async def stop(self) -> None:
-        """Stop the Kafka producer."""
-        if not self._running:
-            self.logger.warning("Producer is not running")
-            return
-        
-        self.logger.info("Stopping PlanExecution producer")
-        self._running = False
-        
-        if self.producer:
-            await self.producer.stop()
-            self.producer = None
-        
-        self.logger.info("PlanExecution producer stopped")
+        await super().stop()
     
     async def publish_plan_execution(self, plan_execution: PlanExecution) -> None:
-        """Publish a PlanExecution message to Kafka."""
-        if not self._running or not self.producer:
-            raise RuntimeError("Producer is not running")
-        
-        try:
-            self.logger.info(
-                "Publishing PlanExecution",
-                plan_name=plan_execution.header.name,
-                tenant_id=plan_execution.header.tenant_id,
-                error_message=plan_execution.result.error_message if plan_execution.result else ""
-            )
-            
-            # Send message
-            future = await self.producer.send_and_wait(
-                topic=self.topic,
-                key=self.plan_name,
-                value=plan_execution
-            )
-            
-            self.logger.info(
-                "Successfully published PlanExecution",
-                plan_name=plan_execution.header.name,
-                topic=self.topic,
-                partition=future.partition,
-                offset=future.offset
-            )
-            
-        except Exception as e:
-            self.logger.error(
-                "Failed to publish PlanExecution",
-                error=str(e),
-                plan_name=plan_execution.header.name,
-                exc_info=True
-            )
-            raise
+        await self.publish_execution(plan_execution)
     
 
     
