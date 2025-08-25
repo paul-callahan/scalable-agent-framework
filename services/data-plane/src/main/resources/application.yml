@@ -1,6 +1,6 @@
 spring:
   application:
-    name: data_plane-java
+    name: data-plane
   
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
