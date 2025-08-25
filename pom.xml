@@ -43,7 +43,7 @@
     
     <modules>
         <module>services/common-java</module>
-        <module>services/data_plane-java</module>
+        <module>services/data-plane</module>
         <module>services/control_plane-java</module>
         <module>services/task_executor-java</module>
         <module>services/plan_executor-java</module>

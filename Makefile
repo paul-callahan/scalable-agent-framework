@@ -21,7 +21,7 @@ define create_venv
 	fi
 endef
 
-.PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test common-java-clean admin-java-clean common-java-build admin-java-build graph_composer-clean graph_composer-build graph-builder-clean graph-builder-build control_plane-java-clean control_plane-java-build data_plane-java-clean data_plane-java-build admin-docker-up admin-docker-logs graph-builder-docker-up graph-builder-docker-logs control-plane-docker-up control-plane-docker-logs data-plane-docker-up data-plane-docker-logs graph-composer-docker-up graph-composer-docker-logs frontend-build frontend-clean frontend-logs frontend-docker-up
+.PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test common-java-clean admin-java-clean common-java-build admin-java-build graph_composer-clean graph_composer-build graph-builder-clean graph-builder-build control_plane-java-clean control_plane-java-build data-plane-clean data-plane-build admin-docker-up admin-docker-logs graph-builder-docker-up graph-builder-docker-logs control-plane-docker-up control-plane-docker-logs data-plane-docker-up data-plane-docker-logs graph-composer-docker-up graph-composer-docker-logs frontend-build frontend-clean frontend-logs frontend-docker-up
 
 # Default target
 help:
@@ -71,8 +71,8 @@ help:
 	@echo "  graph-builder-build            - Build graph-builder module with Maven"
 	@echo "  control_plane-java-clean       - Clean control_plane-java module with Maven"
 	@echo "  control_plane-java-build       - Build control_plane-java module with Maven"
-	@echo "  data_plane-java-clean          - Clean data_plane-java module with Maven"
-	@echo "  data_plane-java-build          - Build data_plane-java module with Maven"
+	@echo "  data-plane-clean               - Clean data-plane module with Maven"
+	@echo "  data-plane-build               - Build data-plane module with Maven"
 	@echo ""
 	@echo "Java Service Deployment Pipelines:"
 	@echo "  admin-docker-up         - Complete pipeline: clean, build, and deploy admin service"
@@ -362,14 +362,14 @@ control_plane-java-build:
 	@echo "Building control_plane-java with Maven..."
 	@cd services/control_plane-java && mvn package -DskipTests
 
-# Individual Maven targets for data_plane-java
-data_plane-java-clean:
-	@echo "Cleaning data_plane-java with Maven..."
-	@cd services/data_plane-java && mvn clean
+# Individual Maven targets for data-plane
+data-plane-clean:
+	@echo "Cleaning data-plane with Maven..."
+	@cd services/data-plane && mvn clean
 
-data_plane-java-build:
-	@echo "Building data_plane-java with Maven..."
-	@cd services/data_plane-java && mvn package -DskipTests
+data-plane-build:
+	@echo "Building data-plane with Maven..."
+	@cd services/data-plane && mvn package -DskipTests
 
 # Complete admin-java clean, build, and deploy pipeline
 admin-docker-up: common-java-clean admin-java-clean common-java-build admin-java-build
@@ -422,22 +422,22 @@ control-plane-docker-logs:
 	@echo "Viewing control_plane-java service logs..."
 	@docker-compose logs -f control_plane-java
 
-# Complete data_plane-java clean, build, and deploy pipeline
-data-plane-docker-up: common-java-clean data_plane-java-clean common-java-build data_plane-java-build
-	@echo "Stopping data_plane-java service with docker-compose..."
-	@docker-compose stop data_plane-java || true
-	@echo "Removing data_plane-java service image..."
-	@docker rmi scalable-agent-framework_data_plane-java || true
-	@docker rmi data_plane-java || true
-	@echo "Building data_plane-java service with docker-compose..."
-	@docker-compose build --no-cache data_plane-java
-	@echo "Starting data_plane-java service with docker-compose..."
-	@docker-compose up -d data_plane-java
-	@echo "Data_plane-java clean, build, and deploy pipeline completed successfully!"
+# Complete data-plane clean, build, and deploy pipeline
+data-plane-docker-up: common-java-clean data-plane-clean common-java-build data-plane-build
+	@echo "Stopping data-plane service with docker-compose..."
+	@docker-compose stop data-plane || true
+	@echo "Removing data-plane service image..."
+	@docker rmi scalable-agent-framework_data-plane || true
+	@docker rmi data-plane || true
+	@echo "Building data-plane service with docker-compose..."
+	@docker-compose build --no-cache data-plane
+	@echo "Starting data-plane service with docker-compose..."
+	@docker-compose up -d data-plane
+	@echo "Data-plane clean, build, and deploy pipeline completed successfully!"
 
 data-plane-docker-logs:
-	@echo "Viewing data_plane-java service logs..."
-	@docker-compose logs -f data_plane-java
+	@echo "Viewing data-plane service logs..."
+	@docker-compose logs -f data-plane
 
 # Complete graph_composer clean, build, and deploy pipeline
 graph-composer-docker-up: common-java-clean graph_composer-clean common-java-build graph_composer-build

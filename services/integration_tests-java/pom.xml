@@ -35,7 +35,7 @@
         <!-- Data Plane module -->
         <dependency>
             <groupId>com.pcallahan.agentic</groupId>
-            <artifactId>data_plane-java</artifactId>
+            <artifactId>data-plane</artifactId>
             <version>1.0.0</version>
         </dependency>
         

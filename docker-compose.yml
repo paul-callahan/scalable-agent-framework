@@ -56,11 +56,11 @@ services:
       retries: 5
 
   # Data Plane Java Service
-  data_plane-java:
+  data-plane:
     build:
       context: .
-      dockerfile: services/data_plane-java/Dockerfile
-    container_name: data_plane-java
+      dockerfile: services/data-plane/Dockerfile
+    container_name: data-plane
     depends_on:
       kafka:
         condition: service_healthy
