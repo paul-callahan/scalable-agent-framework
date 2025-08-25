@@ -153,11 +153,11 @@ services:
       start_period: 60s
 
   # Graph Builder Java Service
-  graph_builder-java:
+  graph-builder:
     build:
-      context: ./services/graph_builder-java
+      context: ./services/graph-builder
       dockerfile: Dockerfile
-    container_name: graph_builder-java
+    container_name: graph-builder
     depends_on:
       kafka:
         condition: service_healthy

@@ -10,7 +10,7 @@ RUN groupadd -g 1001 appgroup && \
 WORKDIR /app
 
 # Copy the pre-built JAR from host (built outside Docker)
-COPY target/graph_builder-java-*.jar app.jar
+COPY target/graph-builder-*.jar app.jar
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app

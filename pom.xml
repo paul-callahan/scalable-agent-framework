@@ -47,7 +47,7 @@
         <module>services/control_plane-java</module>
         <module>services/task_executor-java</module>
         <module>services/plan_executor-java</module>
-        <module>services/graph_builder-java</module>
+        <module>services/graph-builder</module>
         <module>services/graph_composer</module>
         <module>services/integration_tests-java</module>
         <module>services/admin-java</module>
