@@ -165,7 +165,7 @@ public class GraphVizDotParser implements GraphParser {
                     String.format("Task %s has no upstream plan", metadata.name()));
             }
             
-            Task task = new Task(metadata.name(), metadata.label(), metadata.taskSource(), upstreamPlan);
+            Task task = new Task(metadata.name(), metadata.label(), metadata.taskSource(), upstreamPlan, java.util.List.of());
             tasks.put(task.name(), task);
             logger.debug("Created task: {} with upstream plan: {}", task.name(), upstreamPlan);
         }
@@ -252,7 +252,7 @@ public class GraphVizDotParser implements GraphParser {
         // Construct the plan directory path
         Path planDir = specificationDirectory.resolve(PLANS_DIR).resolve(planName);
         
-        return new Plan(planName, label, planDir, new HashSet<>());
+        return new Plan(planName, label, planDir, new java.util.HashSet<>(), java.util.List.of());
     }
     
     private TaskMetadata createTaskMetadata(String taskName, MutableNode node, Path specificationDirectory) throws GraphValidationException {

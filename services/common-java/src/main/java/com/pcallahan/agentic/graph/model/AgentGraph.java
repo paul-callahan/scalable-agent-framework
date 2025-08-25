@@ -1,6 +1,5 @@
 package com.pcallahan.agentic.graph.model;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +25,7 @@ import java.util.Set;
  * @param taskToPlan Map of task names to their upstream plan name
  */
 public record AgentGraph(
+    String tenantId,
     String name,
     Map<String, Plan> plans,
     Map<String, Task> tasks,
@@ -66,6 +66,20 @@ public record AgentGraph(
         planToTasks = Map.copyOf(planToTasks);
         taskToPlan = Map.copyOf(taskToPlan);
     }
+
+    /**
+     * Backward-compatible constructor without tenantId. Delegates to canonical constructor
+     * with {@code tenantId} set to {@code null}.
+     */
+    public AgentGraph(
+        String name,
+        Map<String, Plan> plans,
+        Map<String, Task> tasks,
+        Map<String, Set<String>> planToTasks,
+        Map<String, String> taskToPlan
+    ) {
+        this(null, name, plans, tasks, planToTasks, taskToPlan);
+    }
     
     /**
      * Creates a new AgentGraph with the specified components.
@@ -86,6 +100,20 @@ public record AgentGraph(
     ) {
         return new AgentGraph(name, plans, tasks, planToTasks, taskToPlan);
     }
+
+    /**
+     * Creates a new AgentGraph including tenantId.
+     */
+    public static AgentGraph of(
+        String tenantId,
+        String name,
+        Map<String, Plan> plans,
+        Map<String, Task> tasks,
+        Map<String, Set<String>> planToTasks,
+        Map<String, String> taskToPlan
+    ) {
+        return new AgentGraph(tenantId, name, plans, tasks, planToTasks, taskToPlan);
+    }
     
     /**
      * Creates an empty AgentGraph with the specified name.
@@ -95,6 +123,13 @@ public record AgentGraph(
      */
     public static AgentGraph empty(String name) {
         return new AgentGraph(name, Map.of(), Map.of(), Map.of(), Map.of());
+    }
+
+    /**
+     * Creates an empty AgentGraph with the specified tenantId and name.
+     */
+    public static AgentGraph empty(String tenantId, String name) {
+        return new AgentGraph(tenantId, name, Map.of(), Map.of(), Map.of(), Map.of());
     }
     
     /**

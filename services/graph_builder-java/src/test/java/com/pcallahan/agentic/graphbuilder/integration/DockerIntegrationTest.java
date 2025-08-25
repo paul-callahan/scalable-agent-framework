@@ -91,7 +91,7 @@ class DockerIntegrationTest {
             """;
         Files.write(taskDir.resolve("requirements.txt"), requirements.getBytes());
         
-        Task task = new Task("integration_task", "Integration Test Task", taskDir.resolve("task.py"), null);
+        Task task = new Task("integration_task", "Integration Test Task", taskDir.resolve("task.py"), null, java.util.List.of());
         
         // When
         String imageName = dockerImageService.buildTaskImage(tenantId, task, taskDir, processId);
@@ -135,7 +135,7 @@ class DockerIntegrationTest {
             """;
         Files.write(planDir.resolve("plan.py"), planContent.getBytes());
         
-        Plan plan = new Plan("integration_plan", "Integration Test Plan", planDir.resolve("plan.py"), Set.of());
+        Plan plan = new Plan("integration_plan", "Integration Test Plan", planDir.resolve("plan.py"), Set.of(), java.util.List.of());
         
         // When
         String imageName = dockerImageService.buildPlanImage(tenantId, plan, planDir, processId);
@@ -177,7 +177,7 @@ class DockerIntegrationTest {
             """;
         Files.write(taskDir.resolve("task.py"), invalidTaskContent.getBytes());
         
-        Task task = new Task("invalid_task", "Invalid Test Task", taskDir.resolve("task.py"), null);
+        Task task = new Task("invalid_task", "Invalid Test Task", taskDir.resolve("task.py"), null, java.util.List.of());
         
         // When & Then
         assertThatThrownBy(() -> dockerImageService.buildTaskImage(tenantId, task, taskDir, processId))
@@ -203,8 +203,8 @@ class DockerIntegrationTest {
         Files.createDirectories(planDir);
         Files.write(planDir.resolve("plan.py"), "print('Plan')".getBytes());
         
-        Task task = new Task("cleanup_task", "Cleanup Test Task", taskDir.resolve("task.py"), null);
-        Plan plan = new Plan("cleanup_plan", "Cleanup Test Plan", planDir.resolve("plan.py"), Set.of());
+        Task task = new Task("cleanup_task", "Cleanup Test Task", taskDir.resolve("task.py"), null, java.util.List.of());
+        Plan plan = new Plan("cleanup_plan", "Cleanup Test Plan", planDir.resolve("plan.py"), Set.of(), java.util.List.of());
         
         // Build images
         String taskImageName = dockerImageService.buildTaskImage(tenantId, task, taskDir, processId);
@@ -258,7 +258,7 @@ class DockerIntegrationTest {
         }
         Files.write(taskDir.resolve("requirements.txt"), requirements.toString().getBytes());
         
-        Task task = new Task("large_req_task", "Large Requirements Task", taskDir.resolve("task.py"), null);
+        Task task = new Task("large_req_task", "Large Requirements Task", taskDir.resolve("task.py"), null, java.util.List.of());
         
         // When
         String imageName = dockerImageService.buildTaskImage(tenantId, task, taskDir, processId);

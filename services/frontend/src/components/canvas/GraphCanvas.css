@@ -1,0 +1,62 @@
+.graph-canvas {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tool-button {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  background-color: #e9ecef;
+}
+
+.tool-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.canvas-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #fafafa;
+}
+
+.canvas-content canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.validation-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.validation-toolbar .validation-status-bar {
+  min-width: 200px;
+}

@@ -180,6 +180,29 @@ services:
       retries: 3
       start_period: 60s
 
+  # Graph Composer Java Service
+  graph-composer:
+    build:
+      context: ./services/graph_composer
+      dockerfile: Dockerfile
+    container_name: graph-composer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agentic
+      SPRING_DATASOURCE_USERNAME: agentic
+      SPRING_DATASOURCE_PASSWORD: agentic
+    ports:
+      - "8088:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Admin Java Service
   admin:
     build:
@@ -235,6 +258,34 @@ services:
       - "8085:80"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+
+  # Graph Composer Frontend (React + Vite Development Server)
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount entire frontend directory for live editing
+      - ./services/frontend:/app
+      # Exclude node_modules to avoid conflicts with container's version
+      - /app/node_modules
+    environment:
+      # Vite configuration for development
+      - VITE_API_BASE_URL=http://graph-composer:8080
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - graph-composer
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres-data:

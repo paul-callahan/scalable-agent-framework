@@ -1,7 +1,9 @@
 package com.pcallahan.agentic.graph.model;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -25,8 +27,9 @@ import java.util.Set;
  * @param label The human-readable label for this plan
  * @param planSource Path to the Python subproject directory containing the plan implementation
  * @param upstreamTaskIds Set of task IDs that feed into this plan
+ * @param files List of ExecutorFile objects containing the plan implementation files
  */
-public record Plan(String name, String label, Path planSource, Set<String> upstreamTaskIds) {
+public record Plan(String name, String label, Path planSource, Set<String> upstreamTaskIds, List<ExecutorFile> files) {
     
     /**
      * Compact constructor with validation.
@@ -34,6 +37,7 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
      * @param name The plan name
      * @param planSource The plan source directory
      * @param upstreamTaskIds The upstream task IDs
+     * @param files The list of ExecutorFile objects
      * @throws IllegalArgumentException if validation fails
      */
     public Plan {
@@ -46,6 +50,11 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
         if (upstreamTaskIds == null) {
             upstreamTaskIds = new HashSet<>();
         }
+        if (files == null) {
+            files = new ArrayList<>();
+        } else {
+            files = List.copyOf(files);
+        }
     }
     
     /**
@@ -53,10 +62,10 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
      * 
      * @param name The plan name
      * @param planSource The plan source directory
-     * @return A new Plan with no upstream tasks
+     * @return A new Plan with no upstream tasks and no files
      */
     public static Plan of(String name, Path planSource) {
-        return new Plan(name, name, planSource, new HashSet<>());
+        return new Plan(name, name, planSource, new HashSet<>(), new ArrayList<>());
     }
     
     /**
@@ -65,10 +74,10 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
      * @param name The plan name
      * @param planSource The plan source directory
      * @param upstreamTaskIds The upstream task IDs
-     * @return A new Plan
+     * @return A new Plan with no files
      */
     public static Plan of(String name, Path planSource, Set<String> upstreamTaskIds) {
-        return new Plan(name, name, planSource, upstreamTaskIds);
+        return new Plan(name, name, planSource, upstreamTaskIds, new ArrayList<>());
     }
     
     /**
@@ -80,7 +89,7 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
     public Plan withUpstreamTask(String taskId) {
         Set<String> newUpstreamTasks = new HashSet<>(upstreamTaskIds);
         newUpstreamTasks.add(taskId);
-        return new Plan(name, label, planSource, newUpstreamTasks);
+        return new Plan(name, label, planSource, newUpstreamTasks, files);
     }
     
     /**
@@ -90,6 +99,28 @@ public record Plan(String name, String label, Path planSource, Set<String> upstr
      * @return A new Plan with the specified upstream tasks
      */
     public Plan withUpstreamTasks(Set<String> taskIds) {
-        return new Plan(name, label, planSource, new HashSet<>(taskIds));
+        return new Plan(name, label, planSource, new HashSet<>(taskIds), files);
+    }
+    
+    /**
+     * Returns a new Plan with the specified files.
+     * 
+     * @param newFiles The ExecutorFile list to set
+     * @return A new Plan with the specified files
+     */
+    public Plan withFiles(List<ExecutorFile> newFiles) {
+        return new Plan(name, label, planSource, upstreamTaskIds, List.copyOf(newFiles));
+    }
+    
+    /**
+     * Returns a new Plan with an additional file.
+     * 
+     * @param file The ExecutorFile to add
+     * @return A new Plan with the additional file
+     */
+    public Plan withFile(ExecutorFile file) {
+        List<ExecutorFile> newFiles = new ArrayList<>(files);
+        newFiles.add(file);
+        return new Plan(name, label, planSource, upstreamTaskIds, List.copyOf(newFiles));
     }
 } 

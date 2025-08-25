@@ -61,20 +61,19 @@ CREATE INDEX IF NOT EXISTS idx_docker_image_build_time ON docker_images(build_ti
 CREATE TABLE IF NOT EXISTS agent_graphs (
     id          VARCHAR(36)  PRIMARY KEY,
     tenant_id   VARCHAR(100) NOT NULL,
-    graph_name  VARCHAR(255) NOT NULL,
-    process_id  VARCHAR(36),
+    name        VARCHAR(255) NOT NULL,
     created_at  TIMESTAMP    NOT NULL,
     updated_at  TIMESTAMP    NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_agent_graph_tenant_id ON agent_graphs(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agent_graph_name ON agent_graphs(graph_name);
-CREATE INDEX IF NOT EXISTS idx_agent_graph_tenant_name ON agent_graphs(tenant_id, graph_name);
+CREATE INDEX IF NOT EXISTS idx_agent_graph_name ON agent_graphs(name);
+CREATE INDEX IF NOT EXISTS idx_agent_graph_tenant_name ON agent_graphs(tenant_id, name);
 
 -- plans
 CREATE TABLE IF NOT EXISTS plans (
     id               VARCHAR(36)  PRIMARY KEY,
-    plan_name        VARCHAR(255) NOT NULL,
+    name             VARCHAR(255) NOT NULL,
     label            VARCHAR(255),
     plan_source_path VARCHAR(500),
     graph_id         VARCHAR(36)  NOT NULL,
@@ -85,15 +84,15 @@ CREATE TABLE IF NOT EXISTS plans (
 );
 
 CREATE INDEX IF NOT EXISTS idx_plan_graph_id ON plans(graph_id);
-CREATE INDEX IF NOT EXISTS idx_plan_name ON plans(plan_name);
-CREATE INDEX IF NOT EXISTS idx_plan_graph_name ON plans(graph_id, plan_name);
+CREATE INDEX IF NOT EXISTS idx_plan_name ON plans(name);
+CREATE INDEX IF NOT EXISTS idx_plan_graph_name ON plans(graph_id, name);
 
 -- tasks
 CREATE TABLE IF NOT EXISTS tasks (
     id               VARCHAR(36)  PRIMARY KEY,
-    task_name        VARCHAR(255) NOT NULL,
+    name             VARCHAR(255) NOT NULL,
     label            VARCHAR(255),
-    task_source_path VARCHAR(500),
+    task_source      VARCHAR(500),
     graph_id         VARCHAR(36)  NOT NULL,
     upstream_plan_id VARCHAR(36),
     CONSTRAINT fk_tasks_graph
@@ -107,8 +106,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_graph_id ON tasks(graph_id);
-CREATE INDEX IF NOT EXISTS idx_task_name ON tasks(task_name);
-CREATE INDEX IF NOT EXISTS idx_task_graph_name ON tasks(graph_id, task_name);
+CREATE INDEX IF NOT EXISTS idx_task_name ON tasks(name);
+CREATE INDEX IF NOT EXISTS idx_task_graph_name ON tasks(graph_id, name);
 CREATE INDEX IF NOT EXISTS idx_task_upstream_plan ON tasks(upstream_plan_id);
 
 -- Many-to-many join: plan_upstream_tasks

@@ -13,7 +13,7 @@ mvn clean package -DskipTests
 
 # Verify JAR files were created
 echo "Verifying JAR files..."
-for service in data_plane-java control_plane-java task_executor-java plan_executor-java; do
+for service in data_plane-java control_plane-java admin-java graph_builder-java graoh_composer; do
     jar_file="services/${service}/target/${service}-1.0.0.jar"
     if [ ! -f "$jar_file" ]; then
         echo "ERROR: JAR file not found: $jar_file"

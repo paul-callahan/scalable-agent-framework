@@ -1,0 +1,162 @@
+.node-name-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.node-name-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.node-name-input:focus {
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.node-name-input.error {
+  border-color: #d32f2f;
+}
+
+.node-name-input.error:focus {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+}
+
+.node-name-input.warning {
+  border-color: #f57c00;
+}
+
+.node-name-input.warning:focus {
+  border-color: #f57c00;
+  box-shadow: 0 0 0 2px rgba(245, 124, 0, 0.2);
+}
+
+.node-name-input.valid {
+  border-color: #4caf50;
+}
+
+.node-name-input.valid:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.node-name-input.validating {
+  border-color: #2196f3;
+}
+
+.node-name-input:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.validation-spinner {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.validation-indicator {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+}
+
+.success-indicator {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.warning-indicator {
+  color: #f57c00;
+}
+
+.error-indicator {
+  color: #d32f2f;
+}
+
+/* Compact input for inline use */
+.node-name-input.compact {
+  padding: 4px 24px 4px 8px;
+  font-size: 12px;
+}
+
+.node-name-input.compact + .validation-spinner,
+.node-name-input.compact + .validation-indicator {
+  width: 12px;
+  height: 12px;
+  right: 4px;
+}
+
+.node-name-input.compact + .validation-spinner .spinner {
+  width: 8px;
+  height: 8px;
+}
+
+/* Validation feedback positioning */
+.node-name-input-container .validation-feedback {
+  margin-top: 4px;
+}
+
+/* Focus states for accessibility */
+.node-name-input:focus-visible {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .node-name-input {
+    border-width: 2px;
+  }
+  
+  .node-name-input.error {
+    border-color: #000;
+    background-color: #ffe6e6;
+  }
+  
+  .node-name-input.warning {
+    border-color: #000;
+    background-color: #fff3e0;
+  }
+  
+  .node-name-input.valid {
+    border-color: #000;
+    background-color: #e8f5e8;
+  }
+}

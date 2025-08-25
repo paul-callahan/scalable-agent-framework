@@ -6,6 +6,7 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pcallahan.agentic.graph.service.GraphPersistenceService;
 
 import java.nio.file.Path;
 import java.util.UUID;

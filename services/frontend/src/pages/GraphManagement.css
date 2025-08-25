@@ -1,0 +1,13 @@
+.graph-management {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.management-content {
+  padding-top: 20px;
+}
+
+/* Ensure the page takes full height */
+.graph-management .management-content {
+  min-height: calc(100vh - 60px); /* Assuming header is 60px */
+}

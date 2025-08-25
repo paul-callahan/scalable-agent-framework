@@ -1,6 +1,8 @@
 spring:
   application:
     name: integration-tests-java-test
+  main:
+    banner-mode: off
   
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

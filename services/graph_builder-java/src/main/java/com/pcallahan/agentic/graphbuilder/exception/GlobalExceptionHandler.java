@@ -1,5 +1,7 @@
 package com.pcallahan.agentic.graphbuilder.exception;
 
+import com.pcallahan.agentic.graph.exception.GraphPersistenceException;
+
 import com.pcallahan.agentic.graph.exception.GraphParsingException;
 import com.pcallahan.agentic.graph.exception.GraphValidationException;
 import com.pcallahan.agentic.graphbuilder.dto.BundleUploadResponse;

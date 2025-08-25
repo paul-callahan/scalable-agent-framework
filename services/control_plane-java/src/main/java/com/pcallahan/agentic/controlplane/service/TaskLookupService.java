@@ -40,7 +40,7 @@ public class TaskLookupService {
                     // Create mock task with default values
                     Path mockTaskSource = Path.of("/mock/task/source/" + taskName);
                     String mockUpstreamPlanId = "mock-upstream-plan-" + taskName;
-                    return new Task(taskName, taskName, mockTaskSource, mockUpstreamPlanId);
+                    return new Task(taskName, taskName, mockTaskSource, mockUpstreamPlanId, List.of());
                 })
                 .collect(Collectors.toList());
             

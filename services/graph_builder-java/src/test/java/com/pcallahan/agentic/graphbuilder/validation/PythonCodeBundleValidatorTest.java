@@ -114,12 +114,12 @@ class PythonCodeBundleValidatorTest {
         
         // Create a plan
         Plan plan = new Plan("plan_data_collection", "Data Collection Plan", 
-            specificationDirectory.resolve("plans").resolve("plan_data_collection"), new HashSet<>());
+            specificationDirectory.resolve("plans").resolve("plan_data_collection"), new HashSet<>(), java.util.List.of());
         plans.put("plan_data_collection", plan);
         
         // Create a task
         Task task = new Task("task_fetch_data", "Fetch Data", 
-            specificationDirectory.resolve("tasks").resolve("task_fetch_data"), "plan_data_collection");
+            specificationDirectory.resolve("tasks").resolve("task_fetch_data"), "plan_data_collection", java.util.List.of());
         tasks.put("task_fetch_data", task);
         
         return AgentGraph.of("PythonCodeBundleTestGraph", plans, tasks, new HashMap<>(), new HashMap<>());

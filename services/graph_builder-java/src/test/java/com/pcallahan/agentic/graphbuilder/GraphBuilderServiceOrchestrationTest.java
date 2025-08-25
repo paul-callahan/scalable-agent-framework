@@ -9,11 +9,11 @@ import com.pcallahan.agentic.graphbuilder.enums.BundleStatus;
 import com.pcallahan.agentic.graphbuilder.enums.StepStatus;
 import com.pcallahan.agentic.graphbuilder.exception.BundleProcessingException;
 import com.pcallahan.agentic.graphbuilder.exception.DockerBuildException;
-import com.pcallahan.agentic.graphbuilder.exception.GraphPersistenceException;
+import com.pcallahan.agentic.graph.exception.GraphPersistenceException;
 import com.pcallahan.agentic.graphbuilder.service.BundleProcessingService;
 import com.pcallahan.agentic.graphbuilder.service.CleanupService;
 import com.pcallahan.agentic.graphbuilder.service.DockerImageService;
-import com.pcallahan.agentic.graphbuilder.service.GraphPersistenceService;
+import com.pcallahan.agentic.graph.service.GraphPersistenceService;
 import com.pcallahan.agentic.graphbuilder.service.ProcessingStatusService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,7 +100,7 @@ class GraphBuilderServiceOrchestrationTest {
         // Mock service responses
         when(processingStatusService.createBundleEntity(eq(tenantId), eq(fileName), anyString())).thenReturn(bundleEntity);
         when(bundleProcessingService.extractBundle(eq(mockFile), anyString())).thenReturn(extractDir);
-        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId), anyString())).thenReturn("graph-id");
+        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId))).thenReturn("graph-id");
         when(dockerImageService.buildTaskImage(eq(tenantId), any(Task.class), any(Path.class), anyString())).thenReturn("task-image:latest");
         when(dockerImageService.buildPlanImage(eq(tenantId), any(Plan.class), any(Path.class), anyString())).thenReturn("plan-image:latest");
         
@@ -139,7 +139,7 @@ class GraphBuilderServiceOrchestrationTest {
         inOrder.verify(processingStatusService).createProcessingStep(anyString(), eq("PERSISTING"), eq(StepStatus.IN_PROGRESS));
         
         // 9. Persist graph
-        inOrder.verify(graphPersistenceService).persistGraph(any(AgentGraph.class), eq(tenantId), anyString());
+        inOrder.verify(graphPersistenceService).persistGraph(any(AgentGraph.class), eq(tenantId));
         
         // 10. Update persistence step to completed
         inOrder.verify(processingStatusService).updateProcessingStep(anyString(), eq("PERSISTING"), eq(StepStatus.COMPLETED));
@@ -186,7 +186,7 @@ class GraphBuilderServiceOrchestrationTest {
         
         // Verify no further processing occurred
         verify(bundleProcessingService, never()).extractBundle(any(), anyString());
-        verify(graphPersistenceService, never()).persistGraph(any(), anyString(), anyString());
+        verify(graphPersistenceService, never()).persistGraph(any(), anyString());
         verify(dockerImageService, never()).buildTaskImage(anyString(), any(), any(), anyString());
     }
     
@@ -217,7 +217,7 @@ class GraphBuilderServiceOrchestrationTest {
         verify(cleanupService).performComprehensiveCleanup(anyString(), isNull(), any(CleanupService.CleanupLevel.class));
         
         // Verify no further processing occurred
-        verify(graphPersistenceService, never()).persistGraph(any(), anyString(), anyString());
+        verify(graphPersistenceService, never()).persistGraph(any(), anyString());
         verify(dockerImageService, never()).buildTaskImage(anyString(), any(), any(), anyString());
     }
     
@@ -250,7 +250,7 @@ class GraphBuilderServiceOrchestrationTest {
         
         // Mock persistence failure
         GraphPersistenceException persistenceError = new GraphPersistenceException("Database error", "correlation-id", "test_graph");
-        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId), anyString())).thenThrow(persistenceError);
+        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId))).thenThrow(persistenceError);
         
         // When
         java.util.concurrent.CompletableFuture<String> result = graphBuilderService.processBundle(tenantId, mockFile);
@@ -295,7 +295,7 @@ class GraphBuilderServiceOrchestrationTest {
         GraphBundleEntity bundleEntity = new GraphBundleEntity("bundle-id", tenantId, fileName, BundleStatus.UPLOADED.getValue(), "process-id");
         when(processingStatusService.createBundleEntity(eq(tenantId), eq(fileName), anyString())).thenReturn(bundleEntity);
         when(bundleProcessingService.extractBundle(eq(mockFile), anyString())).thenReturn(extractDir);
-        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId), anyString())).thenReturn("graph-id");
+        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId))).thenReturn("graph-id");
         
         // Mock Docker build failure
         DockerBuildException dockerError = new DockerBuildException("Docker build failed", "correlation-id", "task-image");
@@ -380,7 +380,7 @@ class GraphBuilderServiceOrchestrationTest {
         GraphBundleEntity bundleEntity = new GraphBundleEntity("bundle-id", tenantId, fileName, BundleStatus.UPLOADED.getValue(), "process-id");
         when(processingStatusService.createBundleEntity(eq(tenantId), eq(fileName), anyString())).thenReturn(bundleEntity);
         when(bundleProcessingService.extractBundle(eq(mockFile), anyString())).thenReturn(extractDir);
-        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId), anyString())).thenReturn("graph-id");
+        when(graphPersistenceService.persistGraph(any(AgentGraph.class), eq(tenantId))).thenReturn("graph-id");
         
         // When
         java.util.concurrent.CompletableFuture<String> result = graphBuilderService.processBundle(tenantId, mockFile);

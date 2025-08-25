@@ -21,7 +21,7 @@ define create_venv
 	fi
 endef
 
-.PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test
+.PHONY: help proto install test lint clean format check-deps sync update-deps microservices-build microservices-up microservices-down microservices-logs microservices-test common-java-clean admin-java-clean common-java-build admin-java-build graph_composer-clean graph_composer-build graph_builder-java-clean graph_builder-java-build control_plane-java-clean control_plane-java-build data_plane-java-clean data_plane-java-build admin-docker-up admin-docker-logs graph-builder-docker-up graph-builder-docker-logs control-plane-docker-up control-plane-docker-logs data-plane-docker-up data-plane-docker-logs graph-composer-docker-up graph-composer-docker-logs frontend-build frontend-clean frontend-logs frontend-docker-up
 
 # Default target
 help:
@@ -60,8 +60,40 @@ help:
 	@echo "  gen-proto-java      - Generate Java protobuf classes using Maven"
 	@echo "  java-clean          - Clean Maven builds"
 	@echo ""
+	@echo "Java Module Service targets:"
+	@echo "  common-java-clean              - Clean common-java module with Maven"
+	@echo "  common-java-build              - Build common-java module with Maven"
+	@echo "  admin-java-clean               - Clean admin-java module with Maven"
+	@echo "  admin-java-build               - Build admin-java module with Maven"
+	@echo "  graph_composer-clean           - Clean graph_composer module with Maven"
+	@echo "  graph_composer-build           - Build graph_composer module with Maven"
+	@echo "  graph_builder-java-clean       - Clean graph_builder-java module with Maven"
+	@echo "  graph_builder-java-build       - Build graph_builder-java module with Maven"
+	@echo "  control_plane-java-clean       - Clean control_plane-java module with Maven"
+	@echo "  control_plane-java-build       - Build control_plane-java module with Maven"
+	@echo "  data_plane-java-clean          - Clean data_plane-java module with Maven"
+	@echo "  data_plane-java-build          - Build data_plane-java module with Maven"
+	@echo ""
+	@echo "Java Service Deployment Pipelines:"
+	@echo "  admin-docker-up         - Complete pipeline: clean, build, and deploy admin service"
+	@echo "  admin-docker-logs       - View admin service logs"
+	@echo "  graph-builder-docker-up - Complete pipeline: clean, build, and deploy graph_builder service"
+	@echo "  graph-builder-docker-logs - View graph_builder service logs"
+	@echo "  control-plane-docker-up - Complete pipeline: clean, build, and deploy control_plane service"
+	@echo "  control-plane-docker-logs - View control_plane service logs"
+	@echo "  data-plane-docker-up    - Complete pipeline: clean, build, and deploy data_plane service"
+	@echo "  data-plane-docker-logs  - View data_plane service logs"
+	@echo "  graph-composer-docker-up - Complete pipeline: clean, build, and deploy graph_composer service"
+	@echo "  graph-composer-docker-logs - View graph_composer service logs"
+	@echo ""
+	@echo "Frontend Development targets:"
+	@echo "  frontend-build                  - Build frontend production bundle"
+	@echo "  frontend-clean                  - Clean frontend build artifacts"
+	@echo "  frontend-logs                   - View frontend development server logs"
+	@echo "  frontend-docker-up              - Clean, build, and restart frontend development server"
+	@echo ""
 
-
+# keep
 gen-proto-py: deps-common-py
 	@echo "Generating Python protobuf files for common-py..."
 	$(call check_python_version)
@@ -69,6 +101,7 @@ gen-proto-py: deps-common-py
 	@cd services/common-py && ./scripts/gen_proto.sh
 
 # Install dependencies for common-py
+# keep
 deps-common-py:
 	@echo "Installing dependencies for common-py..."
 	$(call check_python_version)
@@ -76,6 +109,7 @@ deps-common-py:
 	@cd services/common-py && UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv sync
 
 # Install dependencies for common-py
+# keep
 deps-executors-py: deps-common-py
 	@echo "Installing dependencies for common-py..."
 	$(call check_python_version)
@@ -83,6 +117,7 @@ deps-executors-py: deps-common-py
 	@cd services/executors-py && UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv sync
 
 # Run executors-py tests
+# keep
 test-executors-py: gen-proto-py deps-executors-py
 	@echo "Running executors-py tests..."
 	$(call check_python_version)
@@ -280,7 +315,170 @@ gen-proto-java:
 # Clean Maven builds
 java-clean:
 	@echo "Cleaning Maven builds..."
-	@./scripts/build_java_microservices.sh --clean
+	@mvn clean
+
+# Individual Maven clean targets for common-java and admin-java
+common-java-clean:
+	@echo "Cleaning common-java with Maven..."
+	@cd services/common-java && mvn clean
+
+# Individual Maven build targets for common-java and admin-java
+common-java-build:
+	@echo "Building common-java with Maven..."
+	@cd services/common-java && mvn package -DskipTests
+
+admin-java-clean:
+	@echo "Cleaning admin-java with Maven..."
+	@cd services/admin-java && mvn clean	
+
+admin-java-build:
+	@echo "Building admin-java with Maven..."
+	@cd services/admin-java && mvn package -DskipTests
+
+# Individual Maven targets for graph_composer
+graph_composer-clean:
+	@echo "Cleaning graph_composer with Maven..."
+	@cd services/graph_composer && mvn clean
+
+graph_composer-build:
+	@echo "Building graph_composer with Maven..."
+	@cd services/graph_composer && mvn package -DskipTests
+
+# Individual Maven targets for graph_builder-java
+graph_builder-java-clean:
+	@echo "Cleaning graph_builder-java with Maven..."
+	@cd services/graph_builder-java && mvn clean
+
+graph_builder-java-build:
+	@echo "Building graph_builder-java with Maven..."
+	@cd services/graph_builder-java && mvn package -DskipTests
+
+# Individual Maven targets for control_plane-java
+control_plane-java-clean:
+	@echo "Cleaning control_plane-java with Maven..."
+	@cd services/control_plane-java && mvn clean
+
+control_plane-java-build:
+	@echo "Building control_plane-java with Maven..."
+	@cd services/control_plane-java && mvn package -DskipTests
+
+# Individual Maven targets for data_plane-java
+data_plane-java-clean:
+	@echo "Cleaning data_plane-java with Maven..."
+	@cd services/data_plane-java && mvn clean
+
+data_plane-java-build:
+	@echo "Building data_plane-java with Maven..."
+	@cd services/data_plane-java && mvn package -DskipTests
+
+# Complete admin-java clean, build, and deploy pipeline
+admin-docker-up: common-java-clean admin-java-clean common-java-build admin-java-build
+	@echo "Stopping admin service with docker-compose..."
+	@docker-compose stop admin || true
+	@echo "Removing admin service image..."
+	@docker rmi scalable-agent-framework_admin || true
+	@docker rmi admin || true
+	@echo "Building admin service with docker-compose..."
+	@docker-compose build --no-cache admin
+	@echo "Starting admin service with docker-compose..."
+	@docker-compose up -d admin
+	@echo "Admin-java clean, build, and deploy pipeline completed successfully!"
+
+admin-docker-logs:
+	@echo "Viewing admin service logs..."
+	@docker-compose logs -f admin
+
+# Complete graph_builder-java clean, build, and deploy pipeline
+graph-builder-docker-up: common-java-clean graph_builder-java-clean common-java-build graph_builder-java-build
+	@echo "Stopping graph_builder-java service with docker-compose..."
+	@docker-compose stop graph_builder-java || true
+	@echo "Removing graph_builder-java service image..."
+	@docker rmi scalable-agent-framework_graph_builder-java || true
+	@docker rmi graph_builder-java || true
+	@echo "Building graph_builder-java service with docker-compose..."
+	@docker-compose build --no-cache graph_builder-java
+	@echo "Starting graph_builder-java service with docker-compose..."
+	@docker-compose up -d graph_builder-java
+	@echo "Graph_builder-java clean, build, and deploy pipeline completed successfully!"
+
+graph-builder-docker-logs:
+	@echo "Viewing graph_builder-java service logs..."
+	@docker-compose logs -f graph_builder-java
+
+# Complete control_plane-java clean, build, and deploy pipeline
+control-plane-docker-up: common-java-clean control_plane-java-clean common-java-build control_plane-java-build
+	@echo "Stopping control_plane-java service with docker-compose..."
+	@docker-compose stop control_plane-java || true
+	@echo "Removing control_plane-java service image..."
+	@docker rmi scalable-agent-framework_control_plane-java || true
+	@docker rmi control_plane-java || true
+	@echo "Building control_plane-java service with docker-compose..."
+	@docker-compose build --no-cache control_plane-java
+	@echo "Starting control_plane-java service with docker-compose..."
+	@docker-compose up -d control_plane-java
+	@echo "Control_plane-java clean, build, and deploy pipeline completed successfully!"
+
+control-plane-docker-logs:
+	@echo "Viewing control_plane-java service logs..."
+	@docker-compose logs -f control_plane-java
+
+# Complete data_plane-java clean, build, and deploy pipeline
+data-plane-docker-up: common-java-clean data_plane-java-clean common-java-build data_plane-java-build
+	@echo "Stopping data_plane-java service with docker-compose..."
+	@docker-compose stop data_plane-java || true
+	@echo "Removing data_plane-java service image..."
+	@docker rmi scalable-agent-framework_data_plane-java || true
+	@docker rmi data_plane-java || true
+	@echo "Building data_plane-java service with docker-compose..."
+	@docker-compose build --no-cache data_plane-java
+	@echo "Starting data_plane-java service with docker-compose..."
+	@docker-compose up -d data_plane-java
+	@echo "Data_plane-java clean, build, and deploy pipeline completed successfully!"
+
+data-plane-docker-logs:
+	@echo "Viewing data_plane-java service logs..."
+	@docker-compose logs -f data_plane-java
+
+# Complete graph_composer clean, build, and deploy pipeline
+graph-composer-docker-up: common-java-clean graph_composer-clean common-java-build graph_composer-build
+	@echo "Stopping graph_composer service with docker-compose..."
+	@docker-compose stop graph-composer || true
+	@echo "Removing graph-composer service image..."
+	@docker rmi scalable-agent-framework_graph-composer || true
+	@docker rmi graph-composer || true
+	@echo "Building graph-composer service with docker-compose..."
+	@docker-compose build --no-cache graph-composer
+	@echo "Starting graph-composer service with docker-compose..."
+	@docker-compose up -d graph-composer
+	@echo "Graph_composer clean, build, and deploy pipeline completed successfully!"
+
+graph-composer-docker-logs:
+	@echo "Viewing graph-composer service logs..."
+	@docker-compose logs -f graph-composer
+
+# Frontend Development targets
+frontend-build:
+	@echo "Building frontend..."
+	@cd services/frontend && npm run build
+	@echo "Frontend build completed successfully!"
+
+frontend-clean:
+	@echo "Cleaning frontend build artifacts..."
+	@cd services/frontend && npm run clean
+	@echo "Frontend cleaned successfully!"
+
+
+frontend-logs:
+	@echo "Viewing frontend development server logs..."
+	@docker-compose logs -f frontend
+
+frontend-docker-up: frontend-clean frontend-build
+	@echo "Rebuilding and restarting frontend development server..."
+	@docker-compose stop frontend || true
+	@docker-compose rm -f frontend || true
+	@docker-compose build --no-cache frontend
+	@docker-compose up -d frontend
+	@echo "Frontend development server rebuilt and restarted successfully!"
 
 # Show help for specific target
 %:

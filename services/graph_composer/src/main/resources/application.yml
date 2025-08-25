@@ -1,0 +1,137 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: graph-composer
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/agentic_framework
+    username: agentic_user
+    password: agentic_password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Connection pool optimization for high performance
+      maximum-pool-size: 25
+      minimum-idle: 10
+      idle-timeout: 600000  # 10 minutes
+      connection-timeout: 30000  # 30 seconds
+      leak-detection-threshold: 60000
+      max-lifetime: 1800000  # 30 minutes
+      keepalive-time: 300000  # 5 minutes
+      validation-timeout: 5000
+      # Performance optimizations
+      auto-commit: false
+      read-only: false
+      isolation-level: TRANSACTION_READ_COMMITTED
+      # Connection pool monitoring
+      register-mbeans: true
+      pool-name: GraphComposerHikariCP
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        # Performance optimizations
+        jdbc:
+          batch_size: 50
+          batch_versioned_data: true
+          fetch_size: 50
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
+        # Query optimization
+        query:
+          plan_cache_max_size: 2048
+          plan_parameter_metadata_max_size: 128
+
+        # Connection handling
+        connection:
+          provider_disables_autocommit: true
+        # Statistics for monitoring
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 1000
+    open-in-view: false
+
+  flyway:
+    enabled: false
+
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.pcallahan.agentic: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Application specific configuration
+graph-composer:
+  max-file-size: 1048576  # 1MB in bytes
+  validation:
+    debounce-ms: 750  # Increased for better performance
+  canvas:
+    tile-size: 1000
+    max-zoom: 5.0
+    min-zoom: 0.1
+  performance:
+    # Query optimization settings
+    batch-size: 50
+    fetch-size: 50
+    # Connection pool monitoring
+    enable-pool-monitoring: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/agentic_framework
+    username: agentic_user
+    password: agentic_password
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false

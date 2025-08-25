@@ -48,6 +48,7 @@
         <module>services/task_executor-java</module>
         <module>services/plan_executor-java</module>
         <module>services/graph_builder-java</module>
+        <module>services/graph_composer</module>
         <module>services/integration_tests-java</module>
         <module>services/admin-java</module>
     </modules>
@@ -114,13 +115,13 @@
                     <dependency>
                         <groupId>org.testcontainers</groupId>
                         <artifactId>postgresql</artifactId>
-                        <version>1.19.7</version>
+                        <version>${testcontainers.version}</version>
                     </dependency>
                     
                     <dependency>
                         <groupId>org.testcontainers</groupId>
                         <artifactId>junit-jupiter</artifactId>
-                        <version>1.19.7</version>
+                        <version>${testcontainers.version}</version>
                     </dependency>
                     
                     <!-- Docker Java Client -->

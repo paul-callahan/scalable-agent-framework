@@ -10,6 +10,7 @@
         <module name="task_executor-java" />
         <module name="integration_tests-java" />
         <module name="common-java" />
+        <module name="graph_composer" />
         <module name="control_plane-java" />
         <module name="data_plane-java" />
         <module name="graph_builder-java" />
@@ -28,6 +29,7 @@
       <module name="control_plane-java" options="-parameters" />
       <module name="data_plane-java" options="-parameters" />
       <module name="graph_builder-java" options="-parameters" />
+      <module name="graph_composer" options="-parameters" />
       <module name="integration_tests-java" options="-parameters" />
       <module name="plan_executor-java" options="-parameters" />
       <module name="scalable-agent-framework" options="-parameters" />

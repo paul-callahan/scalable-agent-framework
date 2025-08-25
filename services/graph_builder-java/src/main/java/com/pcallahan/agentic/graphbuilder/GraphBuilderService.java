@@ -10,13 +10,13 @@ import com.pcallahan.agentic.graphbuilder.enums.BundleStatus;
 import com.pcallahan.agentic.graphbuilder.enums.StepStatus;
 import com.pcallahan.agentic.graphbuilder.exception.BundleProcessingException;
 import com.pcallahan.agentic.graphbuilder.exception.DockerBuildException;
-import com.pcallahan.agentic.graphbuilder.exception.GraphPersistenceException;
+import com.pcallahan.agentic.graph.exception.GraphPersistenceException;
 import com.pcallahan.agentic.graphbuilder.parser.GraphParser;
 import com.pcallahan.agentic.graphbuilder.parser.GraphVizDotParser;
 import com.pcallahan.agentic.graphbuilder.service.BundleProcessingService;
 import com.pcallahan.agentic.graphbuilder.service.CleanupService;
 import com.pcallahan.agentic.graphbuilder.service.DockerImageService;
-import com.pcallahan.agentic.graphbuilder.service.GraphPersistenceService;
+import com.pcallahan.agentic.graph.service.GraphPersistenceService;
 import com.pcallahan.agentic.graphbuilder.service.ProcessingStatusService;
 import com.pcallahan.agentic.graphbuilder.validation.PythonCodeBundleValidator;
 import org.slf4j.Logger;
@@ -315,7 +315,7 @@ public class GraphBuilderService {
             // Step 4: Persist graph
             logger.debug("Step 4: Persisting graph [correlationId={}]: processId={}", correlationId, processId);
             processingStatusService.createProcessingStep(processId, "PERSISTING", StepStatus.IN_PROGRESS);
-            graphPersistenceService.persistGraph(graph, tenantId, processId);
+            graphPersistenceService.persistGraph(graph, tenantId);
             processingStatusService.updateProcessingStep(processId, "PERSISTING", StepStatus.COMPLETED);
             processingStatusService.updateBundleStatus(processId, BundleStatus.PERSISTING);
 
