@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
 import ErrorNotification from '../components/error/ErrorNotification';
 import type { ErrorNotificationProps } from '../components/error/ErrorNotification';
@@ -22,12 +22,30 @@ interface ErrorProviderProps {
 
 export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<ErrorNotificationState[]>([]);
+  const recentMessages = useRef<Set<string>>(new Set());
+  const messageTimeouts = useRef<Map<string, number>>(new Map());
 
   const addNotification = (
     message: string,
     type: 'error' | 'warning' | 'info',
     options: Partial<ErrorNotificationProps> = {}
   ) => {
+    // Check if this message was recently shown (within last 5 seconds)
+    const messageKey = `${type}:${message}`;
+    if (recentMessages.current.has(messageKey)) {
+      console.log('Suppressing duplicate notification:', message);
+      return;
+    }
+
+    // Add message to recent set and set timeout to remove it
+    recentMessages.current.add(messageKey);
+    const timeout = setTimeout(() => {
+      recentMessages.current.delete(messageKey);
+      messageTimeouts.current.delete(messageKey);
+    }, 5000); // 5 second deduplication window
+    
+    messageTimeouts.current.set(messageKey, timeout);
+
     const id = Date.now().toString();
     const notification: ErrorNotificationState = {
       id,
@@ -61,6 +79,11 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
   };
 
   const clearErrors = () => {
+    // Clear all timeouts
+    messageTimeouts.current.forEach(timeout => clearTimeout(timeout));
+    messageTimeouts.current.clear();
+    recentMessages.current.clear();
+    
     setNotifications([]);
   };
 

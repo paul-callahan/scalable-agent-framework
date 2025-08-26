@@ -12,7 +12,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
     
-    <artifactId>control_plane-java</artifactId>
+    <artifactId>control-plane</artifactId>
     <packaging>jar</packaging>
     
     <name>Agentic Control Plane Java</name>

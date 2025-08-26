@@ -21,7 +21,8 @@ import type { ErrorResponse } from '../types/errors';
 
 // Retry configuration
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const INITIAL_RETRY_DELAY = 2000; // 2 seconds - increased from 1 second
+const MAX_RETRY_DELAY = 30000; // 30 seconds
 const RETRY_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 
 const apiClient = axios.create({
@@ -57,7 +58,14 @@ const withRetry = async <T>(
     const axiosError = error as AxiosError<ErrorResponse>;
     
     if (retries > 0 && isRetryableError(axiosError)) {
-      await delay(RETRY_DELAY * (MAX_RETRIES - retries + 1)); // Exponential backoff
+      // Exponential backoff with jitter
+      const attemptNumber = MAX_RETRIES - retries + 1;
+      const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attemptNumber - 1);
+      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+      const delayMs = Math.min(baseDelay + jitter, MAX_RETRY_DELAY);
+      
+      console.log(`API retry attempt ${attemptNumber}/${MAX_RETRIES} after ${delayMs}ms`);
+      await delay(delayMs);
       return withRetry(requestFn, retries - 1);
     }
     

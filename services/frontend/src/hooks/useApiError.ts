@@ -13,16 +13,10 @@ export const useApiError = () => {
   const handleError = useCallback((error: Error, context?: string) => {
     console.error('API Error:', error, context);
 
+    // Don't show network errors as toasts to prevent spam when backend is unavailable
     if (error instanceof NetworkError) {
-      showError(error.message, {
-        duration: 8000,
-        retryAction: {
-          label: 'Refresh Page',
-          action: () => {
-            window.location.reload();
-          },
-        },
-      });
+      console.warn('Network error suppressed from toast display:', error.message);
+      return;
     } else if (error instanceof ValidationError) {
       const message = error.errors.length > 0 
         ? `Validation failed: ${error.errors.join(', ')}`
@@ -36,9 +30,18 @@ export const useApiError = () => {
         : error.message;
       showError(message, { duration: 6000 });
     } else {
-      // Generic error
-      const contextMessage = context ? `${context}: ` : '';
-      showError(`${contextMessage}${error.message}`, { duration: 5000 });
+      // Generic error - only show if it's not a network-related error
+      const isNetworkError = error.message.toLowerCase().includes('network') ||
+                           error.message.toLowerCase().includes('connection') ||
+                           error.message.toLowerCase().includes('timeout') ||
+                           error.message.toLowerCase().includes('fetch');
+      
+      if (!isNetworkError) {
+        const contextMessage = context ? `${context}: ` : '';
+        showError(`${contextMessage}${error.message}`, { duration: 5000 });
+      } else {
+        console.warn('Network-related error suppressed from toast display:', error.message);
+      }
     }
   }, [showError, showWarning]);
 

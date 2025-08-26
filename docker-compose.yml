@@ -84,11 +84,11 @@ services:
       start_period: 60s
 
   # Control Plane Java Service
-  control_plane-java:
+  control-plane:
     build:
       context: .
-      dockerfile: services/control_plane-java/Dockerfile
-    container_name: control_plane-java
+      dockerfile: services/control-plane/Dockerfile
+    container_name: control-plane
     depends_on:
       kafka:
         condition: service_healthy
@@ -106,51 +106,9 @@ services:
       retries: 3
       start_period: 60s
 
-  # Task Executor Java Service
-  task_executor-java:
-    build:
-      context: .
-      dockerfile: services/task_executor-java/Dockerfile
-    container_name: task_executor-java
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
-    ports:
-      - "8083:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
-  # Plan Executor Java Service
-  plan_executor-java:
-    build:
-      context: .
-      dockerfile: services/plan_executor-java/Dockerfile
-    container_name: plan_executor-java
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
-    ports:
-      - "8084:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+
+
 
   # Graph Builder Java Service
   graph-builder:
@@ -183,7 +141,7 @@ services:
   # Graph Composer Java Service
   graph-composer:
     build:
-      context: ./services/graph_composer
+      context: ./services/graph-composer
       dockerfile: Dockerfile
     container_name: graph-composer
     depends_on:
@@ -272,6 +230,15 @@ services:
       - ./services/frontend:/app
       # Exclude node_modules to avoid conflicts with container's version
       - /app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./services/frontend
+          target: /app
+          ignore:
+          - node_modules
+        - action: rebuild
+          path: package.json
     environment:
       # Vite configuration for development
       - VITE_API_BASE_URL=http://graph-composer:8080

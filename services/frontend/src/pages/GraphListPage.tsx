@@ -5,12 +5,12 @@ import GraphList from '../components/graph-list/GraphList';
 import CreateGraphDialog from '../components/graph-list/CreateGraphDialog';
 import { useGraphs } from '../hooks/useGraphs';
 import { useAppContext } from '../hooks/useAppContext';
-import './GraphManagement.css';
+import './GraphListPage.css';
 
-const GraphManagement: React.FC = () => {
+const GraphListPage: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useAppContext();
-  const { graphs, loadGraph, deleteGraph, submitForExecution, createGraph } = useGraphs();
+  const { graphs, loadGraph, deleteGraph, submitForExecution } = useGraphs();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleCreateNew = () => {
@@ -18,14 +18,9 @@ const GraphManagement: React.FC = () => {
   };
 
   const handleCreateConfirm = async (graphName: string) => {
-    try {
-      await createGraph({ name: graphName, tenantId: state.tenantId });
-      setShowCreateDialog(false);
-      navigate('/editor');
-    } catch (error) {
-      // Error is already handled by the hook
-      console.error('Failed to create graph:', error);
-    }
+    // For now, just navigate to editor without API calls (until backend is fixed)
+    setShowCreateDialog(false);
+    navigate(`/editor?name=${encodeURIComponent(graphName)}`);
   };
 
   const handleCreateCancel = () => {
@@ -61,10 +56,20 @@ const GraphManagement: React.FC = () => {
   };
 
   return (
-    <div className="graph-management">
+    <div className="graph-list-page">
       <AppHeader />
       
-      <main className="management-content">
+      <main className="list-content">
+        <div className="page-header">
+          <h1>Graph Management</h1>
+          <button 
+            className="create-graph-button"
+            onClick={handleCreateNew}
+          >
+            Create New Graph
+          </button>
+        </div>
+        
         <GraphList
           graphs={graphs}
           loading={state.isLoading}
@@ -86,4 +91,4 @@ const GraphManagement: React.FC = () => {
   );
 };
 
-export default GraphManagement;
+export default GraphListPage;

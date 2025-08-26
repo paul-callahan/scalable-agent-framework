@@ -11,9 +11,9 @@
         <option value="$PROJECT_DIR$/services/task_executor-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/plan_executor-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/common-java/pom.xml" />
-        <option value="$PROJECT_DIR$/services/data-plane/pom.xml" />
+        <option value="$PROJECT_DIR$/services/data_plane-java/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
-        <option value="$PROJECT_DIR$/services/graph-builder/pom.xml" />
+        <option value="$PROJECT_DIR$/services/graph_builder-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/integration_tests-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/admin-java/pom.xml" />
         <option value="$PROJECT_DIR$/services/graph_composer/pom.xml" />

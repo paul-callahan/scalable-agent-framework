@@ -17,9 +17,9 @@ interface RetryState {
 
 const DEFAULT_CONFIG: Required<RetryConfig> = {
   maxRetries: 3,
-  initialDelay: 1000, // 1 second
-  maxDelay: 30000, // 30 seconds
-  backoffMultiplier: 2,
+  initialDelay: 2000, // 2 seconds - increased from 1 second
+  maxDelay: 60000, // 60 seconds - increased from 30 seconds
+  backoffMultiplier: 3, // Increased from 2 for more aggressive backoff
   retryableErrors: ['NetworkError', 'TimeoutError', 'ConnectionError'],
 };
 

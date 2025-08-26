@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import ThreePaneLayout from '../components/layout/ThreePaneLayout';
 import AppHeader from '../components/layout/AppHeader';
 import FileExplorer from '../components/file-explorer/FileExplorer';
@@ -6,6 +6,7 @@ import GraphCanvas, { type ToolType, type CanvasNode, type CanvasEdge } from '..
 import CodeEditor from '../components/editor/CodeEditor';
 import { useAppContext } from '../hooks/useAppContext';
 import { graphApi } from '../api/client';
+import type { AgentGraphDto } from '../types';
 
 const GraphEditor: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -36,8 +37,31 @@ const GraphEditor: React.FC = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      // Save the entire graph with all files
-      const updatedGraph = await graphApi.updateGraph(currentGraph.id, currentGraph);
+      // Validate the graph before saving
+      const validatedGraph: AgentGraphDto = {
+        ...currentGraph,
+        plans: [...(currentGraph.plans || [])],
+        tasks: [...(currentGraph.tasks || [])],
+        planToTasks: { ...currentGraph.planToTasks },
+        taskToPlan: { ...currentGraph.taskToPlan }
+      };
+      console.log('Validated graph:', validatedGraph);
+      
+      // Use POST for new graphs, PUT for existing graphs
+      let updatedGraph: AgentGraphDto;
+      if (currentGraph.id.startsWith('new-')) {
+        // Create new graph
+        const createRequest = {
+          name: validatedGraph.name,
+          tenantId: validatedGraph.tenantId
+        };
+        console.log('Creating new graph with:', createRequest);
+        updatedGraph = await graphApi.createGraph(createRequest);
+      } else {
+        // Update existing graph
+        console.log('Updating existing graph');
+        updatedGraph = await graphApi.updateGraph(validatedGraph.id, validatedGraph);
+      }
       
       // Update the current graph with the response from server
       dispatch({ type: 'SET_CURRENT_GRAPH', payload: updatedGraph });
@@ -52,7 +76,7 @@ const GraphEditor: React.FC = () => {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [currentGraph, dispatch]);
+  }, [dispatch]);
 
   // Handle tool changes
   const handleToolChange = useCallback((tool: ToolType) => {
@@ -62,8 +86,47 @@ const GraphEditor: React.FC = () => {
   // Handle node creation (placeholder - will be implemented in later tasks)
   const handleNodeCreate = useCallback((node: Omit<CanvasNode, 'id' | 'selected'>) => {
     console.log('Node creation requested:', node);
-    // TODO: Implement node creation in backend integration
-  }, []);
+    console.log('Current graph before update:', currentGraph);
+    
+    // Add the node to the current graph if it exists
+    if (currentGraph) {
+      // Create a completely new graph object to ensure React detects the change
+      const updatedGraph = {
+        ...currentGraph,
+        plans: [...(currentGraph.plans || [])],
+        tasks: [...(currentGraph.tasks || [])],
+        planToTasks: { ...currentGraph.planToTasks },
+        taskToPlan: { ...currentGraph.taskToPlan }
+      };
+      
+      if (node.type === 'plan') {
+        // Add new plan to the graph
+        const newPlan = {
+          name: node.label,
+          label: node.label,
+          upstreamTaskIds: [],
+          files: []
+        };
+        updatedGraph.plans.push(newPlan);
+        console.log('Added new plan:', newPlan);
+      } else if (node.type === 'task') {
+        // Add new task to the graph
+        const newTask = {
+          name: node.label,
+          label: node.label,
+          upstreamPlanId: '',
+          files: []
+        };
+        updatedGraph.tasks.push(newTask);
+        console.log('Added new task:', newTask);
+      }
+      
+      console.log('Updated graph:', updatedGraph);
+      
+      // Update the current graph in state
+      dispatch({ type: 'SET_CURRENT_GRAPH', payload: updatedGraph });
+    }
+  }, [currentGraph, dispatch]);
 
   // Handle edge creation (placeholder - will be implemented in later tasks)
   const handleEdgeCreate = useCallback((edge: Omit<CanvasEdge, 'id' | 'selected'>) => {
@@ -94,6 +157,63 @@ const GraphEditor: React.FC = () => {
     console.log('Node moved:', nodeId, x, y);
     // TODO: Implement node position updates in backend integration
   }, []);
+
+  // Handle node updates (label changes, etc.)
+  const handleNodeUpdate = useCallback((nodeId: string, updates: Partial<CanvasNode>) => {
+    if (updates.label && currentGraph) {
+      // Create a completely new graph object to ensure React detects the change
+      const updatedGraph = {
+        ...currentGraph,
+        plans: [...(currentGraph.plans || [])],
+        tasks: [...(currentGraph.tasks || [])],
+        planToTasks: { ...currentGraph.planToTasks },
+        taskToPlan: { ...currentGraph.taskToPlan }
+      };
+      
+      // Update plan label
+      updatedGraph.plans = updatedGraph.plans.map((plan: any) => 
+        plan.name === nodeId ? { ...plan, label: updates.label! } : plan
+      );
+      
+      // Update task label
+      updatedGraph.tasks = updatedGraph.tasks.map((task: any) => 
+        task.name === nodeId ? { ...task, label: updates.label! } : task
+      );
+      
+      // Update the current graph in state
+      dispatch({ type: 'SET_CURRENT_GRAPH', payload: updatedGraph });
+    }
+  }, [currentGraph, dispatch]);
+
+  // Initialize currentGraph when component mounts (for new graphs)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const graphName = searchParams.get('name');
+    
+    if (graphName && !currentGraph) {
+      // Create a new graph structure for the new graph
+      const newGraph = {
+        id: `new-${Date.now()}`,
+        name: graphName,
+        tenantId: 'evil-corp', // Default tenant
+        status: 'NEW' as const,
+        plans: [],
+        tasks: [],
+        planToTasks: {},
+        taskToPlan: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('Initializing new graph:', newGraph);
+      dispatch({ type: 'SET_CURRENT_GRAPH', payload: newGraph });
+    }
+  }, [dispatch]);
+
+  // Debug: Log when currentGraph changes
+  useEffect(() => {
+    console.log('GraphEditor: currentGraph changed:', currentGraph);
+  }, [currentGraph]);
 
   return (
     <ThreePaneLayout
@@ -132,6 +252,7 @@ const GraphEditor: React.FC = () => {
           onNodeDelete={handleNodeDelete}
           onEdgeDelete={handleEdgeDelete}
           onNodeMove={handleNodeMove}
+          onNodeUpdate={handleNodeUpdate}
         />
       }
       centerBottomPane={

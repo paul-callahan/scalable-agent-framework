@@ -12,7 +12,7 @@ RUN groupadd -g 1001 appgroup && \
 WORKDIR /app
 
 # Copy the pre-built JAR from host (built outside Docker)
-COPY target/control_plane-java-*.jar app.jar
+COPY services/control-plane/target/control-plane-*.jar app.jar
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
