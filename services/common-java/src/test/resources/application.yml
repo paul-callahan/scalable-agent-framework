@@ -1,0 +1,31 @@
+spring:
+  main:
+    banner-mode: off
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        use_sql_comments: false
+        generate_statistics: false
+
+logging:
+  level:
+    root: ERROR
+    org.hibernate: ERROR
+    org.hibernate.SQL: ERROR
+    org.hibernate.type: ERROR
+    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.hibernate.orm: ERROR
+    org.hibernate.orm.jdbc.bind: ERROR
+    org.hibernate.orm.jdbc.extract: ERROR
+    org.springframework.orm.jpa: ERROR
+    org.springframework.transaction: ERROR
+    org.springframework.boot.autoconfigure: ERROR
+    org.springframework.data.jpa: ERROR
+    org.springframework.jdbc.core: ERROR
+    com.zaxxer.hikari: ERROR
+    org.testcontainers: ERROR
+    tc: ERROR
+

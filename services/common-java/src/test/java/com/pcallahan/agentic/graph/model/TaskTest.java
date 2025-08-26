@@ -80,4 +80,63 @@ class TaskTest {
         assertThat(task1.hashCode()).isNotEqualTo(task3.hashCode());
         assertThat(task1.hashCode()).isNotEqualTo(task4.hashCode());
     }
+    
+    @Test
+    void testWithFiles() {
+        // Given
+        Task task = Task.of("test_task", testTaskPath, "test_plan");
+        ExecutorFile file1 = ExecutorFile.of("task.py", "def task(): pass");
+        ExecutorFile file2 = ExecutorFile.of("requirements.txt", "requests==2.28.0");
+        
+        // When
+        Task newTask = task.withFiles(java.util.List.of(file1, file2));
+        
+        // Then
+        assertThat(newTask.name()).isEqualTo("test_task");
+        assertThat(newTask.taskSource()).isEqualTo(testTaskPath);
+        assertThat(newTask.upstreamPlanId()).isEqualTo("test_plan");
+        assertThat(newTask.files()).containsExactly(file1, file2);
+        
+        // Original task should be unchanged
+        assertThat(task.files()).isEmpty();
+    }
+    
+    @Test
+    void testWithFile() {
+        // Given
+        Task task = Task.of("test_task", testTaskPath, "test_plan");
+        ExecutorFile file = ExecutorFile.of("task.py", "def task(): pass");
+        
+        // When
+        Task newTask = task.withFile(file);
+        
+        // Then
+        assertThat(newTask.name()).isEqualTo("test_task");
+        assertThat(newTask.taskSource()).isEqualTo(testTaskPath);
+        assertThat(newTask.upstreamPlanId()).isEqualTo("test_plan");
+        assertThat(newTask.files()).containsExactly(file);
+        
+        // Original task should be unchanged
+        assertThat(task.files()).isEmpty();
+    }
+    
+    @Test
+    void testFileImmutability() {
+        // Given
+        ExecutorFile file = ExecutorFile.of("task.py", "def task(): pass");
+        Task task = Task.of("test_task", testTaskPath, "test_plan").withFile(file);
+        
+        // When & Then
+        assertThatThrownBy(() -> task.files().add(ExecutorFile.of("test.py", "test")))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+    
+    @Test
+    void testNullFiles() {
+        // Given & When
+        Task task = new Task("test_task", "test_task", testTaskPath, "test_plan", null);
+        
+        // Then
+        assertThat(task.files()).isEmpty();
+    }
 } 

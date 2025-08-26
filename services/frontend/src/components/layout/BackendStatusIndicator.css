@@ -1,0 +1,64 @@
+.backend-status-indicator {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: monospace;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.backend-status-indicator:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.status-text {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.last-check {
+  font-size: 10px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.status-online {
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.status-offline {
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
+.status-checking {
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .backend-status-indicator {
+    bottom: 5px;
+    right: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .last-check {
+    display: none; /* Hide last check on small screens */
+  }
+}

@@ -1,0 +1,107 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.error-boundary__container {
+  max-width: 600px;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.error-boundary__icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.error-boundary__title {
+  color: #dc3545;
+  margin-bottom: 16px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.error-boundary__message {
+  color: #6c757d;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.error-boundary__details {
+  margin: 24px 0;
+  text-align: left;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.error-boundary__details summary {
+  padding: 12px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.error-boundary__details summary:hover {
+  background-color: #e9ecef;
+}
+
+.error-boundary__stack {
+  padding: 16px;
+  margin: 0;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #495057;
+}
+
+.error-boundary__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-boundary__button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.error-boundary__button--primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.error-boundary__button--primary:hover {
+  background-color: #0056b3;
+}
+
+.error-boundary__button--secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.error-boundary__button--secondary:hover {
+  background-color: #545b62;
+}
+
+.error-boundary__button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}

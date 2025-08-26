@@ -4,12 +4,12 @@
     <file url="file://$PROJECT_DIR$/services/admin-java/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/common-java/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/common-java/target/generated-sources/protobuf/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/control_plane-java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/data_plane-java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/graph_builder-java/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/control-plane/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/data-plane/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/graph-builder/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/graph-composer/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/graph_composer/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/services/integration_tests-java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/plan_executor-java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/services/task_executor-java/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
   </component>

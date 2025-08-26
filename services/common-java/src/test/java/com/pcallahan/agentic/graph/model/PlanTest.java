@@ -130,9 +130,67 @@ class PlanTest {
     @Test
     void testNullUpstreamTaskIds() {
         // Given & When
-        Plan plan = new Plan("test_plan", "test_plan", testPlanPath, null);
+        Plan plan = new Plan("test_plan", "test_plan", testPlanPath, null, null);
         
         // Then
         assertThat(plan.upstreamTaskIds()).isEmpty();
+        assertThat(plan.files()).isEmpty();
+    }
+    
+    @Test
+    void testWithFiles() {
+        // Given
+        Plan plan = Plan.of("test_plan", testPlanPath);
+        ExecutorFile file1 = ExecutorFile.of("plan.py", "def plan(): pass");
+        ExecutorFile file2 = ExecutorFile.of("requirements.txt", "requests==2.28.0");
+        
+        // When
+        Plan newPlan = plan.withFiles(java.util.List.of(file1, file2));
+        
+        // Then
+        assertThat(newPlan.name()).isEqualTo("test_plan");
+        assertThat(newPlan.planSource()).isEqualTo(testPlanPath);
+        assertThat(newPlan.files()).containsExactly(file1, file2);
+        
+        // Original plan should be unchanged
+        assertThat(plan.files()).isEmpty();
+    }
+    
+    @Test
+    void testWithFile() {
+        // Given
+        Plan plan = Plan.of("test_plan", testPlanPath);
+        ExecutorFile file = ExecutorFile.of("plan.py", "def plan(): pass");
+        
+        // When
+        Plan newPlan = plan.withFile(file);
+        
+        // Then
+        assertThat(newPlan.name()).isEqualTo("test_plan");
+        assertThat(newPlan.planSource()).isEqualTo(testPlanPath);
+        assertThat(newPlan.files()).containsExactly(file);
+        
+        // Original plan should be unchanged
+        assertThat(plan.files()).isEmpty();
+    }
+    
+    @Test
+    void testFileImmutability() {
+        // Given
+        ExecutorFile file = ExecutorFile.of("plan.py", "def plan(): pass");
+        Plan plan = Plan.of("test_plan", testPlanPath).withFile(file);
+        
+        // When & Then
+        assertThatThrownBy(() -> plan.files().add(ExecutorFile.of("test.py", "test")))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+    
+    @Test
+    void testNullFiles() {
+        // Given & When
+        Plan plan = new Plan("test_plan", "test_plan", testPlanPath, java.util.Set.of(), null);
+        
+        // Then
+        assertThat(plan.files()).isEmpty();
     }
 } 

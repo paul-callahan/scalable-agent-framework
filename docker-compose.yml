@@ -56,11 +56,11 @@ services:
       retries: 5
 
   # Data Plane Java Service
-  data_plane-java:
+  data-plane:
     build:
       context: .
-      dockerfile: services/data_plane-java/Dockerfile
-    container_name: data_plane-java
+      dockerfile: services/data-plane/Dockerfile
+    container_name: data-plane
     depends_on:
       kafka:
         condition: service_healthy
@@ -84,11 +84,11 @@ services:
       start_period: 60s
 
   # Control Plane Java Service
-  control_plane-java:
+  control-plane:
     build:
       context: .
-      dockerfile: services/control_plane-java/Dockerfile
-    container_name: control_plane-java
+      dockerfile: services/control-plane/Dockerfile
+    container_name: control-plane
     depends_on:
       kafka:
         condition: service_healthy
@@ -106,58 +106,16 @@ services:
       retries: 3
       start_period: 60s
 
-  # Task Executor Java Service
-  task_executor-java:
-    build:
-      context: .
-      dockerfile: services/task_executor-java/Dockerfile
-    container_name: task_executor-java
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
-    ports:
-      - "8083:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
-  # Plan Executor Java Service
-  plan_executor-java:
-    build:
-      context: .
-      dockerfile: services/plan_executor-java/Dockerfile
-    container_name: plan_executor-java
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
-      SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
-    ports:
-      - "8084:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+
+
 
   # Graph Builder Java Service
-  graph_builder-java:
+  graph-builder:
     build:
-      context: ./services/graph_builder-java
+      context: ./services/graph-builder
       dockerfile: Dockerfile
-    container_name: graph_builder-java
+    container_name: graph-builder
     depends_on:
       kafka:
         condition: service_healthy
@@ -173,6 +131,29 @@ services:
       SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
     ports:
       - "8087:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Graph Composer Java Service
+  graph-composer:
+    build:
+      context: ./services/graph-composer
+      dockerfile: Dockerfile
+    container_name: graph-composer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agentic
+      SPRING_DATASOURCE_USERNAME: agentic
+      SPRING_DATASOURCE_PASSWORD: agentic
+    ports:
+      - "8088:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -235,6 +216,43 @@ services:
       - "8085:80"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+
+  # Graph Composer Frontend (React + Vite Development Server)
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount entire frontend directory for live editing
+      - ./services/frontend:/app
+      # Exclude node_modules to avoid conflicts with container's version
+      - /app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./services/frontend
+          target: /app
+          ignore:
+          - node_modules
+        - action: rebuild
+          path: package.json
+    environment:
+      # Vite configuration for development
+      - VITE_API_BASE_URL=http://graph-composer:8080
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - graph-composer
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres-data:

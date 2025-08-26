@@ -1,0 +1,66 @@
+.three-pane-layout {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.layout-content {
+  flex: 1;
+  display: flex;
+  min-height: 0; /* Important for flex children to shrink */
+}
+
+.left-pane {
+  width: 33.333%; /* 1/3 of the width */
+  border-right: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  overflow: auto;
+}
+
+.right-panes {
+  flex: 1; /* Takes remaining 2/3 of the width */
+  display: flex;
+  flex-direction: column;
+}
+
+.center-top-pane {
+  flex: 1; /* Takes top half of the right side */
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  overflow: auto;
+}
+
+.center-bottom-pane {
+  flex: 1; /* Takes bottom half of the right side */
+  background-color: #ffffff;
+  overflow: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .layout-content {
+    flex-direction: column;
+  }
+  
+  .left-pane {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .right-panes {
+    flex-direction: row;
+  }
+  
+  .center-top-pane {
+    border-bottom: none;
+    border-right: 1px solid #e0e0e0;
+  }
+}

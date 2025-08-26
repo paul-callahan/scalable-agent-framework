@@ -6,18 +6,23 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="plan_executor-java" />
-        <module name="task_executor-java" />
+        <module name="data-plane" />
         <module name="integration_tests-java" />
         <module name="common-java" />
-        <module name="control_plane-java" />
-        <module name="data_plane-java" />
-        <module name="graph_builder-java" />
+        <module name="graph-composer" />
+        <module name="control-plane" />
+        <module name="graph-builder" />
         <module name="admin-java" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="agentic-parent" target="21" />
+      <module name="control_plane-java" target="21" />
+      <module name="data_plane-java" target="21" />
+      <module name="graph_builder-java" target="21" />
+      <module name="graph_composer" target="21" />
+      <module name="plan_executor-java" target="21" />
+      <module name="task_executor-java" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -25,13 +30,12 @@
       <module name="admin-java" options="-parameters" />
       <module name="agentic-parent" options="-parameters" />
       <module name="common-java" options="-parameters" />
-      <module name="control_plane-java" options="-parameters" />
-      <module name="data_plane-java" options="-parameters" />
-      <module name="graph_builder-java" options="-parameters" />
+      <module name="control-plane" options="-parameters" />
+      <module name="data-plane" options="-parameters" />
+      <module name="graph-builder" options="-parameters" />
+      <module name="graph-composer" options="-parameters" />
       <module name="integration_tests-java" options="-parameters" />
-      <module name="plan_executor-java" options="-parameters" />
       <module name="scalable-agent-framework" options="-parameters" />
-      <module name="task_executor-java" options="-parameters" />
     </option>
   </component>
 </project>

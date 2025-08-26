@@ -1,0 +1,226 @@
+.validation-status-bar {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.status-header:hover {
+  background-color: #f8f9fa;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.status-icon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.status-icon.success {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.status-icon.error {
+  color: #d32f2f;
+}
+
+.status-icon.warning {
+  color: #f57c00;
+}
+
+.status-icon.unknown {
+  color: #666;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refresh-button,
+.expand-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.refresh-button:hover:not(:disabled),
+.expand-button:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-details {
+  border-top: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.status-details .validation-feedback {
+  margin: 0;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+}
+
+/* Status bar variants */
+.validation-status-bar.error {
+  border-color: #d32f2f;
+}
+
+.validation-status-bar.error .status-header {
+  background-color: #ffebee;
+}
+
+.validation-status-bar.warning {
+  border-color: #f57c00;
+}
+
+.validation-status-bar.warning .status-header {
+  background-color: #fff8e1;
+}
+
+.validation-status-bar.success {
+  border-color: #4caf50;
+}
+
+.validation-status-bar.success .status-header {
+  background-color: #e8f5e8;
+}
+
+.validation-status-bar.validating {
+  border-color: #2196f3;
+}
+
+.validation-status-bar.validating .status-header {
+  background-color: #e3f2fd;
+}
+
+/* Validation spinner */
+.validation-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.validation-spinner .spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Compact version */
+.validation-status-bar.compact {
+  border-radius: 20px;
+  overflow: visible;
+}
+
+.validation-status-bar.compact .status-header {
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.validation-status-bar.compact .status-text {
+  font-size: 12px;
+}
+
+.validation-status-bar.compact .status-details {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+/* Animation for expansion */
+.validation-status-bar.expanded .expand-button {
+  transform: rotate(90deg);
+}
+
+.status-details {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .status-text {
+    font-size: 12px;
+  }
+  
+  .status-header {
+    padding: 6px 8px;
+  }
+  
+  .refresh-button,
+  .expand-button {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}

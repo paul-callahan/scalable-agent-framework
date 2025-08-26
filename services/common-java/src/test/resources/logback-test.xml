@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Silence Hibernate SQL logging -->
+    <logger name="org.hibernate.SQL" level="OFF"/>
+    <logger name="org.hibernate" level="OFF"/>
+    <logger name="org.hibernate.orm" level="OFF"/>
+    <!-- Hibernate 6 logger categories for binds and extracts -->
+    <logger name="org.hibernate.orm.jdbc.bind" level="OFF"/>
+    <logger name="org.hibernate.orm.jdbc.extract" level="OFF"/>
+    <!-- Hibernate type binding loggers -->
+    <logger name="org.hibernate.type" level="OFF"/>
+    <logger name="org.hibernate.type.descriptor.jdbc.BasicBinder" level="OFF"/>
+    
+    <!-- Silence Spring JPA and JDBC logging -->
+    <logger name="org.springframework.orm.jpa" level="OFF"/>
+    <logger name="org.springframework.transaction" level="OFF"/>
+    <logger name="org.springframework.data.jpa" level="OFF"/>
+    <logger name="org.springframework.jdbc.core" level="OFF"/>
+    <logger name="org.springframework.boot.autoconfigure" level="OFF"/>
+    
+    <!-- Silence HikariCP logging -->
+    <logger name="com.zaxxer.hikari" level="OFF"/>
+    
+    <!-- Silence TestContainers logging -->
+    <logger name="org.testcontainers" level="OFF"/>
+    <logger name="tc" level="OFF"/>
+    
+    <!-- Only show ERROR level and above for all other loggers -->
+    <root level="ERROR">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
