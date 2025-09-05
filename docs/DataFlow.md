@@ -53,12 +53,12 @@ graph TB
     end
 
     subgraph "Kafka Topics (6 types)"
-        TE[task-executions-{tenantId}]
-        PE[plan-executions-{tenantId}]
-        PTE[persisted-task-executions-{tenantId}]
-        PPE[persisted-plan-executions-{tenantId}]
-        PI[plan-inputs-{tenantId}]
-        TI[task-inputs-{tenantId}]
+        TE["task-executions-{tenantId}"]
+        PE["plan-executions-{tenantId}"]
+        PTE["persisted-task-executions-{tenantId}"]
+        PPE["persisted-plan-executions-{tenantId}"]
+        PI["plan-inputs-{tenantId}"]
+        TI["task-inputs-{tenantId}"]
     end
     
     %% Service Connections with Topic Names
